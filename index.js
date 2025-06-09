@@ -61,7 +61,8 @@ app.use(express.static('public'));
 
 const storage = multer.diskStorage({
   destination: (req,file,cb)=> cb(null,path.join(__dirname, 'uploads')),
-  filename: (req,file,cb)=>cb(null,Date.now() + '-'+file.originalname),
+  //filename: (req,file,cb)=>cb(null,Date.now() + '-'+file.originalname),
+  filename: (req,file,cb)=>cb(null,'archiveto'),
 });
 const upload = multer({storage});
 // routing
