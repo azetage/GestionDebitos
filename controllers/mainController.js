@@ -4,7 +4,7 @@ import DebitosTemp from '../models/DebitosTemporales.js';
 
 const paginainicio = async (req, res) => {
  
-    const fileStream = fs.createReadStream('./BSE1.txt');
+    const fileStream = fs.createReadStream('./uploads/archiveto.txt');
     
     const rl = readline.createInterface({
         input: fileStream,
