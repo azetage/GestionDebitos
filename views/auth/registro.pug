@@ -1,0 +1,27 @@
+extends ../layout/plantilla  
+
+block contenido
+    h2.py-6.text-center.text-2xl.font-bold= pagina
+
+    if errores 
+        div(class="max-w-md mx-auto my-10")
+            each error in errores
+                p(class= "bg-red-600 text-white uppercase text-xs text-center p-2 mb-1 font-bold")= error.msg
+                    
+    div.mt-8.mx-auto.max-w-md
+        .bg-white.py-8.px-4.shadow
+            form.space-y-5(method= "POST" action="/auth/registro" noValidate)
+                div 
+                    label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="nombre") Tu Nombre 
+                    input#nombre.w-full.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(placeholder="Tu Nombre" type="text" name="nombre" value=usuario? usuario.nombre:'')
+                     
+                div
+                    label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="password") Tu clave 
+                    input#email.w-full.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(placeholder="Tu clave" type="password" name="password")   
+                div
+                    label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="repetir_password") Repetir Clave
+                    input#email.w-full.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(placeholder="repite tu clave" type="password" name="repetir_password")
+
+                input(class= "w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" type= 'submit' value= 'Crear Cuenta')
+
+                    

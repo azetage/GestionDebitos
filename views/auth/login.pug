@@ -1,0 +1,18 @@
+extends ../layout/plantilla  
+
+block contenido
+    h2.py-2.text-center.text-2xl.font-bold= pagina 
+
+    .mt-8.mx-auto.max-w-md(class="shadow-lg shadow-gray-500/50")
+        .bg-white.py-8.px-4.shadow
+            form.space-y-5(method= "POST" action="/auth/login" noValidate)
+                
+                div
+                    label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="usuario") Usuario 
+                    input#usuario.w-full.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(placeholder="" type="usuario" name="usuario")
+                        
+                div
+                    label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="password") Contraseña 
+                    input#password.w-full.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(placeholder="" type="password" name="password")
+                       
+                input(class= "w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" type= 'submit' value= 'Iniciar Sesion')       
