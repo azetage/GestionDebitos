@@ -1,6 +1,10 @@
 import fs from 'fs';
 import readline from 'readline'
 import DebitosTemp from '../models/DebitosTemporales.js';
+import ExcelJS from 'exceljs';
+import { db_debitos } from '../config/db.js';
+import os from 'os';
+import path from 'path';
 
 const paginainicio = async (req, res) => {
  
@@ -48,6 +52,45 @@ const paginainicio = async (req, res) => {
     // )
 }
 
+function obtenerRutaDescargas(){
+    const home = os.homedir();
+//console.log (path.join(home,'Dowloads'))
+    return path.join(home,'Descargas');
+}
+
+const generarExcel= async(req,res)=>{
+
+    console.log("funcion generar")
+
+
+    const [rows] = await DebitosTemp.findAll()
+
+    //crear archivo excel
+    const workbook= new ExcelJS.Workbook();
+    const worksheet= workbook.addWorksheet("Datos");
+
+    // // definir columnas
+
+    // const columnas = Object.keys(rows[0] || {}).map(key => ({
+    //     header: key,
+    //     key
+    //   }));
+    //   worksheet.columns = columnas
+
+    // // agregar Filas 
+
+    // rows.forEach(row => worksheet.addRow(row));
+
+    // guardar archivo
+
+    const ruta = path.join(obtenerRutaDescargas(),'debitos_generados.xlsx')
+
+    await workbook.xlsx.writeFile(ruta);
+
+    console.log(`excel generado: ${ruta}`)
+    
+}
 export {
-    paginainicio
+    paginainicio, 
+    generarExcel
 }

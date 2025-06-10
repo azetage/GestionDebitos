@@ -67,3 +67,13 @@ block contenido
                                         td.italic.border.border-slate-300.px-4= item.nro_agente
                                         td.italic.border.border-slate-300.px-4= item.monto 
                                         td.italic.border.border-slate-300.px-4= item.codigo
+    
+    div(name= 'Generar Excel')
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                form.space-y-5(action="/main/index/generarExcel" method= "GET" enctype="multipart/form-data")
+                    fieldset.px-10.py-1 
+                        legend.px-3.py-3.mt-2.font-bold GENERAR EXCEL 
+                            div
+                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                        type= 'submit' value= 'Generar')
