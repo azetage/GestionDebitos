@@ -103,7 +103,7 @@ const generarExcel= async(req,res)=>{
 }
 const paginainicio = async (req, res) => {
    
-    let datosfonavi= await EnvioDebitos.findAll({ where :{ DNI_DESC: 34777829 }})
+    let datosfonavi= await EnvioDebitos.findAll({ where :{ COD_DEB: 2 }})
 
     const datos = datosfonavi.map(item => ({
         COD:        item.COD,
@@ -115,7 +115,7 @@ const paginainicio = async (req, res) => {
         OPERATORIA: 'FONAV'
     }))
     
-    let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
+    let datosOperatorias2 = await VistaDebitos.findAll({ where : { OrganismoId : 2}})
     
     const datos1= datosOperatorias2.map(item=>({
         COD:        item.codigo,
