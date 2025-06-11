@@ -5,9 +5,17 @@ import ExcelJS from 'exceljs';
 import { db_debitos } from '../config/db.js';
 import os from 'os';
 import path from 'path';
+import EnvioDebitos from '../models/EnvioDebitos.js';
+import VistaDebitos from '../models/VistaDebitos.js';
 
-const paginainicio = async (req, res) => {
- 
+
+
+function obtenerRutaDescargas(){
+    const home = os.homedir();
+    return path.join(home,'Descargas');
+}
+
+async function  cargarArchivo() {
     const fileStream = fs.createReadStream('./uploads/archiveto.txt');
     
     const rl = readline.createInterface({
@@ -30,16 +38,7 @@ const paginainicio = async (req, res) => {
     
         datos.push(registro)
     }
-
-
-
-
-    res.render('main/index', {
-        pagina : "GESTION DEBITOS",
-        datos
-    })
-    
-    // DebitosTemp.bulkCreate(datos)
+ // DebitosTemp.bulkCreate(datos)
     // datos.map(async(dato,i)=> {
     //         await DebitosTemp.create({
     //             FEC_VTO:    dato.fec_vto,
@@ -50,13 +49,13 @@ const paginainicio = async (req, res) => {
     //             CODIGO:     dato.codigo
     //         })}
     // )
+
 }
 
-function obtenerRutaDescargas(){
-    const home = os.homedir();
-//console.log (path.join(home,'Dowloads'))
-    return path.join(home,'Descargas');
+function consultarDebitosDio(){
+    
 }
+
 
 const generarExcel= async(req,res)=>{
 
@@ -70,7 +69,16 @@ const generarExcel= async(req,res)=>{
     const worksheet= workbook.addWorksheet("Datos");
 
     // // definir columnas
+    worksheet.columns = [
+                            {header : 'codigo', key: 'codigo'},
+                            {header : 'documento', key: 'documento'},
+                            {header : 'sexo', key: 'sexo'},
+                            {header : 'fecha', key: 'fecha'},
+                            {header : 'importe', key: 'importe'},
+                            {header : 'nro_credito', key: 'nro_credito'},
+                            {header : 'nro_cuota', key: 'nro_cuota'},
 
+    ]
     // const columnas = Object.keys(rows[0] || {}).map(key => ({
     //     header: key,
     //     key
@@ -83,12 +91,55 @@ const generarExcel= async(req,res)=>{
 
     // guardar archivo
 
-    const ruta = path.join(obtenerRutaDescargas(),'debitos_generados.xlsx')
+    const ruta = path.join(obtenerRutaDescargas(),'DebitosDio.xlsx')
 
     await workbook.xlsx.writeFile(ruta);
 
     console.log(`excel generado: ${ruta}`)
     
+
+
+
+}
+const paginainicio = async (req, res) => {
+   
+    let datosfonavi= await EnvioDebitos.findAll({ where :{ DNI_DESC: 34777829 }})
+
+    const datos = datosfonavi.map(item => ({
+        COD:        item.COD,
+        COD_DEB:    item.COD_DEB,
+        DNI_DESC:   item.DNI_DESC,
+        APEYNOM:    item.APEYNOM,
+        NRO_AGENTE: item.NRO_AGENTE,
+        MTO_CUO:    item.MTO_CUO,
+        OPERATORIA: 'FONAV'
+    }))
+    
+    let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
+    
+    const datos1= datosOperatorias2.map(item=>({
+        COD:        item.codigo,
+        COD_DEB:    item.OrganismoId,
+        DNI_DESC:   item.dni_titular,
+        APEYNOM:    item.titular,
+        NRO_AGENTE: item.agente,
+        MTO_CUO:    item.imp_cuota,
+        OPERATORIA: item.operatoria
+
+    }))
+    
+datos.push(...datos1)
+
+   let jsonString = JSON.stringify(datos)
+   jsonString = jsonString.replace(/(\},)/g, "$1\n");
+   console.log(jsonString)
+   
+   res.render('main/index', {
+        pagina : "GESTION DEBITOS",
+        datos
+    })
+    
+   
 }
 export {
     paginainicio, 
