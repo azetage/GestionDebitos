@@ -3,83 +3,32 @@ extends ../layout/plantilla
 
 block contenido
 
-    br
-    br
+
     h2.py-2.text-center.text-2xl.font-bold.text-white.bg-sky-500(class= "shadow-lg shadow-blue-500/50")= pagina
     if errores 
         div(class="max-w-md mx-auto my-10")
             each error in errores
                 p(class= "bg-red-600 text-white uppercase text-xs text-center p-2 mb-1 font-bold")= error.msg
-    
-    div(name= 'subir archivo')
-        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-
-            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                
-                form.space-y-5(action="/upload" method= "POST" enctype="multipart/form-data")
-                    fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold Subir un Archivo 
-                        div(class="grid gap-6 mb-3 md:grid-cols-3")
-                            div(class= "inline-flex flex flex-row")   
-                                label.py-2.px-2.block.h-3.uppercase.text-gray-500.mb-2.font-bold(for="dni_tit") 
-                                input#dni_tit.w-full.italic.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(class="placeholder:italic placeholder:text-sm" 
-                                placeholder="Seleccionar un Archivo" 
-                                type="file" 
-                                name="archivo" 
-                                )
-                            
-                            div
-                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Subir')
- 
+    div.mt-8.mx-auto.max-w-full
+        .bg-white.py-8.px-10.shadow
+               
+                div(class="grid gap-6 mb-3 md:grid-cols-2")
+                    div(class= "inline-flex flex flex-row shadow-lg shadow-blue-500/50")
+                        <button class="w-full text-white font-semibold py-10 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" onclick="window.location.href='/main/enviodebitos'" >ENVIOS</button>      
+                                                        
+                    div(class= "inline-flex flex flex-row shadow-lg shadow-blue-500/50")
+                        <button class="w-full text-white font-semibold py-10 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" onclick="window.location.href=''">RECEPCIONES </button>
+                                
 
 
-    hr    
-    div(name= 'debitos')            
-        h2.px-10.py-2.text-2xl.font-bold DEBITOS            
-        div.mt-8.mx-auto.max-w-full.px-6.items-center
-            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                .space-y-5
-                    fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold DEBITOS DIO 
-                        div(class="overflow-y-auto max-h-96")    
-                            table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
-                                thead.bg-gray-200.text-gray-500
-                                    tr
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 #
 
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 OPERATORIA
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CODIGO
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 COD DEB
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 DNI
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 APEYNOM 
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 NRO AGENTE
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MTO CUO
-                                        
 
-                            
-                                      
-                                tbody
-                                    
-                                    each item,i in datos? datos:''    
 
-                                            
-                                        tr.bg-white
-                                            td.italic.border.border-slate-300.px-4 #{i+1}
-                                            td.italic.border.border-slate-300.px-4= item.OPERATORIA
-                                            td.italic.border.border-slate-300.px-4= item.COD
-                                            td.italic.border.border-slate-300.px-4= item.COD_DEB
-                                            td.italic.border.border-slate-300.px-4= item.DNI_DESC
-                                            td.italic.border.border-slate-300.px-4= item.APEYNOM
-                                            td.italic.border.border-slate-300.px-4= item.NRO_AGENTE
-                                            td.italic.border.border-slate-300.px-4= item.MTO_CUO
-    
-    div(name= 'Generar Excel')
-        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                form.space-y-5(action="/main/index/generarExcel" method= "GET" enctype="multipart/form-data")
-                    fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold GENERAR EXCEL 
-                            div
-                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Generar')
+
+
+
+
+
+
+
+

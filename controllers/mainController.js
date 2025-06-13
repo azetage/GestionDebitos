@@ -7,6 +7,8 @@ import os from 'os';
 import path from 'path';
 import EnvioDebitos from '../models/EnvioDebitos.js';
 import VistaDebitos from '../models/VistaDebitos.js';
+import {jsPDF} from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 
@@ -52,58 +54,10 @@ async function  cargarArchivo() {
 
 }
 
-function consultarDebitosDio(){
-    
-}
-
-
-const generarExcel= async(req,res)=>{
-
-    console.log("funcion generar")
-
-
-    const [rows] = await DebitosTemp.findAll()
-
-    //crear archivo excel
-    const workbook= new ExcelJS.Workbook();
-    const worksheet= workbook.addWorksheet("Datos");
-
-    // // definir columnas
-    worksheet.columns = [
-                            {header : 'codigo', key: 'codigo'},
-                            {header : 'documento', key: 'documento'},
-                            {header : 'sexo', key: 'sexo'},
-                            {header : 'fecha', key: 'fecha'},
-                            {header : 'importe', key: 'importe'},
-                            {header : 'nro_credito', key: 'nro_credito'},
-                            {header : 'nro_cuota', key: 'nro_cuota'},
-
-    ]
-    // const columnas = Object.keys(rows[0] || {}).map(key => ({
-    //     header: key,
-    //     key
-    //   }));
-    //   worksheet.columns = columnas
-
-    // // agregar Filas 
-
-    // rows.forEach(row => worksheet.addRow(row));
-
-    // guardar archivo
-
-    const ruta = path.join(obtenerRutaDescargas(),'DebitosDio.xlsx')
-
-    await workbook.xlsx.writeFile(ruta);
-
-    console.log(`excel generado: ${ruta}`)
-    
-
-
-
-}
-const paginainicio = async (req, res) => {
-   
+async function consultarDebitosDio(req,res){
     let datosfonavi= await EnvioDebitos.findAll({ where :{ COD_DEB: 2 }})
+    // let datosfonavi= await EnvioDebitos.findAll({ where :{     DNI_DESC :34777829   }})
+
 
     const datos = datosfonavi.map(item => ({
         COD:        item.COD,
@@ -112,10 +66,11 @@ const paginainicio = async (req, res) => {
         APEYNOM:    item.APEYNOM,
         NRO_AGENTE: item.NRO_AGENTE,
         MTO_CUO:    item.MTO_CUO,
-        OPERATORIA: 'FONAV'
+        OPERATORIA: 'ADJUD'
     }))
     
     let datosOperatorias2 = await VistaDebitos.findAll({ where : { OrganismoId : 2}})
+    // let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
     
     const datos1= datosOperatorias2.map(item=>({
         COD:        item.codigo,
@@ -128,20 +83,92 @@ const paginainicio = async (req, res) => {
 
     }))
     
-datos.push(...datos1)
+    datos.push(...datos1)
 
-   let jsonString = JSON.stringify(datos)
-   jsonString = jsonString.replace(/(\},)/g, "$1\n");
-   console.log(jsonString)
-   
-   res.render('main/index', {
-        pagina : "GESTION DEBITOS",
-        datos
-    })
+    let jsonString = JSON.stringify(datos)
+    jsonString = jsonString.replace(/(\},)/g, "$1\n");
+    //console.log(jsonString)
     
+    return datos   
+}
+
+
+async function generarExcel (req,res){
+
+    console.log("funcion generar")
+
+
+    const datos= await consultarDebitosDio()
+
+    //crear archivo excel
+    const workbook= new ExcelJS.Workbook();
+    const worksheet= workbook.addWorksheet("DebitosDio");
+
+    // // definir columnas
+    worksheet.columns = [
+                            {header : 'CODIGO',             key: 'COD'},
+                            {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
+                            {header : 'DNI DESC',           key: 'DNI_DESC'},
+                            {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
+                            {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
+                            {header : 'MONTO',              key: 'MTO_CUO'},
+                            {header : 'OPERATORIA',         key: 'OPERATORIA'},
+                        ]
+    
+    //agregar Filas 
+    datos.forEach(item=>{
+                           // console.log(item)    
+                            worksheet.addRow(item)})                    
+
+    // guardar archivo
+
+    const ruta = path.join(obtenerRutaDescargas(),'DebitosDio.xls')
+
+    await workbook.xlsx.writeFile(ruta);
+
+    console.log(`excel generado: ${ruta}`)
+    
+
+
+
+}
+
+function reportePDFBasico(){
+    const doc = new jsPDF()
+
+    autoTable(doc, {
+        head: [['Producto', 'Cantidad', 'Precio']],
+        body: [
+          ['Camisa', '5', '$25'],
+          ['Pantalón', '3', '$40'],
+          ['Zapatos', '2', '$60']
+        ]
+      });
+    doc.text('hola,este es un reporte generado con jsPDF',10,10);
+    doc.save("reporte.pdf")
+}
+const paginainicio= async (req,res)=> {
    
+    reportePDFBasico()
+    return res.render('main/index', {
+         pagina : "GESTION DEBITOS",
+         
+         })
+
+}
+
+const debitosindex = async (req,res)=>{
+    const datos = await consultarDebitosDio()
+    console.log(datos)
+    
+    return res.render('main/enviodebitos', {
+        pagina : "ENVIO DEBITOS",
+        datos
+        })
+
 }
 export {
     paginainicio, 
-    generarExcel
+    generarExcel,
+    debitosindex
 }

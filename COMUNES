@@ -1,0 +1,28 @@
+VISTA PARA SUBIR ARCHIVO
+
+
+div(name= 'subir archivo')
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                
+                form.space-y-5(action="/upload" method= "POST" enctype="multipart/form-data")
+                    fieldset.px-10.py-1 
+                        legend.px-3.py-3.mt-2.font-bold Subir un Archivo 
+                        div(class="grid gap-6 mb-3 md:grid-cols-3")
+                            div(class= "inline-flex flex flex-row")   
+                                label.py-2.px-2.block.h-3.uppercase.text-gray-500.mb-2.font-bold(for="dni_tit") 
+                                input#dni_tit.w-full.italic.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(class="placeholder:italic placeholder:text-sm" 
+                                placeholder="Seleccionar un Archivo" 
+                                type="file" 
+                                name="archivo" 
+                                )
+                            
+                            div
+                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                        type= 'submit' value= 'Subir')
+ 
+
+
+    hr    
+   
