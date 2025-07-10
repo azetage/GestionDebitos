@@ -9,6 +9,7 @@ import EnvioDebitos from '../models/EnvioDebitos.js';
 import VistaDebitos from '../models/VistaDebitos.js';
 import {jsPDF} from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Organismos from '../models/Organismos.js';
 
 
 
@@ -53,9 +54,20 @@ async function  cargarArchivo() {
     // )
 
 }
+async function ConsultarOrganismos(){
+    let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' }})
+    return organismos
+}
+    
 
-async function consultarDebitosDio(req,res){
-    let datosfonavi= await EnvioDebitos.findAll({ where :{ COD_DEB: 2 }})
+const generarDebitos = async (req,res)=>{
+    console.log(req.query.enviosOrganismo)
+    
+    
+    let datosfonavi = await EnvioDebitos.findAll({
+        where: { COD_DEB: req.query.enviosOrganismo },
+        order: [['DNI_DESC', 'ASC']]
+    });
     //let datosfonavi= await EnvioDebitos.findAll({ where :{     DNI_DESC :34777829   }})
 
 
@@ -69,7 +81,7 @@ async function consultarDebitosDio(req,res){
         OPERATORIA: 'ADJUD'
     }))
     
-    let datosOperatorias2 = await VistaDebitos.findAll({ where : { OrganismoId : 2}})
+    let datosOperatorias2 = await VistaDebitos.findAll({ where : { COD_DEB: req.query.enviosOrganismo }})
     //let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
     
     const datos1= datosOperatorias2.map(item=>({
@@ -87,46 +99,49 @@ async function consultarDebitosDio(req,res){
 
     let jsonString = JSON.stringify(datos)
     jsonString = jsonString.replace(/(\},)/g, "$1\n");
-    //console.log(jsonString)
     
-    return datos   
+    return res.render('main/enviodebitos', {
+        pagina : "ENVIO DEBITOS",
+        datos, 
+        Organismos: await ConsultarOrganismos()
+        })   
 }
 
 
 async function generarExcel (req,res){
 
-    console.log("funcion generar")
+    // console.log("funcion generar")
 
 
-    const datos= await consultarDebitosDio()
+    // const datos= await generarDebitos()
 
-    //crear archivo excel
-    const workbook= new ExcelJS.Workbook();
-    const worksheet= workbook.addWorksheet("DebitosDio");
+    // //crear archivo excel
+    // const workbook= new ExcelJS.Workbook();
+    // const worksheet= workbook.addWorksheet("Debitos");
 
-    // // definir columnas
-    worksheet.columns = [
-                            {header : 'CODIGO',             key: 'COD'},
-                            {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
-                            {header : 'DNI DESC',           key: 'DNI_DESC'},
-                            {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
-                            {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
-                            {header : 'MONTO',              key: 'MTO_CUO'},
-                            {header : 'OPERATORIA',         key: 'OPERATORIA'},
-                        ]
+    // // // definir columnas
+    // worksheet.columns = [
+    //                         {header : 'CODIGO',             key: 'COD'},
+    //                         {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
+    //                         {header : 'DNI DESC',           key: 'DNI_DESC'},
+    //                         {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
+    //                         {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
+    //                         {header : 'MONTO',              key: 'MTO_CUO'},
+    //                         {header : 'OPERATORIA',         key: 'OPERATORIA'},
+    //                     ]
     
-    //agregar Filas 
-    datos.forEach(item=>{
-                           // console.log(item)    
-                            worksheet.addRow(item)})                    
+    // //agregar Filas 
+    // datos.forEach(item=>{
+    //                        // console.log(item)    
+    //                         worksheet.addRow(item)})                    
 
-    // guardar archivo
+    // // guardar archivo
 
-    const ruta = path.join(obtenerRutaDescargas(),'DebitosDio.xls')
+    // const ruta = path.join(obtenerRutaDescargas(),'Debitos.xls')
 
-    await workbook.xlsx.writeFile(ruta);
+    // await workbook.xlsx.writeFile(ruta);
 
-    console.log(`excel generado: ${ruta}`)
+    // console.log(`excel generado: ${ruta}`)
     
 
 
@@ -134,67 +149,67 @@ async function generarExcel (req,res){
 }
 
 async function reportePDFBasico(){
-    const doc = new jsPDF()
-    const datos =await consultarDebitosDio()
+//     const doc = new jsPDF()
+//     const datos =await consultarDebitos(34)
 
-    const body = datos.map(item => [
-        item.COD,
-        item.COD_DEB,
-        item.DNI_DESC,
-        item.APEYNOM,
-        item.NRO_AGENTE,
-        item.MTO_CUO,
-        item.OPERATORIA
-      ]);
+//     const body = datos.map(item => [
+//         item.COD,
+//         item.COD_DEB,
+//         item.DNI_DESC,
+//         item.APEYNOM,
+//         item.NRO_AGENTE,
+//         item.MTO_CUO,
+//         item.OPERATORIA
+//       ]);
 
-    doc.text('DEBITOS DIO',10,10);
+//     doc.text('DEBITOS DIO',10,10);
 
-    autoTable(doc, {
-        startY: 20,
-        head: [['COD', 'COD_DEB', 'DNI_DESC', 'APEYNOM', 'NRO_AGENTE', 'MTO_CUO', 'OPERATORIA']],
-        body: body,
+//     autoTable(doc, {
+//         startY: 20,
+//         head: [['COD', 'COD_DEB', 'DNI_DESC', 'APEYNOM', 'NRO_AGENTE', 'MTO_CUO', 'OPERATORIA']],
+//         body: body,
 
-          // Estilos generales
-        styles: {
-            fontSize: 6,
-            cellPadding: 4,
-            valign: 'middle',
-            halign: 'left', // alineación horizontal
-            textColor: [40, 40, 40]
-        },
+//           // Estilos generales
+//         styles: {
+//             fontSize: 6,
+//             cellPadding: 4,
+//             valign: 'middle',
+//             halign: 'left', // alineación horizontal
+//             textColor: [40, 40, 40]
+//         },
 
-//    Encabezado
-        headStyles: {
-            fillColor: [128, 128, 128],  // color fondo
-            textColor: [255, 255, 255], // color texto
-            fontStyle: 'bold',
-            halign: 'center'
-        },
+// //    Encabezado
+//         headStyles: {
+//             fillColor: [128, 128, 128],  // color fondo
+//             textColor: [255, 255, 255], // color texto
+//             fontStyle: 'bold',
+//             halign: 'center'
+//         },
 
-//   // Cuerpo de la tabla
-//   bodyStyles: {
-//     fillColor: [245, 245, 245], // fondo alterno
-//     textColor: 50
-//   },
+// //   // Cuerpo de la tabla
+// //   bodyStyles: {
+// //     fillColor: [245, 245, 245], // fondo alterno
+// //     textColor: 50
+// //   },
 
-//   // Columnas específicas
-//   columnStyles: {
-//     0: { halign: 'center', cellWidth: 15 },
-//     3: { halign: 'right' }
-//   },
+// //   // Columnas específicas
+// //   columnStyles: {
+// //     0: { halign: 'center', cellWidth: 15 },
+// //     3: { halign: 'right' }
+// //   },
 
-//   // Opcional: pie de tabla
-    didDrawPage: (data) => {
-        doc.setFontSize(8);
-        doc.text(`Reporte generado automáticamente - Sist deb IPV - ${new Date().toLocaleString()}`, 14, doc.internal.pageSize.height - 10);         }
+// //   // Opcional: pie de tabla
+//     didDrawPage: (data) => {
+//         doc.setFontSize(8);
+//         doc.text(`Reporte generado automáticamente - Sist deb IPV - ${new Date().toLocaleString()}`, 14, doc.internal.pageSize.height - 10);         }
 
-      });
+//       });
 
-    doc.save("reporte.pdf")
+//     doc.save("reporte.pdf")
 }
 const paginainicio= async (req,res)=> {
    
-    reportePDFBasico()
+   // reportePDFBasico()
     return res.render('main/index', {
          pagina : "GESTION DEBITOS",
          
@@ -203,17 +218,21 @@ const paginainicio= async (req,res)=> {
 }
 
 const debitosindex = async (req,res)=>{
-    const datos = await consultarDebitosDio()
-    console.log(datos)
+
+    let Organismos = await ConsultarOrganismos();
     
     return res.render('main/enviodebitos', {
         pagina : "ENVIO DEBITOS",
-        datos
+        datos: null,
+        Organismos
         })
 
 }
+
+
 export {
     paginainicio, 
     generarExcel,
-    debitosindex
+    debitosindex,
+    generarDebitos
 }
