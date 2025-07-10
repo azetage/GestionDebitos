@@ -10,6 +10,7 @@ import VistaDebitos from '../models/VistaDebitos.js';
 import {jsPDF} from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Organismos from '../models/Organismos.js';
+import { Op, fn, col, where } from 'sequelize';
 
 
 
@@ -65,45 +66,79 @@ const generarDebitos = async (req,res)=>{
     
     
     let datosfonavi = await EnvioDebitos.findAll({
-        where: { COD_DEB: req.query.enviosOrganismo },
+        where: {
+            COD_DEB: req.query.enviosOrganismo,
+            [Op.and]: [
+            where(fn('LEN', col('DNI_DESC')), { [Op.gt]: 6 })
+            ]
+             },
         order: [['DNI_DESC', 'ASC']]
-    });
-    //let datosfonavi= await EnvioDebitos.findAll({ where :{     DNI_DESC :34777829   }})
-
-
-    const datos = datosfonavi.map(item => ({
+        });
+        //let datosfonavi= await EnvioDebitos.findAll({ where :{     DNI_DESC :34777829   }})
+    
+    let total= 0
+    const datos = datosfonavi.map(item  => {
+        
+        total += item.MTO_CUO        
+        return {
+       
         COD:        item.COD,
         COD_DEB:    item.COD_DEB,
         DNI_DESC:   item.DNI_DESC,
         APEYNOM:    item.APEYNOM,
         NRO_AGENTE: item.NRO_AGENTE,
         MTO_CUO:    item.MTO_CUO,
-        OPERATORIA: 'ADJUD'
-    }))
+        OPERATORIA: 'ADJUD',
+        total
+        }
+    })
+    console.log(total)
     
-    let datosOperatorias2 = await VistaDebitos.findAll({ where : { COD_DEB: req.query.enviosOrganismo }})
-    //let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
+    //let datosOperatorias2 = await VistaDebitos.findAll({ where : { COD_DEB: req.query.enviosOrganismo }})
+    let datosOperatorias2 = await VistaDebitos.findAll({
+        where: {
+            COD_DEB: req.query.enviosOrganismo,
+            [Op.and]: [
+            where(fn('LEN', col('dni')), { [Op.gt]: 6 })
+            ]
+             },
+        order: [['dni', 'ASC']]
+        });
+    // //let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
     
-    const datos1= datosOperatorias2.map(item=>({
-        COD:        item.codigo,
-        COD_DEB:    item.OrganismoId,
-        DNI_DESC:   item.dni_titular,
-        APEYNOM:    item.titular,
-        NRO_AGENTE: item.agente,
-        MTO_CUO:    item.imp_cuota,
-        OPERATORIA: item.operatoria
+    const datos1= datosOperatorias2.map(item=>{
+        total += item.imp_cuota
+        return{
+            COD:        item.codigo,
+            COD_DEB:    item.OrganismoId,
+            DNI_DESC:   item.dni_titular,
+            APEYNOM:    item.titular,
+            NRO_AGENTE: item.agente,
+            MTO_CUO:    item.imp_cuota,
+            OPERATORIA: item.operatoria,
+            total
+        }})
 
-    }))
+    console.log(total)
     
     datos.push(...datos1)
+    
+    const totalPesos = total.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 2
+    });
 
-    let jsonString = JSON.stringify(datos)
-    jsonString = jsonString.replace(/(\},)/g, "$1\n");
+    console.log(totalPesos)
+
+    // let jsonString = JSON.stringify(datos)
+    // jsonString = jsonString.replace(/(\},)/g, "$1\n");
     
     return res.render('main/enviodebitos', {
         pagina : "ENVIO DEBITOS",
         datos, 
-        Organismos: await ConsultarOrganismos()
+        Organismos: await ConsultarOrganismos(),
+        totalPesos
         })   
 }
 
