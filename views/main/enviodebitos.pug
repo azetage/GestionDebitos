@@ -3,6 +3,7 @@ extends ../layout/plantilla
 
 block contenido
 
+  
     br
     br
     h2.py-2.text-center.text-2xl.font-bold.text-white.bg-sky-500(class= "shadow-lg shadow-blue-500/50")= pagina
@@ -14,7 +15,7 @@ block contenido
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
 
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                form.space-y-5(method= "GET" action="/main/enviodebitos/generarDebito" noValidate)
+                form.space-y-5(method= "GET" action="/main/enviodebitos/consultasDebito" name="formConsulta" noValidate)
                     fieldset.px-10.py-1 
                         legend.px-3.py-3.mt-2.font-bold  CONSULTA POR ORGANISMO 
 
@@ -44,7 +45,7 @@ block contenido
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 .space-y-5
                     fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold DEBITOS BSE 
+                        legend.px-3.py-3.mt-2.font-bold LISTADO DE DEBITOS 
                         div(class="overflow-y-auto max-h-96")    
                             table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
                                 thead.bg-gray-200.text-gray-500
@@ -81,7 +82,7 @@ block contenido
     div(name= 'Generar Excel')
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                form.space-y-5(action="/main/index/generarExcel" method= "GET" enctype="multipart/form-data")
+                form.space-y-5(action=`/main/index/generarExcel` method="GET")   
                     fieldset.px-10.py-1 
                         legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO EXCEL 
                             div

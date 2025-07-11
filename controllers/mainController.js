@@ -14,6 +14,8 @@ import { Op, fn, col, where } from 'sequelize';
 
 
 
+global.GlobalenviosOrganismo= ""  
+
 function obtenerRutaDescargas(){
     const home = os.homedir();
     return path.join(home,'Descargas');
@@ -42,17 +44,6 @@ async function  cargarArchivo() {
     
         datos.push(registro)
     }
- // DebitosTemp.bulkCreate(datos)
-    // datos.map(async(dato,i)=> {
-    //         await DebitosTemp.create({
-    //             FEC_VTO:    dato.fec_vto,
-    //             CBU:        dato.cbu,
-    //             CBU2:       dato.cbu2,
-    //             NRO_AGENTE: dato.nro_agente,
-    //             MONTO:      dato.monto,
-    //             CODIGO:     dato.codigo
-    //         })}
-    // )
 
 }
 async function ConsultarOrganismos(){
@@ -61,52 +52,52 @@ async function ConsultarOrganismos(){
 }
     
 
-const generarDebitos = async (req,res)=>{
-    console.log(req.query.enviosOrganismo)
+const generarDebitos = async (codigo_debito)=>{
     
-    
+    GlobalenviosOrganismo= codigo_debito    
+
     let datosfonavi = await EnvioDebitos.findAll({
         where: {
-            COD_DEB: req.query.enviosOrganismo,
+            COD_DEB: codigo_debito,
             [Op.and]: [
             where(fn('LEN', col('DNI_DESC')), { [Op.gt]: 6 })
             ]
              },
-        order: [['DNI_DESC', 'ASC']]
+        order: [['NRO_AGENTE', 'ASC']]
         });
-        //let datosfonavi= await EnvioDebitos.findAll({ where :{     DNI_DESC :34777829   }})
-    
-    let total= 0
-    const datos = datosfonavi.map(item  => {
-        
-        total += item.MTO_CUO        
-        return {
        
-        COD:        item.COD,
-        COD_DEB:    item.COD_DEB,
-        DNI_DESC:   item.DNI_DESC,
-        APEYNOM:    item.APEYNOM,
-        NRO_AGENTE: item.NRO_AGENTE,
-        MTO_CUO:    item.MTO_CUO,
-        OPERATORIA: 'ADJUD',
-        total
-        }
-    })
+       
+    let total= 0
+    
+    const datos = datosfonavi.map(item   => {
+        total += item.MTO_CUO        
+
+                return {
+       
+                    COD:        item.COD,
+                    COD_DEB:    item.COD_DEB,
+                    DNI_DESC:   item.DNI_DESC,
+                    APEYNOM:    item.APEYNOM,
+                    NRO_AGENTE: item.NRO_AGENTE,
+                    MTO_CUO:    item.MTO_CUO,
+                    OPERATORIA: 'ADJUD',
+                    total
+                    }
+               
+                })
     console.log(total)
     
-    //let datosOperatorias2 = await VistaDebitos.findAll({ where : { COD_DEB: req.query.enviosOrganismo }})
     let datosOperatorias2 = await VistaDebitos.findAll({
         where: {
-            COD_DEB: req.query.enviosOrganismo,
+            COD_DEB: codigo_debito,
             [Op.and]: [
             where(fn('LEN', col('dni')), { [Op.gt]: 6 })
             ]
              },
         order: [['dni', 'ASC']]
         });
-    // //let datosOperatorias2 = await VistaDebitos.findAll({ where : { dni : 33049944}})
     
-    const datos1= datosOperatorias2.map(item=>{
+    const datos1 = datosOperatorias2.map(item=>{
         total += item.imp_cuota
         return{
             COD:        item.codigo,
@@ -124,59 +115,69 @@ const generarDebitos = async (req,res)=>{
     datos.push(...datos1)
     
     const totalPesos = total.toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2
-    });
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 2
+        });
 
     console.log(totalPesos)
-
-    // let jsonString = JSON.stringify(datos)
-    // jsonString = jsonString.replace(/(\},)/g, "$1\n");
+       
+    return {datos,totalPesos}
     
-    return res.render('main/enviodebitos', {
-        pagina : "ENVIO DEBITOS",
-        datos, 
-        Organismos: await ConsultarOrganismos(),
-        totalPesos
-        })   
 }
 
 
+
+
+const consultarDebitos = async (req,res)=>{
+    
+    let codigo_debito = req.query.enviosOrganismo
+    let debitos = await generarDebitos(codigo_debito)
+
+        return res.render('main/enviodebitos', {
+            pagina : "ENVIO DEBITOS",
+            datos: debitos.datos, 
+            Organismos: await ConsultarOrganismos(),
+            totalPesos: debitos.totalPesos
+            })   
+}
+
 async function generarExcel (req,res){
 
-    // console.log("funcion generar")
-
-
-    // const datos= await generarDebitos()
-
-    // //crear archivo excel
-    // const workbook= new ExcelJS.Workbook();
-    // const worksheet= workbook.addWorksheet("Debitos");
-
-    // // // definir columnas
-    // worksheet.columns = [
-    //                         {header : 'CODIGO',             key: 'COD'},
-    //                         {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
-    //                         {header : 'DNI DESC',           key: 'DNI_DESC'},
-    //                         {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
-    //                         {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
-    //                         {header : 'MONTO',              key: 'MTO_CUO'},
-    //                         {header : 'OPERATORIA',         key: 'OPERATORIA'},
-    //                     ]
     
-    // //agregar Filas 
-    // datos.forEach(item=>{
-    //                        // console.log(item)    
-    //                         worksheet.addRow(item)})                    
+    console.log(GlobalenviosOrganismo)
+    
+    let {datos} = await generarDebitos(GlobalenviosOrganismo)
 
-    // // guardar archivo
+    console.log(datos)
 
-    // const ruta = path.join(obtenerRutaDescargas(),'Debitos.xls')
+    //crear archivo excel
+    const workbook= new ExcelJS.Workbook();
+    const worksheet= workbook.addWorksheet("Debitos");
 
-    // await workbook.xlsx.writeFile(ruta);
+    // // definir columnas
+    worksheet.columns = [
+                            {header : 'CODIGO',             key: 'COD'},
+                            {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
+                            {header : 'DNI DESC',           key: 'DNI_DESC'},
+                            {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
+                            {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
+                            {header : 'MONTO',              key: 'MTO_CUO'},
+                            {header : 'OPERATORIA',         key: 'OPERATORIA'},
+                        ]
+    
+    //agregar Filas 
+    datos.forEach(item=>{
+                           // console.log(item)    
+                            worksheet.addRow(item)})                    
 
-    // console.log(`excel generado: ${ruta}`)
+    // guardar archivo
+
+    const ruta = path.join(obtenerRutaDescargas(),'Debitos.xls')
+
+    await workbook.xlsx.writeFile(ruta);
+
+    console.log(`excel generado: ${ruta}`)
     
 
 
@@ -269,5 +270,6 @@ export {
     paginainicio, 
     generarExcel,
     debitosindex,
-    generarDebitos
+    generarDebitos,
+    consultarDebitos
 }
