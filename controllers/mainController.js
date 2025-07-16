@@ -5,12 +5,16 @@ import ExcelJS from 'exceljs';
 import { db_debitos } from '../config/db.js';
 import os from 'os';
 import path from 'path';
+
 import EnvioDebitos from '../models/EnvioDebitos.js';
 import VistaDebitos from '../models/VistaDebitos.js';
+import EnvioPlanes from '../models/EnvioPlanes.js';
+
 import {jsPDF} from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Organismos from '../models/Organismos.js';
-import { Op, fn, col, where } from 'sequelize';
+import {Sequelize, Op, fn, col, where, literal } from 'sequelize';
+
 
 
 
@@ -52,73 +56,119 @@ async function ConsultarOrganismos(){
 }
     
 
-const generarDebitos = async (codigo_debito)=>{
+const generarDebitos = async (codigo_debito, periodo)=>{
     
     GlobalenviosOrganismo= codigo_debito    
 
+    const [year, month, day] = periodo.split('-').map(Number)
+    
+    console.log("codigo debito "+ codigo_debito+" periodo :" +year + "-"+month )
+
     let datosfonavi = await EnvioDebitos.findAll({
         where: {
-            COD_DEB: codigo_debito,
-            [Op.and]: [
-            where(fn('LEN', col('DNI_DESC')), { [Op.gt]: 6 })
-            ]
-             },
+                    COD_DEB: codigo_debito,
+                    [Op.and]:   [
+                                    literal(`YEAR(FEC_ENVIO) <= ${year} AND MONTH(FEC_ENVIO) <= ${month}`),
+                                    literal(`YEAR(FEC_VTO) >= ${year} `),
+                                 // LEN(DNI_DESC) > 6
+                                    // where(fn('LEN', col('DNI_DESC')), {
+                                    //     [Op.gt]: 6
+                                    // })
+                                ]
+                    },
         order: [['NRO_AGENTE', 'ASC']]
         });
+
+      
        
-       
-    let total= 0
+    let totalFonavi= 0
     
     const datos = datosfonavi.map(item   => {
-        total += item.MTO_CUO        
-
+        const suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA
+        totalFonavi += suma
+        
                 return {
        
-                    COD:        item.COD,
-                    COD_DEB:    item.COD_DEB,
-                    DNI_DESC:   item.DNI_DESC,
-                    APEYNOM:    item.APEYNOM,
                     NRO_AGENTE: item.NRO_AGENTE,
-                    MTO_CUO:    item.MTO_CUO,
+                    APEYNOM:    item.APEYNOM,
+                    DNI_DESC:   item.DNI_DESC,
+                    MTO_CUO:    suma,
+                    COD:        item.COD,                
                     OPERATORIA: 'ADJUD',
-                    total
+                                        }
+               
+                })
+    console.log("Op Adjud "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    
+    let datosPlanes = await EnvioPlanes.findAll({
+        where: {
+            COD_DEB: codigo_debito,
+            TIPO_PLAN: "C",
+            [Op.and]:   [
+                                    literal(`YEAR(CONF_PLAN) <= ${year} AND MONTH(CONF_PLAN) <= ${month}`),
+                                    literal(`YEAR(VTO_PLAN) >= ${year} `),
+                                    // LEN(DNI_DESC) > 6
+                                    where(fn('LEN', col('DNI_DESC')), {
+                                        [Op.gt]: 6
+                                    })
+                                ]
+            },
+            order: [['N_TARJETA', 'ASC']]
+        });
+
+    let totalPlanes = 0  
+    const datos1 = datosPlanes.map(item   => {
+         const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
+         totalPlanes += suma
+        
+                 return {
+       
+                    NRO_AGENTE: item.N_TARJETA,
+                    APEYNOM:    item.APEYNOM,
+                    DNI_DESC:   item.DNI_DESC,
+                    MTO_CUO:    suma,
+                    COD:        item.COD,                
+                    OPERATORIA: 'ADJUD',
                     }
                
                 })
-    console.log(total)
+    console.log("Op Planes "+ totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+
+    datos.push(...datos1)
+    
     
     let datosOperatorias2 = await VistaDebitos.findAll({
         where: {
             COD_DEB: codigo_debito,
             [Op.and]: [
-            where(fn('LEN', col('dni')), { [Op.gt]: 6 })
-            ]
+                        where(fn('LEN', col('dni')), { [Op.gt]: 6 })
+                      ]
              },
-        order: [['dni', 'ASC']]
+        order: [['agente_debito', 'ASC']]
         });
-    
-    const datos1 = datosOperatorias2.map(item=>{
-        total += item.imp_cuota
+    let totalOperatoriaa2=0
+    const datos2 = datosOperatorias2.map(item=>{
+        totalOperatoriaa2 += item.imp_cuota
         return{
-            COD:        item.codigo,
-            COD_DEB:    item.OrganismoId,
-            DNI_DESC:   item.dni_titular,
-            APEYNOM:    item.titular,
-            NRO_AGENTE: item.agente,
-            MTO_CUO:    item.imp_cuota,
-            OPERATORIA: item.operatoria,
-            total
-        }})
+                    NRO_AGENTE: item.agente_debito,
+                    APEYNOM:    item.nombre,
+                    DNI_DESC:   item.dni,
+                    MTO_CUO:    item.imp_cuota,
+                    COD:        item.codigo,                
+                    OPERATORIA: item.operatoria,
+                    
+                    }
+           
+        })
 
-    console.log(total)
+    console.log("Op Operatorias2 "+ totalOperatoriaa2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("------------------")
+
+    let total= totalFonavi+totalPlanes+totalOperatoriaa2
     
-    datos.push(...datos1)
+    datos.push(...datos2)
     
-    const totalPesos = total.toLocaleString('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2
-        });
+    const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
 
     console.log(totalPesos)
        
@@ -132,7 +182,8 @@ const generarDebitos = async (codigo_debito)=>{
 const consultarDebitos = async (req,res)=>{
     
     let codigo_debito = req.query.enviosOrganismo
-    let debitos = await generarDebitos(codigo_debito)
+    let periodo =       req.query.enviosPeriodo
+    let debitos = await generarDebitos(codigo_debito,periodo)
 
         return res.render('main/enviodebitos', {
             pagina : "ENVIO DEBITOS",
@@ -158,14 +209,30 @@ async function generarExcel (req,res){
     // // definir columnas
     worksheet.columns = [
                             {header : 'CODIGO',             key: 'COD'},
-                            {header : 'CODIGO DEBITO',      key: 'COD_DEB'},
                             {header : 'DNI DESC',           key: 'DNI_DESC'},
                             {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
                             {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
                             {header : 'MONTO',              key: 'MTO_CUO'},
                             {header : 'OPERATORIA',         key: 'OPERATORIA'},
                         ]
+    async function generartxt (req,res){
+
+  
+//     console.log(GlobalenviosOrganismo)
     
+//     let {datos} = await generarDebitos(GlobalenviosOrganismo)
+
+//     console.log(datos)
+
+//     const lineas = datos.map(item => 
+//                     '$(item.NRO_AGENTE)  $(item.APEYNOM)  $(item.DNI_DESC) $(item.MTO_CUO)`.join('\n')
+                 
+//     )
+    
+
+
+ }
+
     //agregar Filas 
     datos.forEach(item=>{
                            // console.log(item)    
@@ -183,6 +250,23 @@ async function generarExcel (req,res){
 
 
 }
+// async function generartxt (req,res){
+
+  
+//     console.log(GlobalenviosOrganismo)
+    
+//     let {datos} = await generarDebitos(GlobalenviosOrganismo)
+
+//     console.log(datos)
+
+//     const lineas = datos.map(item => 
+//                     '$(item.NRO_AGENTE)  $(item.APEYNOM)  $(item.DNI_DESC) $(item.MTO_CUO)`.join('\n')
+                 
+//     )
+    
+
+
+// }
 
 async function reportePDFBasico(){
 //     const doc = new jsPDF()

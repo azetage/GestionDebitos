@@ -18,8 +18,8 @@ const EnvioDebitos = db_viviendas_fonavi.define('ENVIO_DEBITO',{
     MTO_DEUDA:     {       type: DataTypes.STRING,     allowNull:false},
     MTO_SEG:       {       type: DataTypes.STRING,     allowNull:false},
     GTS_ADM:       {       type: DataTypes.STRING,     allowNull:false},
-    FEC_ENVIO:     {       type: DataTypes.DATE,     allowNull:false},  
-    FEC_VTO:       {       type: DataTypes.DATE,     allowNull:false},
+    FEC_ENVIO:     {       type: DataTypes.DATE,       allowNull:false},  
+    FEC_VTO:       {       type: DataTypes.DATE,       allowNull:false},
     OBSERV:        {       type: DataTypes.STRING,     allowNull:false},
     CUO_DES:       {       type: DataTypes.STRING,     allowNull:false},
     CUO_HAS:       {       type: DataTypes.STRING,     allowNull:false},
@@ -29,7 +29,7 @@ const EnvioDebitos = db_viviendas_fonavi.define('ENVIO_DEBITO',{
     NRO:           {       type: DataTypes.STRING,     allowNull:false},
     CON_DEUDA:     {       type: DataTypes.STRING,     allowNull:false},
     UVI:           {       type: DataTypes.STRING,     allowNull:false},
-    FECHA_UVI:     {       type: DataTypes.DATE,     allowNull:false},
+    FECHA_UVI:     {       type: DataTypes.DATE,       allowNull:false},
 
     },
     {
