@@ -1,7 +1,7 @@
-import {db_viviendas_fonavi } from "../config/db.js";
+import {db_debitos } from "../config/db.js";
 import {DataTypes} from 'sequelize'
 
-const EnvioDebitos = db_viviendas_fonavi.define('ENVIO_DEBITO',{
+const EnvioDebitos = db_debitos.define('VISTA_ENVIODEBITOS',{
     COD:           {       type: DataTypes.STRING,     allowNull:false},
     COD_DEB:       {       type: DataTypes.STRING,     allowNull:false},
     SUCURSAL:      {       type: DataTypes.STRING,     allowNull:false},
@@ -30,6 +30,8 @@ const EnvioDebitos = db_viviendas_fonavi.define('ENVIO_DEBITO',{
     CON_DEUDA:     {       type: DataTypes.STRING,     allowNull:false},
     UVI:           {       type: DataTypes.STRING,     allowNull:false},
     FECHA_UVI:     {       type: DataTypes.DATE,       allowNull:false},
+    FECHA_ENVIO_OFFSET:     {       type: DataTypes.DATE,       allowNull:false},
+    FECHA_VTO_OFFSET:     {       type: DataTypes.DATE,       allowNull:false},
 
     },
     {

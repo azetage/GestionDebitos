@@ -9,6 +9,7 @@ import path from 'path';
 import EnvioDebitos from '../models/EnvioDebitos.js';
 import VistaDebitos from '../models/VistaDebitos.js';
 import EnvioPlanes from '../models/EnvioPlanes.js';
+import { db_viviendas_fonavi } from '../config/db.js';
 
 import {jsPDF} from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -54,41 +55,65 @@ async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' }})
     return organismos
 }
-    
+
+function ultimoDiaDelMes(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+}
+
 
 const generarDebitos = async (codigo_debito, periodo)=>{
     
     GlobalenviosOrganismo= codigo_debito    
 
-    const [year, month, day] = periodo.split('-').map(Number)
+    // const [year, month, day] = periodo.split('-').map(Number)
     
-    console.log("codigo debito "+ codigo_debito+" periodo :" +year + "-"+month )
-
-    let datosfonavi = await EnvioDebitos.findAll({
-        where: {
-                    COD_DEB: codigo_debito,
-                    [Op.and]:   [
-                                    literal(`YEAR(FEC_ENVIO) <= ${year} AND MONTH(FEC_ENVIO) <= ${month}`),
-                                    literal(`YEAR(FEC_VTO) >= ${year} `),
-                                 // LEN(DNI_DESC) > 6
-                                    // where(fn('LEN', col('DNI_DESC')), {
-                                    //     [Op.gt]: 6
-                                    // })
-                                ]
-                    },
-        order: [['NRO_AGENTE', 'ASC']]
-        });
-
+    console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
+    const fecha = new Date(periodo); // cualquier fecha
+    const ultimoDia = ultimoDiaDelMes(fecha);
+    console.log(ultimoDia)
       
-       
+    // const datosfonavi = await EnvioDebitos.findAll({where:{
+    //                                             COD_DEB: codigo_debito},
+    //                                             [Op.and]:   [
+    //                                                         literal(`FEC_ENVIO <= ${periodo}`),
+    //                                                         literal(`FEC_VTO >= ${periodo}`),
+    //                                                         ],
+    //                                             order: [['NRO_AGENTE','ASC']]})
+    //   
+    
+
+            const datosfonavi = await EnvioDebitos.findAll({
+                                                            attributes: [
+                                                                'DNI_DESC',
+                                                                'APEYNOM',
+                                                                 [literal('SUM(MTO_CUO + MTO_ADIC + MTO_DEUDA)'), 'TOTAL_MONTO']
+                                                            ],
+                                                            group: ['DNI_DESC', 'APEYNOM'],
+                                                            where: {
+                                                                COD_DEB: codigo_debito,
+                                                                FECHA_ENVIO_OFFSET: {
+                                                                [Op.lte]: ultimoDia
+                                                                },
+                                                                FECHA_VTO_OFFSET: {
+                                                                [Op.gte]: ultimoDia
+                                                                },
+                                                                [Op.and]: [
+                                                                where(fn('LEN', col('DNI_DESC')), {
+                                                                    [Op.gt]: 6
+                                                                })
+                                                                ]
+                                                            },
+                                                            order: [['DNI_DESC', 'ASC']] // NRO_AGENTE no está en group by
+                                                            });
+
     let totalFonavi= 0
     
     const datos = datosfonavi.map(item   => {
-        const suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA
+        //console.log (item)
+        const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
         totalFonavi += suma
-        
+
                 return {
-       
                     NRO_AGENTE: item.NRO_AGENTE,
                     APEYNOM:    item.APEYNOM,
                     DNI_DESC:   item.DNI_DESC,
@@ -98,21 +123,25 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                                         }
                
                 })
-    console.log("Op Adjud "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
-    
+
+    console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+
     let datosPlanes = await EnvioPlanes.findAll({
-        where: {
-            COD_DEB: codigo_debito,
-            TIPO_PLAN: "C",
-            [Op.and]:   [
-                                    literal(`YEAR(CONF_PLAN) <= ${year} AND MONTH(CONF_PLAN) <= ${month}`),
-                                    literal(`YEAR(VTO_PLAN) >= ${year} `),
-                                    // LEN(DNI_DESC) > 6
-                                    where(fn('LEN', col('DNI_DESC')), {
-                                        [Op.gt]: 6
-                                    })
-                                ]
-            },
+                                                    where: {
+                                                            COD_DEB: codigo_debito,
+                                                            TIPO_PLAN: "C",
+                                                            CONF_PLAN_OFFSET: {
+                                                                                [Op.lte]:   ultimoDia
+                                                                                },
+                                                            VTO_PLAN_OFFSET:   {
+                                                                                [Op.gte]:   ultimoDia
+                                                                                },
+                                                            [Op.and]:           [                
+                                                                                where(fn('LEN', col('DNI_DESC')), {
+                                                                                    [Op.gt]: 6
+                                                                                    })
+                                                                                ]
+                                                          } ,
             order: [['N_TARJETA', 'ASC']]
         });
 
@@ -146,9 +175,9 @@ const generarDebitos = async (codigo_debito, periodo)=>{
              },
         order: [['agente_debito', 'ASC']]
         });
-    let totalOperatoriaa2=0
+    let totalOperatoria2=0
     const datos2 = datosOperatorias2.map(item=>{
-        totalOperatoriaa2 += item.imp_cuota
+        totalOperatoria2 += item.imp_cuota
         return{
                     NRO_AGENTE: item.agente_debito,
                     APEYNOM:    item.nombre,
@@ -156,21 +185,19 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                     MTO_CUO:    item.imp_cuota,
                     COD:        item.codigo,                
                     OPERATORIA: item.operatoria,
-                    
-                    }
+                                        }
            
         })
 
-    console.log("Op Operatorias2 "+ totalOperatoriaa2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    datos.push(...datos2)
+    console.log("Op Operatorias2 "+ totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     console.log("------------------")
 
-    let total= totalFonavi+totalPlanes+totalOperatoriaa2
-    
-    datos.push(...datos2)
-    
+    let total= totalFonavi+totalPlanes+totalOperatoria2
+      
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
 
-    console.log(totalPesos)
+    console.log("TOTAL PESOS" + totalPesos)
        
     return {datos,totalPesos}
     

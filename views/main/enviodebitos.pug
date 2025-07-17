@@ -55,7 +55,8 @@ block contenido
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 APELLIDO Y NOMBRE
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 DNI
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MONTO CUOTA 
-                                      
+                                   
+
                                 tbody
                                     
                                     each item,i in datos? datos:''    
@@ -69,6 +70,7 @@ block contenido
                                             td.italic.border.border-slate-300.px-4= item.DNI_DESC
                                             - const valor = item.MTO_CUO.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
                                             td.italic.border.border-slate-300.px-4= valor
+                                            
 
     
                     h2.py-2.text-center.text-2xl.font-bold.text-white.bg-gray-500(class= "shadow-lg shadow-gray-500/50")= totalPesos

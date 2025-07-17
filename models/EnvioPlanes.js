@@ -1,7 +1,7 @@
-import {db_viviendas_fonavi } from "../config/db.js";
+import {db_debitos } from "../config/db.js";
 import {DataTypes} from 'sequelize'
 
-const EnvioPlanes = db_viviendas_fonavi.define('ENVIO_PLANES',{
+const EnvioPlanes = db_debitos.define('VISTA_ENVIOPLANES',{
     COD:           {       type: DataTypes.STRING,     allowNull:false},
     COD_DEB:       {       type: DataTypes.STRING,     allowNull:false},
     N_TARJETA:     {       type: DataTypes.STRING,     allowNull:false},
@@ -12,7 +12,9 @@ const EnvioPlanes = db_viviendas_fonavi.define('ENVIO_PLANES',{
     INT_CUO:       {       type: DataTypes.STRING,     allowNull:false},
     CONF_PLAN:     {       type: DataTypes.DATE,       allowNull:false},  
     VTO_PLAN:      {       type: DataTypes.DATE,       allowNull:false},
-    TIPO_PLAN:     {       type: DataTypes.STRING,     allowNull:false},  
+    TIPO_PLAN:     {       type: DataTypes.STRING,     allowNull:false},
+    CONF_PLAN_OFFSET:       {       type: DataTypes.DATE,       allowNull:false},
+    VTO_PLAN_OFFSET:        {       type: DataTypes.DATE,       allowNull:false},
     },
     {
         timestamps: false,
