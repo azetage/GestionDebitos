@@ -20,10 +20,12 @@ import {Sequelize, Op, fn, col, where, literal } from 'sequelize';
 
 
 global.GlobalenviosOrganismo= ""  
+global.Globalperiodo=""
 
 function obtenerRutaDescargas(){
-    const home = os.homedir();
-    return path.join(home,'Descargas');
+    // const home = os.homedir();
+    // return path.join(home,'Descargas');
+    return 'public/descargas'
 }
 
 async function  cargarArchivo() {
@@ -63,7 +65,8 @@ function ultimoDiaDelMes(fecha) {
 
 const generarDebitos = async (codigo_debito, periodo)=>{
     
-    GlobalenviosOrganismo= codigo_debito    
+    GlobalenviosOrganismo= codigo_debito
+    Globalperiodo=periodo    
 
     // const [year, month, day] = periodo.split('-').map(Number)
     
@@ -71,40 +74,25 @@ const generarDebitos = async (codigo_debito, periodo)=>{
     const fecha = new Date(periodo); // cualquier fecha
     const ultimoDia = ultimoDiaDelMes(fecha);
     console.log(ultimoDia)
-      
-    // const datosfonavi = await EnvioDebitos.findAll({where:{
-    //                                             COD_DEB: codigo_debito},
-    //                                             [Op.and]:   [
-    //                                                         literal(`FEC_ENVIO <= ${periodo}`),
-    //                                                         literal(`FEC_VTO >= ${periodo}`),
-    //                                                         ],
-    //                                             order: [['NRO_AGENTE','ASC']]})
-    //   
     
-
-            const datosfonavi = await EnvioDebitos.findAll({
-                                                            attributes: [
-                                                                'DNI_DESC',
-                                                                'APEYNOM',
-                                                                 [literal('SUM(MTO_CUO + MTO_ADIC + MTO_DEUDA)'), 'TOTAL_MONTO']
-                                                            ],
-                                                            group: ['DNI_DESC', 'APEYNOM'],
-                                                            where: {
+    const datosfonavi = await EnvioDebitos.findAll({
+                                                    where: {
                                                                 COD_DEB: codigo_debito,
                                                                 FECHA_ENVIO_OFFSET: {
-                                                                [Op.lte]: ultimoDia
-                                                                },
-                                                                FECHA_VTO_OFFSET: {
-                                                                [Op.gte]: ultimoDia
-                                                                },
-                                                                [Op.and]: [
-                                                                where(fn('LEN', col('DNI_DESC')), {
-                                                                    [Op.gt]: 6
-                                                                })
-                                                                ]
-                                                            },
-                                                            order: [['DNI_DESC', 'ASC']] // NRO_AGENTE no está en group by
-                                                            });
+                                                                                    [Op.lte]: ultimoDia
+                                                                                    },
+                                                                FECHA_VTO_OFFSET:   {
+                                                                                    [Op.gte]: ultimoDia
+                                                                                    },
+                                                                [Op.and]:           [
+                                                                                    where(fn('LEN', col('DNI_DESC')), {
+                                                                                                                         [Op.gt]: 6
+                                                                                                                }
+                                                                                        )
+                                                                                    ]
+                                                    },
+                                                    order: [['DNI_DESC', 'ASC']] // NRO_AGENTE no está en group by
+                                                    });
 
     let totalFonavi= 0
     
@@ -223,11 +211,12 @@ const consultarDebitos = async (req,res)=>{
 async function generarExcel (req,res){
 
     
-    console.log(GlobalenviosOrganismo)
+    console.log(GlobalenviosOrganismo+Globalperiodo)
     
-    let {datos} = await generarDebitos(GlobalenviosOrganismo)
+    
+    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo)
 
-    console.log(datos)
+//console.log(datos)
 
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
@@ -242,25 +231,8 @@ async function generarExcel (req,res){
                             {header : 'MONTO',              key: 'MTO_CUO'},
                             {header : 'OPERATORIA',         key: 'OPERATORIA'},
                         ]
-    async function generartxt (req,res){
-
-  
-//     console.log(GlobalenviosOrganismo)
     
-//     let {datos} = await generarDebitos(GlobalenviosOrganismo)
-
-//     console.log(datos)
-
-//     const lineas = datos.map(item => 
-//                     '$(item.NRO_AGENTE)  $(item.APEYNOM)  $(item.DNI_DESC) $(item.MTO_CUO)`.join('\n')
-                 
-//     )
-    
-
-
- }
-
-    //agregar Filas 
+        //agregar Filas 
     datos.forEach(item=>{
                            // console.log(item)    
                             worksheet.addRow(item)})                    
@@ -272,6 +244,15 @@ async function generarExcel (req,res){
     await workbook.xlsx.writeFile(ruta);
 
     console.log(`excel generado: ${ruta}`)
+    res.download(ruta, 'Debitos.xls', 
+            
+            (err) => {
+            if (err) {
+                console.error('Error al descargar el archivo:', err);
+                res.status(500).send('Hubo un problema al descargar el archivo');
+            }
+        })
+
     
 
 
