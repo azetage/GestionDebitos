@@ -19,7 +19,7 @@ import {Sequelize, Op, fn, col, where, literal } from 'sequelize';
 
 
 
-global.GlobalenviosOrganismo= ""  
+global.GlobalenviosOrganismo= ""
 global.Globalperiodo=""
 
 function obtenerRutaDescargas(){
@@ -30,17 +30,17 @@ function obtenerRutaDescargas(){
 
 async function  cargarArchivo() {
     const fileStream = fs.createReadStream('./uploads/archiveto.txt');
-    
+
     const rl = readline.createInterface({
         input: fileStream,
         crlfDelay: Infinity
-    
+
     });
         let datos= []
 
     for await (const line of rl){
         const registro = {
-        
+
         fec_vto:    line.slice(24,32),
         cbu:        line.slice(32,40),
         cbu2:       line.slice(40,54),
@@ -48,7 +48,7 @@ async function  cargarArchivo() {
         monto:      line.slice(60,74),
         codigo:     line.slice(74,81)
         }
-    
+
         datos.push(registro)
     }
 
@@ -64,38 +64,59 @@ function ultimoDiaDelMes(fecha) {
 
 
 const generarDebitos = async (codigo_debito, periodo)=>{
-    
-    GlobalenviosOrganismo= codigo_debito
-    Globalperiodo=periodo    
 
-    // const [year, month, day] = periodo.split('-').map(Number)
-    
+    GlobalenviosOrganismo= codigo_debito
+    Globalperiodo=periodo
+
     console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
-    const fecha = new Date(periodo); // cualquier fecha
-    const ultimoDia = ultimoDiaDelMes(fecha);
-    console.log(ultimoDia)
+
+    const [year, month, day] = periodo.split('-').map(Number)
+
+    console.log (year, month, day)
+
+    const wfecha = new Date(year, month-1, day)
+
+    console.log ("WFECHA "+ wfecha)
+
+    const ultimoDia = ultimoDiaDelMes(wfecha);
+    console.log("ultimo dia del mes "+ultimoDia.toLocaleDateString('es-AR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }))
+
     
-    const datosfonavi = await EnvioDebitos.findAll({
-                                                    where: {
-                                                                COD_DEB: codigo_debito,
-                                                                FECHA_ENVIO_OFFSET: {
-                                                                                    [Op.lte]: ultimoDia
-                                                                                    },
-                                                                FECHA_VTO_OFFSET:   {
-                                                                                    [Op.gte]: ultimoDia
-                                                                                    },
-                                                                [Op.and]:           [
-                                                                                    where(fn('LEN', col('DNI_DESC')), {
-                                                                                                                         [Op.gt]: 6
-                                                                                                                }
-                                                                                        )
-                                                                                    ]
-                                                    },
-                                                    order: [['DNI_DESC', 'ASC']] // NRO_AGENTE no está en group by
-                                                    });
+    const datosfonavi = await db_debitos.query(   `SELECT * FROM VISTA_ENVIODEBITOS WHERE COD_DEB = :codigoDebito` ,
+  {
+    replacements: { codigoDebito: codigo_debito },
+    type: db_debitos.QueryTypes.SELECT
+  }
+);
+
+    // const datosfonavi = await EnvioDebitos.findAll({
+    //                                                 where: {
+    //                                                             COD_DEB: codigo_debito,
+    //                                                             FECHA_ENVIO_OFFSET: {
+    //                                                                                 [Op.lte]: wfecha },
+    //                                                             FECHA_VTO_OFFSET:   {
+    //                                                                                  [Op.gte]: wfecha }
+    //                                                             //                     },
+    //                                                             // [Op.and]:           [
+    //                                                             //                     where(fn('LEN', col('DNI_DESC')), {
+    //                                                             //                                                          [Op.gt]: 6
+    //                                                             //                                                 }
+    //                                                             //                         )
+    //                                                             //                     ]
+    //                                                 }//, group: ['NRO_AGENTE']
+    //                                                 // order: [['NRO_AGENTE', 'ASC']] // NRO_AGENTE no está en group by
+    //                                                 });
+
+
+
+
 
     let totalFonavi= 0
-    
+
     const datos = datosfonavi.map(item   => {
         //console.log (item)
         const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
@@ -106,10 +127,10 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                     APEYNOM:    item.APEYNOM,
                     DNI_DESC:   item.DNI_DESC,
                     MTO_CUO:    suma,
-                    COD:        item.COD,                
+                    COD:        item.COD,
                     OPERATORIA: 'ADJUD',
                                         }
-               
+
                 })
 
     console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
@@ -124,7 +145,7 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                                                             VTO_PLAN_OFFSET:   {
                                                                                 [Op.gte]:   ultimoDia
                                                                                 },
-                                                            [Op.and]:           [                
+                                                            [Op.and]:           [
                                                                                 where(fn('LEN', col('DNI_DESC')), {
                                                                                     [Op.gt]: 6
                                                                                     })
@@ -133,33 +154,33 @@ const generarDebitos = async (codigo_debito, periodo)=>{
             order: [['N_TARJETA', 'ASC']]
         });
 
-    let totalPlanes = 0  
+    let totalPlanes = 0
     const datos1 = datosPlanes.map(item   => {
          const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
          totalPlanes += suma
-        
+
                  return {
-       
+
                     NRO_AGENTE: item.N_TARJETA,
                     APEYNOM:    item.APEYNOM,
                     DNI_DESC:   item.DNI_DESC,
                     MTO_CUO:    suma,
-                    COD:        item.COD,                
+                    COD:        item.COD,
                     OPERATORIA: 'ADJUD',
                     }
-               
+
                 })
     console.log("Op Planes "+ totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
     datos.push(...datos1)
-    
-    
+
+
     let datosOperatorias2 = await VistaDebitos.findAll({
         where: {
             COD_DEB: codigo_debito,
-            [Op.and]: [
-                        where(fn('LEN', col('dni')), { [Op.gt]: 6 })
-                      ]
+            // [Op.and]: [
+            //             where(fn('LEN', col('dni')), { [Op.gt]: 6 })
+            //           ]
              },
         order: [['agente_debito', 'ASC']]
         });
@@ -171,10 +192,10 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                     APEYNOM:    item.nombre,
                     DNI_DESC:   item.dni,
                     MTO_CUO:    item.imp_cuota,
-                    COD:        item.codigo,                
+                    COD:        item.codigo,
                     OPERATORIA: item.operatoria,
                                         }
-           
+
         })
 
     datos.push(...datos2)
@@ -182,38 +203,38 @@ const generarDebitos = async (codigo_debito, periodo)=>{
     console.log("------------------")
 
     let total= totalFonavi+totalPlanes+totalOperatoria2
-      
+
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
 
     console.log("TOTAL PESOS" + totalPesos)
-       
+
     return {datos,totalPesos}
-    
+
 }
 
 
 
 
 const consultarDebitos = async (req,res)=>{
-    
+
     let codigo_debito = req.query.enviosOrganismo
     let periodo =       req.query.enviosPeriodo
     let debitos = await generarDebitos(codigo_debito,periodo)
 
         return res.render('main/enviodebitos', {
             pagina : "ENVIO DEBITOS",
-            datos: debitos.datos, 
+            datos: debitos.datos,
             Organismos: await ConsultarOrganismos(),
             totalPesos: debitos.totalPesos
-            })   
+            })
 }
 
 async function generarExcel (req,res){
 
-    
+
     console.log(GlobalenviosOrganismo+Globalperiodo)
-    
-    
+
+
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo)
 
 //console.log(datos)
@@ -231,11 +252,11 @@ async function generarExcel (req,res){
                             {header : 'MONTO',              key: 'MTO_CUO'},
                             {header : 'OPERATORIA',         key: 'OPERATORIA'},
                         ]
-    
-        //agregar Filas 
+
+        //agregar Filas
     datos.forEach(item=>{
-                           // console.log(item)    
-                            worksheet.addRow(item)})                    
+                           // console.log(item)
+                            worksheet.addRow(item)})
 
     // guardar archivo
 
@@ -244,8 +265,8 @@ async function generarExcel (req,res){
     await workbook.xlsx.writeFile(ruta);
 
     console.log(`excel generado: ${ruta}`)
-    res.download(ruta, 'Debitos.xls', 
-            
+    res.download(ruta, 'Debitos.xls',
+
             (err) => {
             if (err) {
                 console.error('Error al descargar el archivo:', err);
@@ -253,25 +274,25 @@ async function generarExcel (req,res){
             }
         })
 
-    
+
 
 
 
 }
 // async function generartxt (req,res){
 
-  
+
 //     console.log(GlobalenviosOrganismo)
-    
+
 //     let {datos} = await generarDebitos(GlobalenviosOrganismo)
 
 //     console.log(datos)
 
-//     const lineas = datos.map(item => 
+//     const lineas = datos.map(item =>
 //                     '$(item.NRO_AGENTE)  $(item.APEYNOM)  $(item.DNI_DESC) $(item.MTO_CUO)`.join('\n')
-                 
+
 //     )
-    
+
 
 
 // }
@@ -336,11 +357,11 @@ async function reportePDFBasico(){
 //     doc.save("reporte.pdf")
 }
 const paginainicio= async (req,res)=> {
-   
+
    // reportePDFBasico()
     return res.render('main/index', {
          pagina : "GESTION DEBITOS",
-         
+
          })
 
 }
@@ -348,7 +369,7 @@ const paginainicio= async (req,res)=> {
 const debitosindex = async (req,res)=>{
 
     let Organismos = await ConsultarOrganismos();
-    
+
     return res.render('main/enviodebitos', {
         pagina : "ENVIO DEBITOS",
         datos: null,
@@ -359,7 +380,7 @@ const debitosindex = async (req,res)=>{
 
 
 export {
-    paginainicio, 
+    paginainicio,
     generarExcel,
     debitosindex,
     generarDebitos,
