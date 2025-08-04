@@ -72,23 +72,37 @@ const generarDebitos = async (codigo_debito, periodo)=>{
 
     const [year, month, day] = periodo.split('-').map(Number)
 
-    console.log (year, month, day)
+    console.log ("FECHA SEPADARA", year, month, day)
 
     const wfecha = new Date(year, month-1, day)
 
-    console.log ("WFECHA "+ wfecha)
+    console.log ("NUEVA DATE DESDE FECHA SEPARADA", wfecha.toLocaleDateString('es-AR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }))
 
     const ultimoDia = ultimoDiaDelMes(wfecha);
-    console.log("ultimo dia del mes "+ultimoDia.toLocaleDateString('es-AR', {
+ 
+    console.log("ULTIMO DIA DEL MES ",ultimoDia.toLocaleDateString('es-AR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }))
 
     
-    const datosfonavi = await db_debitos.query(   `SELECT * FROM VISTA_ENVIODEBITOS WHERE COD_DEB = :codigoDebito` ,
+const datosfonavi = await db_debitos.query(
+  `SELECT * FROM VISTA_ENVIODEBITOS 
+   WHERE COD_DEB = :codigoDebito 
+     AND FEC_ENVIO <= :ultimodiaSQL 
+     AND FEC_VTO >= :fechaSQL
+   ORDER BY NRO_AGENTE ASC`,
   {
-    replacements: { codigoDebito: codigo_debito },
+    replacements: {
+      codigoDebito: codigo_debito,
+       fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
+       ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
+    },
     type: db_debitos.QueryTypes.SELECT
   }
 );
