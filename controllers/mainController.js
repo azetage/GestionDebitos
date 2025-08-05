@@ -107,47 +107,69 @@ const datosfonavi = await db_debitos.query(
   }
 );
 
-    // const datosfonavi = await EnvioDebitos.findAll({
-    //                                                 where: {
-    //                                                             COD_DEB: codigo_debito,
-    //                                                             FECHA_ENVIO_OFFSET: {
-    //                                                                                 [Op.lte]: wfecha },
-    //                                                             FECHA_VTO_OFFSET:   {
-    //                                                                                  [Op.gte]: wfecha }
-    //                                                             //                     },
-    //                                                             // [Op.and]:           [
-    //                                                             //                     where(fn('LEN', col('DNI_DESC')), {
-    //                                                             //                                                          [Op.gt]: 6
-    //                                                             //                                                 }
-    //                                                             //                         )
-    //                                                             //                     ]
-    //                                                 }//, group: ['NRO_AGENTE']
-    //                                                 // order: [['NRO_AGENTE', 'ASC']] // NRO_AGENTE no está en group by
-    //                                                 });
-
-
-
-
+//  const datosfonavi = await EnvioDebitos.findAll({
+//     where: {
+//     COD_DEB: codigo_debito,
+//     FEC_ENVIO: { [Op.lte]: ultimoDia },   // <=
+//     FEC_VTO: { [Op.gte]: wfecha }         // >=
+//   },
+//   order: [['NRO_AGENTE', 'ASC']]
+// });
 
     let totalFonavi= 0
-
-    const datos = datosfonavi.map(item   => {
-        //console.log (item)
+    let datos
+    
+    if (!['11', '34', '37'].includes(codigo_debito)){
+    
+        datos = datosfonavi.map(item   => { 
         const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
         totalFonavi += suma
-
-                return {
+            return {
                     NRO_AGENTE: item.NRO_AGENTE,
                     APEYNOM:    item.APEYNOM,
                     DNI_DESC:   item.DNI_DESC,
                     MTO_CUO:    suma,
                     COD:        item.COD,
                     OPERATORIA: 'ADJUD',
+                    cantidad:   0
                                         }
 
                 })
+                  
+    }
+    else{
+        
+        const agrupados = datosfonavi.reduce((acc, item) => {
+        const key = item.NRO_AGENTE;
+        const suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA;
+        totalFonavi += suma;
 
-    console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+        if (!acc[key]) {
+            acc[key] = {
+            NRO_AGENTE: item.NRO_AGENTE,
+            APEYNOM: item.APEYNOM,
+            DNI_DESC: item.DNI_DESC,
+            MTO_CUO:0,
+            COD: item.COD,
+            OPERATORIA: 'ADJUD',
+            cantidad: 0  // ← contador de registros
+            };
+        }
+
+        acc[key].MTO_CUO += suma;
+        acc[key].cantidad += 1; // ← incrementa por cada registro
+
+            return acc;
+            }, {});
+
+        datos = Object.values(agrupados);
+    }
+    
+    
+    //console.log("Total Fonavi:", totalFonavi);
+    //console.log("Datos agrupados:", datos);
+    
+     console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
     let datosPlanes = await EnvioPlanes.findAll({
                                                     where: {
