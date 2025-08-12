@@ -63,7 +63,7 @@ function ultimoDiaDelMes(fecha) {
 }
 
 
-const generarDebitos = async (codigo_debito, periodo)=>{
+const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
     GlobalenviosOrganismo= codigo_debito
     Globalperiodo=periodo
@@ -99,10 +99,10 @@ const generarDebitos = async (codigo_debito, periodo)=>{
     
 const datosfonavi = await db_debitos.query(
 `SELECT * FROM VISTA_ENVIODEBITOS 
-   WHERE COD_DEB = :codigoDebito 
-     AND FEC_ENVIO <= :ultimodiaSQL 
-     AND FEC_VTO >= :fechaSQL
-   ORDER BY NRO_AGENTE ASC`,
+    WHERE COD_DEB = :codigoDebito
+    AND FEC_ENVIO <= :ultimodiaSQL
+    AND FEC_VTO >= :fechaSQL
+    ORDER BY NRO_AGENTE ASC`,
 
   {
     replacements: {
@@ -128,17 +128,20 @@ const datosfonavi = await db_debitos.query(
     
     if (!['11', '34', '37'].includes(codigo_debito)){
     
-        if(['2'].includes(codigo_debito)){
+        if(['2', '8'].includes(codigo_debito)){
                 datos = datosfonavi.map(item   => { 
                     const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
                     totalFonavi += suma
                     return {
-                                NRO_AGENTE: item.DNI_DESC,
-                                APEYNOM:    item.APEYNOM,
-                                DNI_DESC:   item.DNI_DESC,
-                                MTO_CUO:    suma,
-                                COD:        item.COD,
+                                FECHA: wfecha,
                                 OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.DNI_DESC,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
                                 cantidad:   'N/A'
                             }
                     }
@@ -149,12 +152,15 @@ const datosfonavi = await db_debitos.query(
                     const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
                     totalFonavi += suma
                         return {
-                                NRO_AGENTE: item.NRO_AGENTE,
-                                APEYNOM:    item.APEYNOM,
-                                DNI_DESC:   item.DNI_DESC,
-                                MTO_CUO:    suma,
-                                COD:        item.COD,
+                                FECHA: wfecha,
                                 OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.NRO_AGENTE,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
                                 cantidad:   'N/A'
                                 }
                         }
@@ -177,13 +183,16 @@ const datosfonavi = await db_debitos.query(
 
         if (!acc[key]) {
             acc[key] = {
-            NRO_AGENTE: item.NRO_AGENTE,
-            APEYNOM: item.APEYNOM,
-            DNI_DESC: item.DNI_DESC,
-            MTO_CUO:0,
-            COD: item.COD,
-            OPERATORIA: 'ADJUD',
-            cantidad: 0  // ← contador de registros
+                                FECHA: wfecha,
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.NRO_AGENTE,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad: 0  // ← contador de registros
             };
         }
 
@@ -224,12 +233,17 @@ const datosfonavi = await db_debitos.query(
 
                  return {
 
-                    NRO_AGENTE: item.N_TARJETA,
-                    APEYNOM:    item.APEYNOM,
-                    DNI_DESC:   item.DNI_DESC,
-                    MTO_CUO:    suma,
-                    COD:        item.COD,
-                    OPERATORIA: 'ADJUD',
+                         
+                                FECHA: wfecha,
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.N_TARJETA,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad: 0  // ← contador de registros
                     }
 
                 })
@@ -248,12 +262,20 @@ const datosfonavi = await db_debitos.query(
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
         return{
-                    NRO_AGENTE: item.agente_debito,
-                    APEYNOM:    item.nombre,
-                    DNI_DESC:   item.dni,
-                    MTO_CUO:    item.imp_cuota,
-                    COD:        item.codigo,
-                    OPERATORIA: item.operatoria,
+                                 
+         
+
+
+                    FECHA: wfecha,
+                               OPERATORIA: item.operatoria,
+                                COD:        item.codigo,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.agente_debito,
+                                DNI_DESC:   item.dni,
+                                APEYNOM:    item.nombre,                                
+                                MTO_CUO:    item.imp_cuota,                            
+                                cantidad: 0  // ← contador de registros
                                         }
 
         })
@@ -276,10 +298,10 @@ const datosfonavi = await db_debitos.query(
 
 
 const consultarDebitos = async (req,res)=>{
+    let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
 
-    let codigo_debito = req.query.enviosOrganismo
     let periodo =       req.query.enviosPeriodo
-    let debitos = await generarDebitos(codigo_debito,periodo)
+    let debitos = await generarDebitos(codigo_debito,periodo,sigla)
 
         return res.render('main/enviodebitos', {
             pagina : "ENVIO DEBITOS",
