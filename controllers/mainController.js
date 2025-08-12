@@ -21,6 +21,7 @@ import {Sequelize, Op, fn, col, where, literal } from 'sequelize';
 
 global.GlobalenviosOrganismo= ""
 global.Globalperiodo=""
+global.Globalsigla=""
 
 function obtenerRutaDescargas(){
     // const home = os.homedir();
@@ -54,7 +55,8 @@ async function  cargarArchivo() {
 
 }
 async function ConsultarOrganismos(){
-    let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' }})
+    let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
+    console.log(organismos.length)
     return organismos
 }
 
@@ -67,6 +69,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
     GlobalenviosOrganismo= codigo_debito
     Globalperiodo=periodo
+    Globalsigla= sigla
 
     console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
 
@@ -317,21 +320,36 @@ async function generarExcel (req,res){
     console.log(GlobalenviosOrganismo+Globalperiodo)
 
 
-    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo)
+    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
 
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos");
 
-    // // definir columnas
+    // // // definir columnas
+                                 // FECHA: wfecha,
+    //                             OPERATORIA: 'ADJUD',
+    //                             COD:        item.COD,
+    //                             COD_DEB:    codigo_debito,
+    //                             SIGLA:      sigla,    
+    //                             NRO_AGENTE: item.DNI_DESC,
+    //                             DNI_DESC:   item.DNI_DESC,
+    //                             APEYNOM:    item.APEYNOM,                                
+    //                             MTO_CUO:    suma,                            
+    //                             cantidad:   'N/A'
     worksheet.columns = [
-                            {header : 'CODIGO',             key: 'COD'},
-                            {header : 'DNI DESC',           key: 'DNI_DESC'},
-                            {header : 'APELLIDO Y NOMBRE',  key: 'APEYNOM'},
-                            {header : 'NRO AGENTE',         key: 'NRO_AGENTE'},
-                            {header : 'MONTO',              key: 'MTO_CUO'},
+                            {header : 'FECHA',              key: 'FECHA'},
                             {header : 'OPERATORIA',         key: 'OPERATORIA'},
+                            {header : 'COD',                key: 'COD'},
+                            {header : 'COD_DEB',            key: 'COD_DEB'},
+                            {header : 'SIGLA',              key: 'SIGLA'},
+                            {header : 'NRO_AGENTE',         key: 'NRO_AGENTE'},
+                            {header : 'DNI_DESC',           key: 'DNI_DESC'},
+                            {header : 'APEYNOM',            key: 'APEYNOM'},
+                            {header : 'MTO_CUO',            key: 'MTO_CUO'},
+                            {header : 'CANTIDAD',           key: 'cantidad'},
+
                         ]
 
     //agregar Filas

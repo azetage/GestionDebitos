@@ -23,7 +23,7 @@ block contenido
                                     div
                                     select#enviosOrganismo(type ='select' placeholder='Seleccione Organismo' name = 'enviosOrganismo')
                                             for item in Organismos? Organismos:''
-                                                option(value=item.COD_DEB) #{item.REGISTRA }
+                                               
                                                 option(value=`${item.COD_DEB}|${item.SIGLA}`)= item.REGISTRA
                                 
                                 div(class= "inline-flex flex flex-row")   
