@@ -90,13 +90,20 @@ const generarDebitos = async (codigo_debito, periodo)=>{
                     day: '2-digit'
                 }))
 
+// `SELECT * FROM VISTA_ENVIODEBITOS 
+//    WHERE COD_DEB = :codigoDebito 
+//      AND FEC_ENVIO <= :ultimodiaSQL 
+//      AND FEC_VTO >= :fechaSQL
+//    ORDER BY NRO_AGENTE ASC`,
+
     
 const datosfonavi = await db_debitos.query(
-  `SELECT * FROM VISTA_ENVIODEBITOS 
+`SELECT * FROM VISTA_ENVIODEBITOS 
    WHERE COD_DEB = :codigoDebito 
      AND FEC_ENVIO <= :ultimodiaSQL 
      AND FEC_VTO >= :fechaSQL
    ORDER BY NRO_AGENTE ASC`,
+
   {
     replacements: {
       codigoDebito: codigo_debito,
@@ -121,27 +128,51 @@ const datosfonavi = await db_debitos.query(
     
     if (!['11', '34', '37'].includes(codigo_debito)){
     
-        datos = datosfonavi.map(item   => { 
-        const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
-        totalFonavi += suma
-            return {
-                    NRO_AGENTE: item.NRO_AGENTE,
-                    APEYNOM:    item.APEYNOM,
-                    DNI_DESC:   item.DNI_DESC,
-                    MTO_CUO:    suma,
-                    COD:        item.COD,
-                    OPERATORIA: 'ADJUD',
-                    cantidad:   0
-                                        }
+        if(['2'].includes(codigo_debito)){
+                datos = datosfonavi.map(item   => { 
+                    const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
+                    totalFonavi += suma
+                    return {
+                                NRO_AGENTE: item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,
+                                DNI_DESC:   item.DNI_DESC,
+                                MTO_CUO:    suma,
+                                COD:        item.COD,
+                                OPERATORIA: 'ADJUD',
+                                cantidad:   'N/A'
+                            }
+                    }
+                )
 
-                })
-                  
+        }else{ 
+                datos = datosfonavi.map(item   => { 
+                    const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
+                    totalFonavi += suma
+                        return {
+                                NRO_AGENTE: item.NRO_AGENTE,
+                                APEYNOM:    item.APEYNOM,
+                                DNI_DESC:   item.DNI_DESC,
+                                MTO_CUO:    suma,
+                                COD:        item.COD,
+                                OPERATORIA: 'ADJUD',
+                                cantidad:   'N/A'
+                                }
+                        }
+                )
+                
+            }          
     }
     else{
         
         const agrupados = datosfonavi.reduce((acc, item) => {
         const key = item.NRO_AGENTE;
-        const suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA;
+        let suma=0
+        if (['11'].includes(codigo_debito)){
+            suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA;
+        }else{
+             suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA+1;
+        }   
+        
         totalFonavi += suma;
 
         if (!acc[key]) {
@@ -164,12 +195,8 @@ const datosfonavi = await db_debitos.query(
 
         datos = Object.values(agrupados);
     }
-    
-    
-    //console.log("Total Fonavi:", totalFonavi);
-    //console.log("Datos agrupados:", datos);
-    
-     console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log('cantidad de elementos:'+ datos.length , 'gastos administrativos FONAVI: ' + datos.length*200)  
+    console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
     let datosPlanes = await EnvioPlanes.findAll({
                                                     where: {
@@ -214,10 +241,7 @@ const datosfonavi = await db_debitos.query(
     let datosOperatorias2 = await VistaDebitos.findAll({
         where: {
             COD_DEB: codigo_debito,
-            // [Op.and]: [
-            //             where(fn('LEN', col('dni')), { [Op.gt]: 6 })
-            //           ]
-             },
+          },
         order: [['agente_debito', 'ASC']]
         });
     let totalOperatoria2=0
@@ -242,7 +266,7 @@ const datosfonavi = await db_debitos.query(
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
 
-    console.log("TOTAL PESOS" + totalPesos)
+    console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
 
     return {datos,totalPesos}
 
@@ -273,7 +297,6 @@ async function generarExcel (req,res){
 
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo)
 
-//console.log(datos)
 
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
@@ -289,10 +312,11 @@ async function generarExcel (req,res){
                             {header : 'OPERATORIA',         key: 'OPERATORIA'},
                         ]
 
-        //agregar Filas
+    //agregar Filas
     datos.forEach(item=>{
-                           // console.log(item)
-                            worksheet.addRow(item)})
+
+    // console.log(item)
+    worksheet.addRow(item)})
 
     // guardar archivo
 
@@ -333,7 +357,7 @@ async function generarExcel (req,res){
 
 // }
 
-async function reportePDFBasico(){
+//async function reportePDFBasico(){
 //     const doc = new jsPDF()
 //     const datos =await consultarDebitos(34)
 
@@ -391,7 +415,8 @@ async function reportePDFBasico(){
 //       });
 
 //     doc.save("reporte.pdf")
-}
+//}
+
 const paginainicio= async (req,res)=> {
 
    // reportePDFBasico()
