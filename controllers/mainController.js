@@ -1,20 +1,12 @@
 import fs from 'fs';
 import readline from 'readline'
-import DebitosTemp from '../models/DebitosTemporales.js';
 import ExcelJS from 'exceljs';
 import { db_debitos } from '../config/db.js';
-import os from 'os';
 import path from 'path';
-
-import EnvioDebitos from '../models/EnvioDebitos.js';
 import VistaDebitos from '../models/VistaDebitos.js';
 import EnvioPlanes from '../models/EnvioPlanes.js';
-import { db_viviendas_fonavi } from '../config/db.js';
-
-import {jsPDF} from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import Organismos from '../models/Organismos.js';
-import {Sequelize, Op, fn, col, where, literal } from 'sequelize';
+import {Op, fn, col, where} from 'sequelize';
 
 
 
@@ -327,30 +319,18 @@ async function generarExcel (req,res){
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos");
 
-    // // // definir columnas
-                                 // FECHA: wfecha,
-    //                             OPERATORIA: 'ADJUD',
-    //                             COD:        item.COD,
-    //                             COD_DEB:    codigo_debito,
-    //                             SIGLA:      sigla,    
-    //                             NRO_AGENTE: item.DNI_DESC,
-    //                             DNI_DESC:   item.DNI_DESC,
-    //                             APEYNOM:    item.APEYNOM,                                
-    //                             MTO_CUO:    suma,                            
-    //                             cantidad:   'N/A'
     worksheet.columns = [
-                            {header : 'FECHA',              key: 'FECHA'},
-                            {header : 'OPERATORIA',         key: 'OPERATORIA'},
-                            {header : 'COD',                key: 'COD'},
-                            {header : 'COD_DEB',            key: 'COD_DEB'},
-                            {header : 'SIGLA',              key: 'SIGLA'},
-                            {header : 'NRO_AGENTE',         key: 'NRO_AGENTE'},
-                            {header : 'DNI_DESC',           key: 'DNI_DESC'},
-                            {header : 'APEYNOM',            key: 'APEYNOM'},
-                            {header : 'MTO_CUO',            key: 'MTO_CUO'},
-                            {header : 'CANTIDAD',           key: 'cantidad'},
-
-                        ]
+    { header: 'FECHA', key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
+    { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
+    { header: 'CODIGO', key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
+    { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SIGLA', key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'DNI', key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
+    { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
+    { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
+    { header: 'CANT', key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
+];
 
     //agregar Filas
     datos.forEach(item=>{
