@@ -7,6 +7,7 @@ import VistaDebitos from '../models/VistaDebitos.js';
 import EnvioPlanes from '../models/EnvioPlanes.js';
 import Organismos from '../models/Organismos.js';
 import {Op, fn, col, where} from 'sequelize';
+import DebitosTotales from '../models/DebitosTotales.js';
 
 
 
@@ -109,15 +110,6 @@ const datosfonavi = await db_debitos.query(
   }
 );
 
-//  const datosfonavi = await EnvioDebitos.findAll({
-//     where: {
-//     COD_DEB: codigo_debito,
-//     FEC_ENVIO: { [Op.lte]: ultimoDia },   // <=
-//     FEC_VTO: { [Op.gte]: wfecha }         // >=
-//   },
-//   order: [['NRO_AGENTE', 'ASC']]
-// });
-
     let totalFonavi= 0
     let datos
     
@@ -137,7 +129,7 @@ const datosfonavi = await db_debitos.query(
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
-                                cantidad:   'N/A'
+                                cantidad:   1
                             }
                     }
                 )
@@ -156,7 +148,7 @@ const datosfonavi = await db_debitos.query(
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
-                                cantidad:   'N/A'
+                                cantidad:   1
                                 }
                         }
                 )
@@ -294,13 +286,12 @@ const datosfonavi = await db_debitos.query(
 
 const consultarDebitos = async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-
     let periodo =       req.query.enviosPeriodo
     let debitos = await generarDebitos(codigo_debito,periodo,sigla)
 
         return res.render('main/enviodebitos', {
-            pagina : "ENVIO DEBITOS",
-            datos: debitos.datos,
+            pagina :    "ENVIO DEBITOS",
+            datos:      debitos.datos,
             Organismos: await ConsultarOrganismos(),
             totalPesos: debitos.totalPesos
             })
@@ -314,7 +305,7 @@ async function generarExcel (req,res){
 
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
-
+    await DebitosTotales.bulkCreate(datos)
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos");
