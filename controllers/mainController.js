@@ -305,10 +305,10 @@ async function generarExcel (req,res){
 
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
-    await DebitosTotales.bulkCreate(datos)
+  //  await DebitosTotales.bulkCreate(datos)
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
-    const worksheet= workbook.addWorksheet("Debitos");
+    const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
 
     worksheet.columns = [
     { header: 'FECHA', key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
@@ -331,12 +331,12 @@ async function generarExcel (req,res){
 
     // guardar archivo
 
-    const ruta = path.join(obtenerRutaDescargas(),'Debitos.xls')
+    const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
 
     await workbook.xlsx.writeFile(ruta);
 
     console.log(`excel generado: ${ruta}`)
-    res.download(ruta, 'Debitos.xls',
+    res.download(ruta, `Debitos ${Globalsigla} - ${Globalperiodo} .xls`,
 
             (err) => {
             if (err) {
