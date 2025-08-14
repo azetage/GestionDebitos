@@ -8,6 +8,7 @@ import EnvioPlanes from '../models/EnvioPlanes.js';
 import Organismos from '../models/Organismos.js';
 import {Op, fn, col, where} from 'sequelize';
 import DebitosTotales from '../models/DebitosTotales.js';
+import { DBFFile } from 'dbffile';
 
 
 
@@ -253,8 +254,8 @@ const datosfonavi = await db_debitos.query(
          
 
 
-                    FECHA: wfecha,
-                               OPERATORIA: item.operatoria,
+                                FECHA: wfecha,
+                                OPERATORIA: item.operatoria,
                                 COD:        item.codigo,
                                 COD_DEB:    codigo_debito,
                                 SIGLA:      sigla,    
@@ -305,7 +306,7 @@ async function generarExcel (req,res){
 
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
-  //  await DebitosTotales.bulkCreate(datos)
+    await DebitosTotales.bulkCreate(datos)
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
@@ -347,9 +348,44 @@ async function generarExcel (req,res){
 
 
 
-
+crearDBF()
 
 }
+
+async function crearDBF() {
+  // Definir campos de la tabla
+  const campos = [
+    { name: 'FECHA', type: 'D', size: 8 },
+    { name: 'OPERATORIA', type: 'C', size: 20 },
+    { name: 'COD', type: 'N', size: 20 },
+    { name: 'COD_DEB', type: 'C', size: 20 },
+    { name: 'SIGLA', type: 'C', size: 20 },
+    { name: 'NRO_AGENTE', type: 'C', size: 20 },
+    { name: 'DNI_DESC', type: 'C', size: 20 },
+    { name: 'APEYNOM', type: 'C', size: 20 },
+    { name: 'MTO_CUO', type: 'N', size: 20 },
+    { name: 'cantidad', type: 'N', size: 20 },
+  ];
+
+       
+
+
+  // Crear archivo DBF
+  const rutaArchivo = path.join(obtenerRutaDescargas(), `IPV_${Globalperiodo}.dbf`);
+  const dbf = await DBFFile.create(rutaArchivo, campos);
+
+  console.log(`Archivo DBF creado: ${dbf.path}`);
+let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+  // Agregar registros
+  await dbf.appendRecords(datos);
+
+  console.log(`Se agregaron ${registros.length} registros`);
+}
+
+crearDBF().catch(console.error);
+
+
+
 // async function generartxt (req,res){
 
 
