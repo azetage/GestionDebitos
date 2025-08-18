@@ -9,6 +9,7 @@ import Organismos from '../models/Organismos.js';
 import {Op, fn, col, where} from 'sequelize';
 import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
+import { writeFile } from 'fs/promises';
 
 
 
@@ -345,14 +346,9 @@ async function generarExcel (req,res){
                 res.status(500).send('Hubo un problema al descargar el archivo');
             }
         })
-
-
-
-crearDBF()
-
 }
 
-async function crearDBF() {
+async function generarDbf() {
   // Definir campos de la tabla
   const campos = [
     { name: 'FECHA', type: 'D', size: 8 },
@@ -371,38 +367,46 @@ async function crearDBF() {
 
 
   // Crear archivo DBF
-  const rutaArchivo = path.join(obtenerRutaDescargas(), `IPV_${Globalperiodo}.dbf`);
+  const rutaArchivo = path.join(obtenerRutaDescargas(), `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
   const dbf = await DBFFile.create(rutaArchivo, campos);
 
-  console.log(`Archivo DBF creado: ${dbf.path}`);
-let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+    console.log(`Archivo DBF creado: ${dbf.path}`);
+    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
   // Agregar registros
   await dbf.appendRecords(datos);
 
   console.log(`Se agregaron ${registros.length} registros`);
+  res.download(rutaArchivo,`Debitos ${Globalsigla} - ${Globalperiodo}.dbf`)
 }
 
-crearDBF().catch(console.error);
+//generarDbf().catch(console.error);
 
 
 
-// async function generartxt (req,res){
 
 
-//     console.log(GlobalenviosOrganismo)
+async function generartxt(req, res) {
+    try {
+        let { datos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
 
-//     let {datos} = await generarDebitos(GlobalenviosOrganismo)
+        // Convertimos array a string separado por saltos de línea
+        const filas = datos.map(obj => Object.values(obj).join(",")).join("\n");
 
-//     console.log(datos)
+        // Construimos ruta con nombre de archivo .txt
+        const ruta = path.join(
+            obtenerRutaDescargas(),
+            `Debitos ${Globalsigla} - ${Globalperiodo}.txt`
+        );
 
-//     const lineas = datos.map(item =>
-//                     '$(item.NRO_AGENTE)  $(item.APEYNOM)  $(item.DNI_DESC) $(item.MTO_CUO)`.join('\n')
+        // Escribimos el archivo
+        await writeFile(ruta, filas, 'utf8');
+        console.log(`Archivo creado exitosamente: ${ruta}`);
 
-//     )
+    } catch (err) {
+        console.error('Error al escribir el archivo:', err);
+    }
+}
 
-
-
-// }
 
 //async function reportePDFBasico(){
 //     const doc = new jsPDF()
@@ -492,5 +496,7 @@ export {
     generarExcel,
     debitosindex,
     generarDebitos,
-    consultarDebitos
+    generartxt,
+    consultarDebitos,
+    generarDbf
 }

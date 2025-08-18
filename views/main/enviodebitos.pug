@@ -79,7 +79,7 @@ block contenido
     
                     h2.py-2.text-center.text-2xl.font-bold.text-white.bg-gray-500(class= "shadow-lg shadow-gray-500/50")= totalPesos
 
-    div(name= 'Generar Excel')
+    div(name= 'Generar Excel' class="grid gap-6 mb-3 md:grid-cols-3" )
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 form.space-y-5(action=`/main/index/generarExcel` method="GET")   
@@ -87,4 +87,24 @@ block contenido
                         legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO EXCEL 
                             div
                                 input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Generar')
+                                        type= 'submit' value= 'Generar EXCEL')
+
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+       
+                form.space-y-5(action=`/main/index/generarTxt` method="GET")   
+                    fieldset.px-10.py-1 
+                        legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO TXT 
+                            div
+                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                        type= 'submit' value= 'Generar TXT')
+        
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+       
+                form.space-y-5(action=`/main/index/generarDbf` method="GET")   
+                    fieldset.px-10.py-1 
+                        legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO DBF 
+                            div
+                                input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                        type= 'submit' value= 'Generar DBF')
