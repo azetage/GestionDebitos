@@ -87,6 +87,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
+    /////////////////////////////////////DEBITOS FONAVI /////////////////////////////////////////////////////////////////////////
 
 // `SELECT * FROM VISTA_ENVIODEBITOS 
 //    WHERE COD_DEB = :codigoDebito 
@@ -95,22 +96,21 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //    ORDER BY NRO_AGENTE ASC`,
 
     
-const datosfonavi = await db_debitos.query(
-`SELECT * FROM VISTA_ENVIODEBITOS 
-    WHERE COD_DEB = :codigoDebito
-    AND FEC_ENVIO <= :ultimodiaSQL
-    AND FEC_VTO >= :fechaSQL
-    ORDER BY NRO_AGENTE ASC`,
+    const datosfonavi = await db_debitos.query(
+    `SELECT * FROM VISTA_ENVIODEBITOS 
+        WHERE COD_DEB = :codigoDebito
+        AND FEC_ENVIO <= :ultimodiaSQL
+        AND FEC_VTO >= :fechaSQL
+        ORDER BY NRO_AGENTE ASC`,
 
-  {
-    replacements: {
-      codigoDebito: codigo_debito,
-       fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
-       ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
-    },
-    type: db_debitos.QueryTypes.SELECT
-  }
-);
+    {
+        replacements: {
+            codigoDebito: codigo_debito,
+            fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
+            ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
+        },
+        type: db_debitos.QueryTypes.SELECT
+    });
 
     let totalFonavi= 0
     let datos
@@ -122,7 +122,7 @@ const datosfonavi = await db_debitos.query(
                     const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
                     totalFonavi += suma
                     return {
-                                FECHA: wfecha,
+                                FECHA: wfecha.toISOString().split('T')[0],
                                 OPERATORIA: 'ADJUD',
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
@@ -140,8 +140,8 @@ const datosfonavi = await db_debitos.query(
                 datos = datosfonavi.map(item   => { 
                     const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
                     totalFonavi += suma
-                        return {
-                                FECHA: wfecha,
+                    return {
+                                FECHA: wfecha.toISOString().split('T')[0],
                                 OPERATORIA: 'ADJUD',
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
@@ -151,28 +151,27 @@ const datosfonavi = await db_debitos.query(
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
                                 cantidad:   1
-                                }
-                        }
+                            }
+                    }
                 )
                 
             }          
-    }
-    else{
+    }else{
         
         const agrupados = datosfonavi.reduce((acc, item) => {
         const key = item.NRO_AGENTE;
         let suma=0
-        if (['11'].includes(codigo_debito)){
+            if (['11'].includes(codigo_debito)){
             suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA;
-        }else{
+            }else{
              suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA+1;
-        }   
+            }   
         
         totalFonavi += suma;
 
         if (!acc[key]) {
             acc[key] = {
-                                FECHA: wfecha,
+                                FECHA: wfecha.toISOString().split('T')[0],
                                 OPERATORIA: 'ADJUD',
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
@@ -192,10 +191,14 @@ const datosfonavi = await db_debitos.query(
             }, {});
 
         datos = Object.values(agrupados);
-    }
+        }
     console.log('cantidad de elementos:'+ datos.length , 'gastos administrativos FONAVI: ' + datos.length*200)  
     console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
+    
+    /////////////////////////////////////ENVIO PLANES /////////////////////////////////////////////////////////////////////////
+    
+    
     let datosPlanes = await EnvioPlanes.findAll({
                                                     where: {
                                                             COD_DEB: codigo_debito,
@@ -239,6 +242,8 @@ const datosfonavi = await db_debitos.query(
     console.log("Op Planes "+ totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
     datos.push(...datos1)
+
+    /////////////////////////////////////OPERATORIAS 2  /////////////////////////////////////////////////////////////////////////
 
 
     let datosOperatorias2 = await VistaDebitos.findAll({
@@ -389,8 +394,9 @@ async function generartxt(req, res) {
     try {
         let { datos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
 
+
         // Convertimos array a string separado por saltos de línea
-        const filas = datos.map(obj => Object.values(obj).join(",")).join("\n");
+        const filas = datos.map(obj => Object.values(obj).join(" ")).join("\n");
 
         // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
@@ -401,6 +407,7 @@ async function generartxt(req, res) {
         // Escribimos el archivo
         await writeFile(ruta, filas, 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
+        res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
 
     } catch (err) {
         console.error('Error al escribir el archivo:', err);
@@ -469,7 +476,6 @@ async function generartxt(req, res) {
 //}
 
 const paginainicio= async (req,res)=> {
-
    // reportePDFBasico()
     return res.render('main/index', {
          pagina : "GESTION DEBITOS",
