@@ -1,0 +1,230 @@
+
+const generarDebitos = async (codigo_debito, periodo, sigla)=>{
+
+    GlobalenviosOrganismo= codigo_debito
+    Globalperiodo=periodo
+    Globalsigla= sigla
+
+    console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
+
+    const [year, month, day] = periodo.split('-').map(Number)
+
+    console.log ("FECHA SEPADARA", year, month, day)
+
+    const wfecha = new Date(year, month-1, day)
+
+    console.log ("NUEVA DATE DESDE FECHA SEPARADA", wfecha.toLocaleDateString('es-AR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }))
+
+    const ultimoDia = ultimoDiaDelMes(wfecha);
+ 
+    console.log("ULTIMO DIA DEL MES ",ultimoDia.toLocaleDateString('es-AR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }))
+    /////////////////////////////////////DEBITOS FONAVI /////////////////////////////////////////////////////////////////////////
+
+// `SELECT * FROM VISTA_ENVIODEBITOS 
+//    WHERE COD_DEB = :codigoDebito 
+//      AND FEC_ENVIO <= :ultimodiaSQL 
+//      AND FEC_VTO >= :fechaSQL
+//    ORDER BY NRO_AGENTE ASC`,
+
+    
+    const datosfonavi = await db_debitos.query(
+    `SELECT * FROM VISTA_ENVIODEBITOS 
+        WHERE COD_DEB = :codigoDebito
+        AND FEC_ENVIO <= :ultimodiaSQL
+        AND FEC_VTO >= :fechaSQL
+        ORDER BY NRO_AGENTE ASC`,
+
+    {
+        replacements: {
+            codigoDebito: codigo_debito,
+            fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
+            ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
+        },
+        type: db_debitos.QueryTypes.SELECT
+    });
+
+    let totalFonavi= 0
+
+    
+    let datos
+    
+    if (!['11', '34', '37'].includes(codigo_debito)){
+    
+        if(['2', '8'].includes(codigo_debito)){
+                datos = datosfonavi.map(item   => { 
+                    const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
+                    totalFonavi += suma
+                    return {
+                                FECHA: wfecha.toISOString().split('T')[0],
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.DNI_DESC,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad:   1
+                            }
+                    }
+                )
+
+        }else{ 
+                datos = datosfonavi.map(item   => { 
+                    const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
+                    totalFonavi += suma
+                    return {
+                                FECHA: wfecha.toISOString().split('T')[0],
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.NRO_AGENTE,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad:   1
+                            }
+                    }
+                )
+                
+            }          
+    }else{
+        
+        const agrupados = datosfonavi.reduce((acc, item) => {
+        const key = item.NRO_AGENTE;
+        let suma=0
+            if (['11'].includes(codigo_debito)){
+            suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA;
+            }else{
+             suma = item.MTO_CUO + item.MTO_ADIC + item.MTO_DEUDA+1;
+            }   
+        
+        totalFonavi += suma;
+
+        if (!acc[key]) {
+            acc[key] = {
+                                FECHA: wfecha.toISOString().split('T')[0],
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.NRO_AGENTE,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad: 0  // ← contador de registros
+            };
+        }
+
+        acc[key].MTO_CUO += suma;
+        acc[key].cantidad += 1; // ← incrementa por cada registro
+
+            return acc;
+            }, {});
+
+        datos = Object.values(agrupados);
+        }
+    console.log('cantidad de elementos:'+ datos.length , 'gastos administrativos FONAVI: ' + datos.length*200)  
+    console.log("Op Fonavi "+ totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+
+    
+    /////////////////////////////////////ENVIO PLANES /////////////////////////////////////////////////////////////////////////
+    
+    
+    let datosPlanes = await EnvioPlanes.findAll({
+                                                    where: {
+                                                            COD_DEB: codigo_debito,
+                                                            TIPO_PLAN: "C",
+                                                            CONF_PLAN_OFFSET: {
+                                                                                [Op.lte]:   ultimoDia
+                                                                                },
+                                                            VTO_PLAN_OFFSET:   {
+                                                                                [Op.gte]:   ultimoDia
+                                                                                },
+                                                            [Op.and]:           [
+                                                                                where(fn('LEN', col('DNI_DESC')), {
+                                                                                    [Op.gt]: 6
+                                                                                    })
+                                                                                ]
+                                                          } ,
+            order: [['N_TARJETA', 'ASC']]
+        });
+
+    let totalPlanes = 0
+    const datos1 = datosPlanes.map(item   => {
+         const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
+         totalPlanes += suma
+
+                 return {
+
+                         
+                                FECHA: wfecha,
+                                OPERATORIA: 'ADJUD',
+                                COD:        item.COD,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.N_TARJETA,
+                                DNI_DESC:   item.DNI_DESC,
+                                APEYNOM:    item.APEYNOM,                                
+                                MTO_CUO:    suma,                            
+                                cantidad: 0  // ← contador de registros
+                    }
+
+                })
+    console.log("Op Planes "+ totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+
+    datos.push(...datos1)
+
+    /////////////////////////////////////OPERATORIAS 2  /////////////////////////////////////////////////////////////////////////
+
+
+    let datosOperatorias2 = await VistaDebitos.findAll({
+        where: {
+            COD_DEB: codigo_debito,
+          },
+        order: [['agente_debito', 'ASC']]
+        });
+    let totalOperatoria2=0
+    const datos2 = datosOperatorias2.map(item=>{
+        totalOperatoria2 += item.imp_cuota
+        return{
+                                 
+         
+
+
+                                FECHA: wfecha,
+                                OPERATORIA: item.operatoria,
+                                COD:        item.codigo,
+                                COD_DEB:    codigo_debito,
+                                SIGLA:      sigla,    
+                                NRO_AGENTE: item.agente_debito,
+                                DNI_DESC:   item.dni,
+                                APEYNOM:    item.nombre,                                
+                                MTO_CUO:    item.imp_cuota,                            
+                                cantidad: 0  // ← contador de registros
+                                        }
+
+        })
+
+    datos.push(...datos2)
+    console.log("Op Operatorias2 "+ totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("------------------")
+
+    let total= totalFonavi+totalPlanes+totalOperatoria2
+
+    const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
+
+    console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
+
+    return {datos,totalPesos}
+
+}
