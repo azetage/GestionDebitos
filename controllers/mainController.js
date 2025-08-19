@@ -207,13 +207,63 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         })
     console.log("elementos Operatorias2   " + datos2.length + "   total operatorias 2   " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
-    datos.push(...datos2)
-     
-
+    datos.push(...datos2) 
 
     let total= totalFonavi+totalPlanes+totalOperatoria2
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
+    
+    if (['11', '34', '37'].includes(codigo_debito)) {
+
+                const agrupados = datos.reduce((acc, item) => {
+                const key = item.NRO_AGENTE;
+
+                // proteger contra null/undefined
+                const safe = (v) => Number(v) || 0;
+                const monto = safe(item.MTO_CUO); // monto a acumular
+
+                if (!acc[key]) {
+                    acc[key] = {
+                        FECHA:      item.FECHA,
+                        OPERATORIA: item.OPERATORIA,
+                        COD:        item.COD,
+                        COD_DEB:    item.COD_DEB,
+                        SIGLA:      item.SIGLA,    
+                        NRO_AGENTE: item.NRO_AGENTE,
+                        DNI_DESC:   item.DNI_DESC,
+                        APEYNOM:    item.APEYNOM,                                
+                        MTO_CUO:    item.MTO_CUO,                            
+                        cantidad: 0  // ← contador de registros
+                    };
+                }
+
+                acc[key].MTO_CUO += monto;  // acumula la cuota
+                acc[key].cantidad += 1;     // incrementa contador de registros
+
+                return acc;
+            }, {});
+
+            datos = Object.values(agrupados);
+            
+    }
+    
+    if(['2', '8'].includes(codigo_debito)){
+                datos = datos.map(item   => { 
+                    return {
+                                    FECHA:      item.FECHA,
+                                    OPERATORIA: item.OPERATORIA,
+                                    COD:        item.COD,
+                                    COD_DEB:    item.COD_DEB,
+                                    SIGLA:      item.SIGLA,    
+                                    NRO_AGENTE: item.DNI_DESC,
+                                    DNI_DESC:   item.DNI_DESC,
+                                    APEYNOM:    item.APEYNOM,                                
+                                    MTO_CUO:    item.MTO_CUO,                            
+                                    cantidad:   1
+                            }
+                    }
+                )
+    }
 
     console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
 
