@@ -585,9 +585,6 @@ video {
 .grid {
   display: grid;
 }
-.hidden {
-  display: none;
-}
 .h-3 {
   height: 0.75rem;
 }
@@ -780,6 +777,10 @@ video {
   font-size: 0.75rem;
   line-height: 1rem;
 }
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
 .font-bold {
   font-weight: 700;
 }
@@ -809,6 +810,10 @@ video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+.text-blue-500 {
+  --tw-text-opacity: 1;
+  color: rgb(59 130 246 / var(--tw-text-opacity, 1));
 }
 .placeholder-gray-400::-moz-placeholder {
   --tw-placeholder-opacity: 1;
@@ -840,6 +845,20 @@ video {
 .shadow-gray-500\/50 {
   --tw-shadow-color: rgb(107 114 128 / 0.5);
   --tw-shadow: var(--tw-shadow-colored);
+}
+.placeholder\:text-sm::-moz-placeholder {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.placeholder\:text-sm::placeholder {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.placeholder\:italic::-moz-placeholder {
+  font-style: italic;
+}
+.placeholder\:italic::placeholder {
+  font-style: italic;
 }
 .hover\:bg-sky-700:hover {
   --tw-bg-opacity: 1;

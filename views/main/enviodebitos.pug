@@ -44,10 +44,11 @@ block contenido
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 .space-y-5
                     fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold LISTADO DE DEBITOS 
+                        legend.px-3.py-3.mt-2.font-bold Listado Debitos:  
+                            span.text-xl.font-bold.text-blue-500 #{datos[0].SIGLA} - #{datos[0].FECHA}
                         div(class="overflow-y-auto max-h-96")    
                             table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
-                                thead.bg-gray-200.text-gray-500
+                                thead.bg-gray-200.text-gray-500.py-3
                                     tr
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 #
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 OPER
@@ -78,33 +79,33 @@ block contenido
                                              td.italic.border.border-slate-300.px-4= item.cantidad
     
                     h2.py-2.text-center.text-2xl.font-bold.text-white.bg-gray-500(class= "shadow-lg shadow-gray-500/50")= totalPesos
-
+    br
     div(name= 'Generar Excel' class="grid gap-6 mb-3 md:grid-cols-3" )
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 form.space-y-5(action=`/main/index/generarExcel` method="GET")   
                     fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO EXCEL 
+                        legend.px-3.py-3.mt-2.font-bold
                             div
                                 input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Generar EXCEL')
+                                        type= 'submit' value= '   Generar Excel   ')
 
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
        
                 form.space-y-5(action=`/main/index/generarTxt` method="GET")   
                     fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO TXT 
+                        legend.px-3.py-3.mt-2.font-bold 
                             div
                                 input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Generar TXT')
+                                        type= 'submit' value= '   Generar TXT   ')
         
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
        
                 form.space-y-5(action=`/main/index/generarDbf` method="GET")   
                     fieldset.px-10.py-1 
-                        legend.px-3.py-3.mt-2.font-bold GENERAR ARCHIVO DBF 
+                        legend.px-3.py-3.mt-2.font-bold  
                             div
                                 input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                        type= 'submit' value= 'Generar DBF')
+                                        type= 'submit' value= '   Generar DBF   ')
