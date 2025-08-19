@@ -45,7 +45,8 @@ block contenido
                 .space-y-5
                     fieldset.px-10.py-1 
                         legend.px-3.py-3.mt-2.font-bold DEBITOS:   
-                            span.text-xl.font-bold.text-blue-500.px-3 #{datos[0].SIGLA} - #{datos[0].FECHA}
+                            span.text-xl.font-bold.text-blue-500.px-3= datos && datos.length ? `${datos[0].SIGLA} - ${datos[0].FECHA}` : ''
+
                         div(class="overflow-y-auto max-h-96")    
                             table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
                                 thead.bg-gray-200.text-gray-500.py-3

@@ -115,7 +115,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
                                 SIGLA:      sigla,    
-                                NRO_AGENTE: item.DNI_DESC,
+                                NRO_AGENTE: item.NRO_AGENTE,
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
@@ -213,7 +213,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
     
-    if (['11', '34', '37'].includes(codigo_debito)) {
+    if (['11'].includes(codigo_debito)) {
 
                 const agrupados = datos.reduce((acc, item) => {
                 const key = item.NRO_AGENTE;
@@ -247,7 +247,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             
     }
     
-    if(['2', '8'].includes(codigo_debito)){
+    if(['2', '8'].includes(datos[0].COD_DEB)){
                 datos = datos.map(item   => { 
                     return {
                                     FECHA:      item.FECHA,
