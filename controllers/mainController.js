@@ -201,7 +201,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
-                cantidad: 0  // ← contador de registros
+                cantidad:   1  // ← contador de registros
                         }
 
         })
@@ -213,7 +213,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
     
-    if (['11'].includes(codigo_debito)) {
+    if (['7','11'].includes(codigo_debito)) {
 
                 const agrupados = datos.reduce((acc, item) => {
                 const key = item.NRO_AGENTE;
@@ -242,6 +242,12 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
                 return acc;
             }, {});
+            
+            if (['11'].includes(codigo_debito)) {
+                Object.values(agrupados).forEach(item => {
+                item.MTO_CUO += 200;
+                });
+            }    
 
             datos = Object.values(agrupados);
             
@@ -263,6 +269,12 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                             }
                     }
                 )
+    }
+    if (['34','37'].includes(datos[0]?.COD_DEB)) {
+
+         Object.values(datos).forEach(item => {
+            item.MTO_CUO += 1;
+            });
     }
 
     console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
