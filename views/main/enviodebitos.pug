@@ -79,7 +79,12 @@ block contenido
                                             td.italic.border.border-slate-300.px-4= valor                                                                                       
                                              td.italic.border.border-slate-300.px-4= item.cantidad
     
-                    h2.py-2.text-center.text-2xl.font-bold.text-white.bg-gray-500(class= "shadow-lg shadow-gray-500/50")= totalPesos
+                    div(class="grid gap-6 mb-3 md:grid-cols-2 shadow-lg shadow-gray-500/50").py-2.text-center.text-xl.font-bold.bg-gray-200.text-gray-500.py-3
+                        h3 Elementos: #{cant_reg}
+                        h3 Monto Total: #{totalPesos} 
+                            span.text-xs.text-center.pt-2 Sin Gastos Administrativos
+                        
+                        
     br
     div(name= 'Generar Excel' class="grid gap-6 mb-3 md:grid-cols-3" )
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center

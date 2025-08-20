@@ -247,7 +247,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             
     }
     
-    if(['2', '8'].includes(datos[0].COD_DEB)){
+    if (['2', '8'].includes(datos[0]?.COD_DEB)) {
                 datos = datos.map(item   => { 
                     return {
                                     FECHA:      item.FECHA,
@@ -283,7 +283,8 @@ const consultarDebitos = async (req,res)=>{
             pagina :    "ENVIO DEBITOS",
             datos:      debitos.datos,
             Organismos: await ConsultarOrganismos(),
-            totalPesos: debitos.totalPesos
+            totalPesos: debitos.totalPesos,
+            cant_reg:   debitos.datos.length
             })
 }
 
