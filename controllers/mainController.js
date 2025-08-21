@@ -219,8 +219,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 const key = item.NRO_AGENTE;
 
                 // proteger contra null/undefined
-                const safe = (v) => Number(v) || 0;
-                const monto = safe(item.MTO_CUO); // monto a acumular
+                // const safe = (v) => Number(v) || 0;
+                const monto = Number(item.MTO_CUO) || 0;  // asegurar número
 
                 if (!acc[key]) {
                     acc[key] = {
@@ -232,8 +232,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                         NRO_AGENTE: item.NRO_AGENTE,
                         DNI_DESC:   item.DNI_DESC,
                         APEYNOM:    item.APEYNOM,                                
-                        MTO_CUO:    item.MTO_CUO,                            
-                        cantidad: 0  // ← contador de registros
+                        MTO_CUO:    0,                            
+                        cantidad:   0  // ← contador de registros
                     };
                 }
 
@@ -278,7 +278,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     }
 
     console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
-
+    datos.forEach((obj, i) => {
+  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
+})
     return {datos,totalPesos}
 
 }
