@@ -95,6 +95,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const datosfonavi = await db_debitos.query(
     `SELECT * FROM VISTA_ENVIODEBITOS 
         WHERE COD_DEB = :codigoDebito
+        AND FEC_ENVIO <= :ultimodiaSQL 
+        AND FEC_VTO >= :fechaSQL
         ORDER BY NRO_AGENTE ASC`,
 
     {
@@ -212,6 +214,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     let total= totalFonavi+totalPlanes+totalOperatoria2
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
+
+    console.log("CANTIDAD DE REGISTROS SIN AGRUPAR "+datos.length +"--- TOTAL PESOS" + totalPesos)
     
     if (['7','11'].includes(codigo_debito)) {
 
@@ -278,9 +282,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     }
 
     console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
-    datos.forEach((obj, i) => {
-  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
-})
+ //   datos.forEach((obj, i) => {
+//  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
+//})
     return {datos,totalPesos}
 
 }
