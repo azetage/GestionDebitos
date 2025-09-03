@@ -46,7 +46,7 @@ async function  cargarArchivo() {
 }
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
-    console.log(organismos.length)
+   
     return organismos
 }
 
@@ -60,8 +60,13 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     GlobalenviosOrganismo= codigo_debito
     Globalperiodo=periodo
     Globalsigla= sigla
+    console.log("********************************************************************")
+    console.log("******************        TA MACHO         *************************")
+    console.log("********************************************************************")
 
-    
+
+
+
     console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
     const [year, month, day] = periodo.split('-').map(Number)
     console.log ("FECHA SEPADARA", year, month, day)
@@ -86,6 +91,13 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //      AND FEC_VTO >= :fechaSQL
 //    ORDER BY NRO_AGENTE ASC`,
 
+//  if (req.query.compleja_fecha_escritura){
+//         const year = Number(req.query.compleja_fecha_escritura);
+//         const start = new Date(`${year}-01-01T00:00:00Z`);
+//         const end   = new Date(`${year}-12-31T23:59:59Z`);
+                    
+//         where.FECHA_ESCRITURA= { [Op.between]: [start, end] }
+//     }            
     let datos
     let totalFonavi= 0
     let totalPlanes = 0
@@ -216,8 +228,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     let total= totalFonavi+totalPlanes+totalOperatoria2
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
-
-    console.log("CANTIDAD DE REGISTROS SIN AGRUPAR "+datos.length +"--- TOTAL PESOS" + totalPesos)
     
     if (['7','11'].includes(codigo_debito)) {
 
@@ -225,10 +235,10 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 const key = item.NRO_AGENTE;
 
                 // proteger contra null/undefined
-                // const safe = (v) => Number(v) || 0;
-                const monto = Number(item.MTO_CUO) || 0;  // asegurar número
-
-                if (!acc[key]) {
+                 const safe = (v) => Number(v) || 0; 
+                 const monto = safe(item.MTO_CUO); // monto a acumul
+                
+                 if (!acc[key]) {
                     acc[key] = {
                         FECHA:      item.FECHA,
                         OPERATORIA: item.OPERATORIA,
@@ -282,6 +292,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             item.MTO_CUO += 1;
             });
     }
+<<<<<<< HEAD
 
     console.log("CANTIDAD DE REGISTROS "+Object.keys(datos).length +"--- TOTAL PESOS" + totalPesos)
 
@@ -289,6 +300,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
  //   datos.forEach((obj, i) => {
 //  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
 //})
+=======
+    console.log("********************************************************************")
+    console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
+    console.log("********************************************************************")
+>>>>>>> ed979618ba273f6ed0ad3c7f8891c8276ede5f73
     return {datos,totalPesos}
 
 }
