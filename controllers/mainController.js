@@ -148,6 +148,16 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //      AND FEC_ENVIO <= :ultimodiaSQL 
 //      AND FEC_VTO >= :fechaSQL
 //    ORDER BY NRO_AGENTE ASC`,
+
+//  if (req.query.compleja_fecha_escritura){
+//         const year = Number(req.query.compleja_fecha_escritura);
+//         const start = new Date(`${year}-01-01T00:00:00Z`);
+//         const end   = new Date(`${year}-12-31T23:59:59Z`);
+                    
+//         where.FECHA_ESCRITURA= { [Op.between]: [start, end] }
+//     }            
+
+
     let datosPlanes = await db_debitos.query(
         `SELECT * FROM VISTA_ENVIOPLANES 
         WHERE COD_DEB = :codigoDebito
