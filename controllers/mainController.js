@@ -95,9 +95,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const datosfonavi = await db_debitos.query(
     `SELECT * FROM VISTA_ENVIODEBITOS 
         WHERE COD_DEB = :codigoDebito
-        AND FEC_ENVIO <= :ultimodiaSQL 
-        AND FEC_VTO >= :fechaSQL
+        AND FEC_ENVIO <= '2025-09-01' 
+        AND FEC_VTO >= '2025-09-30'
         ORDER BY NRO_AGENTE ASC`,
+
+        
 
     {
         replacements: {
@@ -281,7 +283,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             });
     }
 
-    console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
+    console.log("CANTIDAD DE REGISTROS "+Object.keys(datos).length +"--- TOTAL PESOS" + totalPesos)
+
+    
  //   datos.forEach((obj, i) => {
 //  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
 //})
