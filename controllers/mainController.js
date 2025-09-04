@@ -139,7 +139,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                             }
                     }
                 )
-    console.log("elementos Fonavi   " + datosfonavi.length + "   total fonavi   " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("elementos [Fonavi]   " + datosfonavi.length + "   total [fonavi]   " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
    /////////////////////////////////////DEBITOS PLANES /////////////////////////////////////////////////////////////////////////
     
@@ -195,7 +195,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
                 }
             )
-    console.log("elementos Planes   " + datos1.length + "   total planes   "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("elementos [Planes]   " + datos1.length + "   total [planes]   "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     datos.push(...datos1)
     /////////////////////////////////////DEBITOS OPERATORIAS /////////////////////////////////////////////////////////////////////////  
@@ -231,7 +231,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                         }
 
         })
-    console.log("elementos Operatorias2   " + datos2.length + "   total operatorias 2   " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("elementos [Operatorias2]   " + datos2.length + "   total [operatorias2]   " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     datos.push(...datos2) 
 
@@ -302,19 +302,13 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             item.MTO_CUO += 1;
             });
     }
-<<<<<<< HEAD
 
-    console.log("CANTIDAD DE REGISTROS "+Object.keys(datos).length +"--- TOTAL PESOS" + totalPesos)
+    console.log("CANTIDAD DE REGISTROS    [[ "+Object.keys(datos).length +"]]--- TOTAL PESOS" + totalPesos)
 
     
  //   datos.forEach((obj, i) => {
 //  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
 //})
-=======
-    console.log("********************************************************************")
-    console.log("CANTIDAD DE REGISTROS "+datos.length +"--- TOTAL PESOS" + totalPesos)
-    console.log("********************************************************************")
->>>>>>> ed979618ba273f6ed0ad3c7f8891c8276ede5f73
     return {datos,totalPesos}
 
 }
