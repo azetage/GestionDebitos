@@ -7,6 +7,7 @@ import Organismos from '../models/Organismos.js';
 import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
+import { json } from 'sequelize';
 
 
 global.GlobalenviosOrganismo= ""
@@ -130,7 +131,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                 OPERATORIA: 'ADJUD',
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
-                                SIGLA:      sigla,    
+                                SIGLA:      sigla,
+                                SUCURSAL:   item.SUCURSAL, 
                                 NRO_AGENTE: item.NRO_AGENTE,
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
@@ -185,7 +187,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                 OPERATORIA: 'ADJUD',
                                 COD:        item.COD,
                                 COD_DEB:    codigo_debito,
-                                SIGLA:      sigla,    
+                                SIGLA:      sigla,
+                                SUCURSAL:   item.SUCURSAL,     
                                 NRO_AGENTE: item.N_TARJETA,
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
@@ -222,7 +225,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 OPERATORIA: item.operatoria,
                 COD:        item.codigo,
                 COD_DEB:    codigo_debito,
-                SIGLA:      sigla,    
+                SIGLA:      sigla,
+                SUCURSAL:   item.agente_debito.slice(1,4), 
                 NRO_AGENTE: item.agente_debito,
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
@@ -235,6 +239,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     
     datos.push(...datos2) 
 
+    console.log (JSON.stringify(datos))
+
     let total= totalFonavi+totalPlanes+totalOperatoria2
 
     const totalPesos = total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
@@ -242,7 +248,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     if (['7','11'].includes(codigo_debito)) {
 
                 const agrupados = datos.reduce((acc, item) => {
-                const key = item.NRO_AGENTE;
+                const key =  `${item.SUCURSAL}-${item.NRO_AGENTE}`;
 
                 // proteger contra null/undefined
                  const safe = (v) => Number(v) || 0; 
@@ -253,8 +259,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                         FECHA:      item.FECHA,
                         OPERATORIA: item.OPERATORIA,
                         COD:        item.COD,
-                        COD_DEB:    item.COD_DEB,
+                        COD_DEB:    item.COD_DEB,                        
                         SIGLA:      item.SIGLA,    
+                        SUCURSAL:   item.SUCURSAL,
                         NRO_AGENTE: item.NRO_AGENTE,
                         DNI_DESC:   item.DNI_DESC,
                         APEYNOM:    item.APEYNOM,                                
@@ -286,7 +293,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                     OPERATORIA: item.OPERATORIA,
                                     COD:        item.COD,
                                     COD_DEB:    item.COD_DEB,
-                                    SIGLA:      item.SIGLA,    
+                                    SIGLA:      item.SIGLA,
+                                    SUCURSAL:   item.SUCURSAL,    
                                     NRO_AGENTE: item.DNI_DESC,
                                     DNI_DESC:   item.DNI_DESC,
                                     APEYNOM:    item.APEYNOM,                                
