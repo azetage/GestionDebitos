@@ -13,7 +13,8 @@ import { json } from 'sequelize';
 global.GlobalenviosOrganismo= ""
 global.Globalperiodo=""
 global.Globalsigla=""
-
+global.wfecha= ""
+global.ultimoDia= ""
 function obtenerRutaDescargas(){
     // const home = os.homedir();
     // return path.join(home,'Descargas');
@@ -61,6 +62,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     GlobalenviosOrganismo= codigo_debito
     Globalperiodo=periodo
     Globalsigla= sigla
+
     console.log("********************************************************************")
     console.log("******************        TA MACHO         *************************")
     console.log("********************************************************************")
@@ -71,14 +73,14 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
     const [year, month, day] = periodo.split('-').map(Number)
     console.log ("FECHA SEPADARA", year, month, day)
-    const wfecha = new Date(year, month-1, day)
+    wfecha = new Date(year, month-1, day)
     console.log ("NUEVA DATE DESDE FECHA SEPARADA", wfecha.toLocaleDateString('es-AR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }))
     
-    const ultimoDia = ultimoDiaDelMes(wfecha);
+    ultimoDia = ultimoDiaDelMes(wfecha);
     console.log("ULTIMO DIA DEL MES ",ultimoDia.toLocaleDateString('es-AR', {
                     year: 'numeric',
                     month: '2-digit',
@@ -421,16 +423,26 @@ async function generarDbf() {
 //generarDbf().catch(console.error);
 
 
-
+function a128Caracteres(str) {
+  // Si es más largo, corta a 128
+  str = str.slice(0, 128);
+  // Si es más corto, rellena con espacios al final
+  return str.padEnd(128, "*");
+}
 
 
 async function generartxt(req, res) {
     try {
         let { datos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
 
-
-        // Convertimos array a string separado por saltos de línea
-        const filas = datos.map(obj => Object.values(obj).join(" ")).join("\n");
+                // Convertimos array a string separado por saltos de línea
+        
+        const mes = String(wfecha.getMonth()+1).padStart(2, "0");
+        const diaFin= ultimoDia.getDate()
+        const encabezado= `1315504660048000PE`+mes+"01"+wfecha.getFullYear()+mes+diaFin+'REE'
+              
+        let filas = [a128Caracteres(encabezado)+"\n"]
+        filas.push(...datos.map(obj => a128Caracteres("2"+Object.values(obj))+"\n"));
 
         // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
@@ -439,6 +451,7 @@ async function generartxt(req, res) {
         );
 
         // Escribimos el archivo
+        await writeFile(ruta,'Hola','utf8');
         await writeFile(ruta, filas, 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
         res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
