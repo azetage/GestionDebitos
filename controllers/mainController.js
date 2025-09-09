@@ -424,7 +424,7 @@ function a128Caracteres(str) {
   // Si es más largo, corta a 128
   str = str.slice(0, 128);
   // Si es más corto, rellena con espacios al final
-  return str.padEnd(128, "*");
+  return str.padEnd(128, " ");
 }
 
 
@@ -467,9 +467,12 @@ async function generartxt(req, res) {
     // Pie de Pagina
     const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
     const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
-    const pie = a128Caracteres("3" + String(totalPesosEntero).padStart(15, "0")) + "\n";
+    const cantidad = String(datos.length).padStart(6, "0");
+    const ceros = "0".repeat(21);
+    const pieStr = "3" + String(totalPesosEntero).padStart(15, "0") + cantidad+ceros;
+    const pie = a128Caracteres(pieStr) + "\n";
     filas.push(pie);
-        
+            
     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
