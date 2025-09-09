@@ -461,7 +461,7 @@ async function generartxt(req, res) {
         });
 
         const fila = "2" + valoresOrdenados.join("");
-        return a128Caracteres(fila) + "\n";
+        return a128Caracteres(fila+"0".repeat(9))+"\n";
       })
     );
     // Pie de Pagina
