@@ -17,7 +17,7 @@ global.wfecha= ""
 global.ultimoDia= ""
 
 //////////////////////////////////////////////////
-//////////////////////////////FUNCIONES AUXILIARES
+////////////////////////////// FUNCIONES AUXILIARES
 //////////////////////////////////////////////////
 
 // funcion devuelve ruta de descarga
@@ -78,7 +78,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
-    console.log("=".repeat(150))
+    console.log("=".repeat(68))
 
 //////////////////////////////////////////////////
 //////////////////////////////GENERAR DEBITOS FONAVI
@@ -300,9 +300,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             });
     }
     
-    console.log("=".repeat(150))
+    console.log("=".repeat(68))
     console.log(" CANTIDAD DE REGISTROS    [ "+Object.keys(datos).length +"]--- TOTAL " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
-    console.log("=".repeat(150))
+    console.log("=".repeat(68))
 
     return {datos,totalPesos}
 
