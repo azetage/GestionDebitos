@@ -78,6 +78,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
+    console.log("=".repeat(150))
 
 //////////////////////////////////////////////////
 //////////////////////////////GENERAR DEBITOS FONAVI
@@ -134,7 +135,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                             }
                     }
                 )
-    console.log("elementos [Fonavi]   " + datosfonavi.length + "   total [fonavi]   " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+                
+    console.log(" CONSULTA FONAVI          [" + datosfonavi.length + "]     MONTO: " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
 //////////////////////////////////////////////////
 //////////////////////////////DEBITOS PLANES
@@ -178,7 +180,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
                 }
             )
-    console.log("elementos [Planes]   " + datos1.length + "   total [planes]   "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log(" CONSULTA PLANES          [" + datos1.length + "]     MONTO: "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     datos.push(...datos1)
 
@@ -218,7 +220,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                         }
 
         })
-    console.log("elementos [Operatorias2]   " + datos2.length + "   total [operatorias2]   " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log(" CONSULTA OPERATORIAS2    [" + datos2.length + "]     MONTO: " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     datos.push(...datos2) 
 
@@ -238,7 +240,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const agrupados = datos.reduce((acc, item) => {
         
         // KEY TERNANIO SI CODIGO DEBITO ES 11 UTILIZA EL STRING COMPUESTO - SINO NRO AGENTE
-        const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}` : `${item.NRO_AGENTE}`;
+        const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
         if (!acc[key]) {
             acc[key] = {
                 FECHA:      item.FECHA,
@@ -297,8 +299,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             item.MTO_CUO += 1;
             });
     }
-    console.log("=======================================================")
-    console.log("CANTIDAD DE REGISTROS    [[ "+Object.keys(datos).length +"]]--- TOTAL PESOS " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    
+    console.log("=".repeat(150))
+    console.log(" CANTIDAD DE REGISTROS    [ "+Object.keys(datos).length +"]--- TOTAL " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
+    console.log("=".repeat(150))
+
     return {datos,totalPesos}
 
 }
