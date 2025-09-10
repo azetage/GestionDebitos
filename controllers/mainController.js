@@ -15,37 +15,19 @@ global.Globalperiodo=""
 global.Globalsigla=""
 global.wfecha= ""
 global.ultimoDia= ""
+
+//////////////////////////////////////////////////
+//////////////////////////////FUNCIONES AUXILIARES
+//////////////////////////////////////////////////
+
+// funcion devuelve ruta de descarga
 function obtenerRutaDescargas(){
     // const home = os.homedir();
     // return path.join(home,'Descargas');
     return 'public/descargas'
 }
 
-async function  cargarArchivo() {
-    const fileStream = fs.createReadStream('./uploads/archiveto.txt');
 
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-
-    });
-        let datos= []
-
-    for await (const line of rl){
-        const registro = {
-
-        fec_vto:    line.slice(24,32),
-        cbu:        line.slice(32,40),
-        cbu2:       line.slice(40,54),
-        nro_agente: line.slice(44,53),
-        monto:      line.slice(60,74),
-        codigo:     line.slice(74,81)
-        }
-
-        datos.push(registro)
-    }
-
-}
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
    
@@ -56,6 +38,19 @@ function ultimoDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
 }
 
+//funcion devuelve string con 128 caracteres fijos
+function a128Caracteres(str) {
+  // Si es más largo, corta a 128
+  str = str.slice(0, 128);
+  // Si es más corto, rellena con espacios al final
+  return str.padEnd(128, " ");
+}
+
+
+
+//////////////////////////////////////////////////
+//////////////////////////////FUNCION GENERAR  DEBITO
+//////////////////////////////////////////////////
 
 const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
@@ -66,9 +61,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     console.log("********************************************************************")
     console.log("******************        CONSOLA          *************************")
     console.log("********************************************************************")
-
-
-
 
     console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
     const [year, month, day] = periodo.split('-').map(Number)
@@ -86,7 +78,10 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
-/////////////////////////////////////DEBITOS FONAVI /////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+//////////////////////////////GENERAR DEBITOS FONAVI
+//////////////////////////////////////////////////
 
 // `SELECT * FROM VISTA_ENVIODEBITOS 
 //    WHERE COD_DEB = :codigoDebito 
@@ -110,12 +105,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const datosfonavi = await db_debitos.query(
     `SELECT * FROM VISTA_ENVIODEBITOS 
         WHERE COD_DEB = :codigoDebito
-        AND FEC_ENVIO <= '2025-09-01' 
-        AND FEC_VTO >= '2025-09-30'
+        AND FEC_ENVIO <= :ultimodiaSQL 
         ORDER BY NRO_AGENTE ASC`,
-
-        
-
     {
         replacements: {
             codigoDebito: codigo_debito,
@@ -145,24 +136,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 )
     console.log("elementos [Fonavi]   " + datosfonavi.length + "   total [fonavi]   " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
-   /////////////////////////////////////DEBITOS PLANES /////////////////////////////////////////////////////////////////////////
-    
-   // `SELECT * FROM VISTA_ENVIODEBITOS 
-//    WHERE COD_DEB = :codigoDebito 
-//      AND FEC_ENVIO <= :ultimodiaSQL 
-//      AND FEC_VTO >= :fechaSQL
-//    ORDER BY NRO_AGENTE ASC`,
-
-//  if (req.query.compleja_fecha_escritura){
-//         const year = Number(req.query.compleja_fecha_escritura);
-//         const start = new Date(`${year}-01-01T00:00:00Z`);
-//         const end   = new Date(`${year}-12-31T23:59:59Z`);
-                    
-//         where.FECHA_ESCRITURA= { [Op.between]: [start, end] }
-//     }            
-
-
-    let datosPlanes = await db_debitos.query(
+//////////////////////////////////////////////////
+//////////////////////////////DEBITOS PLANES
+//////////////////////////////////////////////////
+ 
+     let datosPlanes = await db_debitos.query(
         `SELECT * FROM VISTA_ENVIOPLANES 
         WHERE COD_DEB = :codigoDebito
         AND TIPO_PLAN = 'C'
@@ -203,8 +181,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     console.log("elementos [Planes]   " + datos1.length + "   total [planes]   "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     datos.push(...datos1)
-    /////////////////////////////////////DEBITOS OPERATORIAS /////////////////////////////////////////////////////////////////////////  
-    
+
+//////////////////////////////////////////////////
+////////////////////////////// DEBITOS OPERATORIAS2
+//////////////////////////////////////////////////
+
     let datosOperatorias2 = await db_vistaDebitos.query(
         `SELECT * FROM v_debitos 
         WHERE COD_DEB = :codigoDebito
@@ -246,47 +227,51 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
     const totalPesos = total //total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
     
-    if (['7','11'].includes(codigo_debito)) {
 
-                const agrupados = datos.reduce((acc, item) => {
-                const key =  `${item.SUCURSAL}-${item.NRO_AGENTE}`;
 
-                // proteger contra null/undefined
-                 const safe = (v) => Number(v) || 0; 
-                 const monto = safe(item.MTO_CUO); // monto a acumul
-                
-                 if (!acc[key]) {
-                    acc[key] = {
-                        FECHA:      item.FECHA,
-                        OPERATORIA: item.OPERATORIA,
-                        COD:        item.COD,
-                        COD_DEB:    item.COD_DEB,                        
-                        SIGLA:      item.SIGLA,    
-                        SUCURSAL:   item.SUCURSAL,
-                        NRO_AGENTE: item.NRO_AGENTE,
-                        DNI_DESC:   item.DNI_DESC,
-                        APEYNOM:    item.APEYNOM,                                
-                        MTO_CUO:    0,                            
-                        cantidad:   0  // ← contador de registros
-                    };
-                }
+//////////////////////////////////////////////////
+//////////////////////////////AGRUPA POR CODIGO DEBITO
+//////////////////////////////////////////////////
 
-                acc[key].MTO_CUO += monto;  // acumula la cuota
-                acc[key].cantidad += 1;     // incrementa contador de registros
+    if (['25','7','11'].includes(codigo_debito)) {
 
-                return acc;
-            }, {});
-            
-            if (['11'].includes(codigo_debito)) {
-                Object.values(agrupados).forEach(item => {
-                item.MTO_CUO += 200;
-                });
-            }    
+    const agrupados = datos.reduce((acc, item) => {
+        
+        // KEY TERNANIO SI CODIGO DEBITO ES 11 UTILIZA EL STRING COMPUESTO - SINO NRO AGENTE
+        const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}` : `${item.NRO_AGENTE}`;
+        if (!acc[key]) {
+            acc[key] = {
+                FECHA:      item.FECHA,
+                OPERATORIA: item.OPERATORIA,
+                COD:        item.COD,
+                COD_DEB:    item.COD_DEB,
+                SIGLA:      item.SIGLA,
+                SUCURSAL:   item.SUCURSAL,
+                NRO_AGENTE: item.NRO_AGENTE,
+                DNI_DESC:   item.DNI_DESC,
+                APEYNOM:    item.APEYNOM,
+                MTO_CUO:    0,
+                cantidad:   0
+            };
+        }
 
-            datos = Object.values(agrupados);
-            
-    }
+        acc[key].MTO_CUO += Number(item.MTO_CUO) || 0;
+        acc[key].cantidad += 1;
+
+        return acc;
+    }, {});
     
+    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $200 
+    if (codigo_debito === '11') { Object.values(agrupados).forEach(item => item.MTO_CUO += 200); }
+
+    datos = Object.values(agrupados);
+    }
+
+//////////////////////////////////////////////////
+////////////////////////////// CAMBIO DE MAPEO DE DATOS SEGUN ORGANISMO
+//////////////////////////////////////////////////
+
+ 
     if (['2', '8'].includes(datos[0]?.COD_DEB)) {
                 datos = datos.map(item   => { 
                     return {
@@ -305,6 +290,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     }
                 )
     }
+    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $1 
     if (['34','37'].includes(datos[0]?.COD_DEB)) {
 
          Object.values(datos).forEach(item => {
@@ -313,12 +299,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     }
     console.log("=======================================================")
     console.log("CANTIDAD DE REGISTROS    [[ "+Object.keys(datos).length +"]]--- TOTAL PESOS " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
-    //console.log (JSON.stringify(datos[0]))
-
-    
- //   datos.forEach((obj, i) => {
-//  console.log(`${i + 1}: ${JSON.stringify(obj)}\n`)
-//})
     return {datos,totalPesos}
 
 }
@@ -339,17 +319,14 @@ const consultarDebitos = async (req,res)=>{
 
 async function generarExcel (req,res){
 
-
     console.log(GlobalenviosOrganismo+Globalperiodo)
-
-
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
     await DebitosTotales.bulkCreate(datos)
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
-
+    //crear columnas de la hoja1
     worksheet.columns = [
     { header: 'FECHA', key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
     { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
@@ -361,31 +338,49 @@ async function generarExcel (req,res){
     { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
     { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
     { header: 'CANT', key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
-];
+    ];
 
     //agregar Filas
-    datos.forEach(item=>{
-
-    // console.log(item)
-    worksheet.addRow(item)})
-
-    // guardar archivo
-
+    datos.forEach(item=>{   worksheet.addRow(item)  })
+    //guardar archivo
     const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
-
     await workbook.xlsx.writeFile(ruta);
-
     console.log(`excel generado: ${ruta}`)
+    //generar archivo descargable en el Navegador web
     res.download(ruta, `Debitos ${Globalsigla} - ${Globalperiodo} .xls`,
 
             (err) => {
-            if (err) {
-                console.error('Error al descargar el archivo:', err);
-                res.status(500).send('Hubo un problema al descargar el archivo');
-            }
-        })
+                if (err) {
+                    console.error('Error al descargar el archivo:', err);
+                    res.status(500).send('Hubo un problema al descargar el archivo');
+                }
+            })
 }
+async function  cargarArchivo() {
+    const fileStream = fs.createReadStream('./uploads/archiveto.txt');
 
+    const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+
+    });
+        let datos= []
+
+    for await (const line of rl){
+        const registro = {
+
+        fec_vto:    line.slice(24,32),
+        cbu:        line.slice(32,40),
+        cbu2:       line.slice(40,54),
+        nro_agente: line.slice(44,53),
+        monto:      line.slice(60,74),
+        codigo:     line.slice(74,81)
+        }
+
+        datos.push(registro)
+    }
+
+}
 async function generarDbf() {
   // Definir campos de la tabla
   const campos = [
@@ -416,16 +411,9 @@ async function generarDbf() {
   console.log(`Se agregaron ${registros.length} registros`);
   res.download(rutaArchivo,`Debitos ${Globalsigla} - ${Globalperiodo}.dbf`)
 }
-
 //generarDbf().catch(console.error);
 
 
-function a128Caracteres(str) {
-  // Si es más largo, corta a 128
-  str = str.slice(0, 128);
-  // Si es más corto, rellena con espacios al final
-  return str.padEnd(128, " ");
-}
 
 
 async function generartxt(req, res) {
