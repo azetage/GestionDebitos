@@ -7,7 +7,6 @@ import Organismos from '../models/Organismos.js';
 import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
-import { json, STRING } from 'sequelize';
 
 
 global.GlobalenviosOrganismo= ""
@@ -30,7 +29,6 @@ function obtenerRutaDescargas(){
 
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
-   
     return organismos
 }
 
@@ -45,8 +43,12 @@ function a128Caracteres(str) {
   // Si es más corto, rellena con espacios al final
   return str.padEnd(128, " ");
 }
-
-
+function a188Caracteres(str) {
+  // Si es más largo, corta a 188
+  str = str.slice(0, 188);
+  // Si es más corto, rellena con espacios al final
+  return str.padEnd(188, " ");
+}
 
 //////////////////////////////////////////////////
 //////////////////////////////FUNCION GENERAR  DEBITO
@@ -90,13 +92,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //      AND FEC_VTO >= :fechaSQL
 //    ORDER BY NRO_AGENTE ASC`,
 
-//  if (req.query.compleja_fecha_escritura){
-//         const year = Number(req.query.compleja_fecha_escritura);
-//         const start = new Date(`${year}-01-01T00:00:00Z`);
-//         const end   = new Date(`${year}-12-31T23:59:59Z`);
-                    
-//         where.FECHA_ESCRITURA= { [Op.between]: [start, end] }
-//     }            
     let datos
     let totalFonavi= 0
     let totalPlanes = 0
@@ -224,13 +219,15 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     
     datos.push(...datos2) 
 
-
+    let sinagrupar= datos    
     let total= totalFonavi+totalPlanes+totalOperatoria2
-
+    
+    console.log("-".repeat(68))
+    console.log(" CANT REG SIN AGRUPAR    [" +datos.length+ "]     MONTO: " + total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}) )   
     const totalPesos = total //total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
     
 
-
+//    await DebitosTotales.bulkCreate(datos)
 //////////////////////////////////////////////////
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 //////////////////////////////////////////////////
@@ -240,6 +237,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const agrupados = datos.reduce((acc, item) => {
         
         // KEY TERNANIO SI CODIGO DEBITO ES 11 UTILIZA EL STRING COMPUESTO - SINO NRO AGENTE
+        // const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
+
         const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
         if (!acc[key]) {
             acc[key] = {
@@ -304,7 +303,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     console.log(" CANTIDAD DE REGISTROS    [ "+Object.keys(datos).length +"]--- TOTAL " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     console.log("=".repeat(68))
 
-    return {datos,totalPesos}
+    return {datos,totalPesos,sinagrupar}
 
 }
 
@@ -327,7 +326,7 @@ async function generarExcel (req,res){
     console.log(GlobalenviosOrganismo+Globalperiodo)
     let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
-    await DebitosTotales.bulkCreate(datos)
+   
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
@@ -386,37 +385,50 @@ async function  cargarArchivo() {
     }
 
 }
-async function generarDbf() {
-  // Definir campos de la tabla
+
+async function generarDbf(req, res) {
   const campos = [
-    { name: 'FECHA', type: 'D', size: 8 },
+    { name: 'FECHA', type: 'C', size: 8 },
     { name: 'OPERATORIA', type: 'C', size: 20 },
     { name: 'COD', type: 'N', size: 20 },
-    { name: 'COD_DEB', type: 'C', size: 20 },
+    { name: 'COD_DEB', type: 'N', size: 20 },
     { name: 'SIGLA', type: 'C', size: 20 },
-    { name: 'NRO_AGENTE', type: 'C', size: 20 },
-    { name: 'DNI_DESC', type: 'C', size: 20 },
+    { name: 'NRO_AGENTE', type: 'N', size: 20 },
+    { name: 'DNI_DESC', type: 'N', size: 20 },
     { name: 'APEYNOM', type: 'C', size: 20 },
-    { name: 'MTO_CUO', type: 'N', size: 20 },
-    { name: 'cantidad', type: 'N', size: 20 },
+    { name: 'MTO_CUO', type: 'N', size: 20, decimals: 2 },
+    { name: 'cantidad', type: 'N', size: 10 },
   ];
 
-       
-
-
-  // Crear archivo DBF
   const rutaArchivo = path.join(obtenerRutaDescargas(), `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
   const dbf = await DBFFile.create(rutaArchivo, campos);
 
-    console.log(`Archivo DBF creado: ${dbf.path}`);
-    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
-  // Agregar registros
-  await dbf.appendRecords(datos);
+  console.log(`Archivo DBF creado: ${dbf.path}`);
 
+  let { datos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+
+  const registros = datos.map(d => ({
+    FECHA:      String(d.FECHA),
+    OPERATORIA: String(d.OPERATORIA),
+    COD:        Number(d.COD) || 0,
+    COD_DEB:    Number(d.COD_DEB),
+    SIGLA:      String(d.SIGLA),
+    NRO_AGENTE: Number(d.NRO_AGENTE),
+    DNI_DESC:   Number(d.DNI_DESC),
+    APEYNOM:    String(d.APEYNOM),
+    MTO_CUO:    Number(d.MTO_CUO) || 0,
+    cantidad:   Number(d.cantidad) || 0
+  }));
+
+  await dbf.appendRecords(registros);
   console.log(`Se agregaron ${registros.length} registros`);
-  res.download(rutaArchivo,`Debitos ${Globalsigla} - ${Globalperiodo}.dbf`)
+
+  if (res) {
+    res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
+  }
 }
-//generarDbf().catch(console.error);
+
+generarDbf().catch(console.error);
 
 
 
@@ -428,44 +440,112 @@ async function generartxt(req, res) {
     // Fechas
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
+    let filas
 
-    // Encabezado
-    const encabezado = `1315504660048000PE${mes}01${wfecha.getFullYear()}${mes}${diaFin}REE`;
+    //////////////////////////////////////////////////
+    ////////////////////////////// TXT BANCO NACION
+    //////////////////////////////////////////////////
 
-    let filas = [a128Caracteres(encabezado) + "\n"];
+    if(["11"].includes(GlobalenviosOrganismo)){
+        // Encabezado
+        const encabezado = `1315504660048000PE${mes}01${wfecha.getFullYear()}${mes}${diaFin}REE`;
 
-    // Orden de campos
-    const orden = ["SUCURSAL", "NRO_AGENTE", "MTO_CUO"];
+         filas= [a128Caracteres(encabezado) + "\n"];
 
-    filas.push(
-      ...datos.map(obj => {
-        const valoresOrdenados = orden.map(k => {
-          if (k === "SUCURSAL") {
-            return String(obj[k] ?? "").padStart(4, "0") + "CA";
-          }
-          if (k === "NRO_AGENTE") {
-            return String(obj[k] ?? "").padStart(11, "0");
-          }
-          if (k === "MTO_CUO") {
-            const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
-            return String(montoEntero).padStart(15, "0");
-          }
-          return obj[k] ?? "";
-        });
+        // Orden de campos
+        const orden = ["SUCURSAL", "NRO_AGENTE", "MTO_CUO"];
 
-        const fila = "2" + valoresOrdenados.join("");
-        return a128Caracteres(fila+"0".repeat(9))+"\n";
-      })
-    );
-    // Pie de Pagina
-    const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
-    const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
-    const cantidad = String(datos.length).padStart(6, "0");
-    const ceros = "0".repeat(21);
-    const pieStr = "3" + String(totalPesosEntero).padStart(15, "0") + cantidad+ceros;
-    const pie = a128Caracteres(pieStr) + "\n";
-    filas.push(pie);
+        filas.push(
+        ...datos.map(obj => {
+            const valoresOrdenados = orden.map(k => {
+            if (k === "SUCURSAL") {
+                return String(obj[k] ?? "").padStart(4, "0") + "CA";
+            }
+            if (k === "NRO_AGENTE") {
+                return String(obj[k] ?? "").padStart(11, "0");
+            }
+            if (k === "MTO_CUO") {
+                const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
+                return String(montoEntero).padStart(15, "0");
+            }
+            return obj[k] ?? "";
+            });
+
+            const fila = "2" + valoresOrdenados.join("");
+            return a128Caracteres(fila+"0".repeat(9))+"\n";
+        })
+        );
+        // Pie de Pagina
+        const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
+        const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
+        const cantidad = String(datos.length).padStart(6, "0");
+        const ceros = "0".repeat(21);
+        const pieStr = "3" + String(totalPesosEntero).padStart(15, "0") + cantidad+ceros;
+        const pie = a128Caracteres(pieStr) + "\n";
+        filas.push(pie);
+    }   
+    //////////////////////////////////////////////////
+    ////////////////////////////// TXT BANCO SANTIAGO
+    //////////////////////////////////////////////////
+
+    if(["34","37"].includes(GlobalenviosOrganismo)){
+        // Encabezado
+        const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
+        const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
+        const monto=  String(totalPesosEntero).padStart(15, "0")
+        const cantidad = String(datos.length).padStart(8, "0");
+        // Fechas
+        const anio= String(wfecha.getFullYear())
+        const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
+        const diaInicio= "01"
+        const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
+        let tipoCuenta
+        let encabezado 
+        if(["34"].includes(GlobalenviosOrganismo)){
+            encabezado= `0848001${cantidad}${monto}`+" ".repeat(157);
+            tipoCuenta= "50001"
+        }
+        else{
+            encabezado= `0849001${cantidad}${monto}`+" ".repeat(157);
+            tipoCuenta= "30290"
+        }
+
+            filas = [a188Caracteres(encabezado) + "\n"];
+            // Orden de campos
+            const prefijo= anio+mes+diaInicio+(anio+mes+diaFin).repeat(2)+"0".repeat(22)+anio+mes
+
+            const orden = ["MTO_CUO", "COD","NRO_AGENTE"];
+
+            filas.push(
+            ...datos.map(obj => {
+                const valoresOrdenados = orden.map(k => {
+                
+                if (k === "MTO_CUO") {
+                    const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
+                    return String(montoEntero).padStart(14, "0");
+                }
+                if (k === "COD") {
+                return String(obj[k] ?? "").padStart(7, "0") + tipoCuenta
+                }
+                
+                if (k === "NRO_AGENTE") {
+                    return String(obj[k] ?? "").padStart(17, "0");
+                }
             
+                return obj[k] ?? "";
+                });
+
+                const fila = prefijo + valoresOrdenados.join("")+" ".repeat(90)+"02"
+                return a188Caracteres(fila+"\n");
+            }))
+      
+
+
+
+
+
+        }
+    
     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
@@ -483,7 +563,13 @@ async function generartxt(req, res) {
     }
 }
 
+async function grabardatos(req,res){
 
+     let {sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+
+      await DebitosTotales.bulkCreate(sinagrupar)
+
+}
 //async function reportePDFBasico(){
 //     const doc = new jsPDF()
 //     const datos =await consultarDebitos(34)
@@ -573,5 +659,6 @@ export {
     generarDebitos,
     generartxt,
     consultarDebitos,
-    generarDbf
+    generarDbf,
+    grabardatos
 }
