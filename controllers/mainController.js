@@ -564,10 +564,12 @@ async function generartxt(req, res) {
 }
 
 async function grabardatos(req,res){
+    console.log("grabar datos")
+    let {sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
 
-     let {sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
-
-      await DebitosTotales.bulkCreate(sinagrupar)
+     for (const item of sinagrupar) {
+        await DebitosTotales.upsert(item);
+    }
 
 }
 //async function reportePDFBasico(){
