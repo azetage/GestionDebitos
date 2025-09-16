@@ -7,6 +7,7 @@ import Organismos from '../models/Organismos.js';
 import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
+import { Op } from "sequelize";
 
 
 global.GlobalenviosOrganismo= ""
@@ -426,9 +427,11 @@ async function generarDbf(req, res) {
   if (res) {
     res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
   }
+  
+  //generarDbf().catch(console.error);
 }
 
-generarDbf().catch(console.error);
+
 
 
 
@@ -563,15 +566,39 @@ async function generartxt(req, res) {
     }
 }
 
-async function grabardatos(req,res){
-    console.log("grabar datos")
-    let {sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
 
-     for (const item of sinagrupar) {
-        await DebitosTotales.upsert(item);
+
+async function grabardatos(req, res) {
+  console.log("grabar datos");
+
+  try {
+    let { sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+    // Paso 1: borrar coincidencias por COD_DEB y FECHA
+    await DebitosTotales.destroy({
+      where: {
+      COD_DEB : sinagrupar[0].COD_DEB,
+      FECHA:    sinagrupar[0].FECHA   
     }
+    });
 
+    // Paso 2: insertar todos los nuevos registros
+    sinagrupar.forEach(item => {
+    item.FECHA = new Date().toISOString().split('T')[0]; // solo la fecha, sin hora
+    });
+    await DebitosTotales.bulkCreate(sinagrupar);
+
+    // Paso 3: responder al cliente
+    res.render("templates/mensaje", {
+      pagina: "DEBITOS GRABADO EN BASE DE DATOS",
+      mensaje: "¡ Operacion Realizada Satisfactoriamente!",
+      ruta: "/main/enviodebitos"
+    });
+  } catch (error) {
+    console.error("Error en grabardatos:", error);
+
+  }
 }
+
 //async function reportePDFBasico(){
 //     const doc = new jsPDF()
 //     const datos =await consultarDebitos(34)
