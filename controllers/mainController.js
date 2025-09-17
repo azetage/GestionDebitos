@@ -33,6 +33,9 @@ async function ConsultarOrganismos(){
     return organismos
 }
 
+function primerDiaDelMes(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+}
 function ultimoDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
 }
@@ -333,16 +336,17 @@ async function generarExcel (req,res){
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
     //crear columnas de la hoja1
     worksheet.columns = [
-    { header: 'FECHA', key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
+    { header: 'FECHA',      key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
     { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
-    { header: 'CODIGO', key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
+    { header: 'CODIGO',     key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
     { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'SIGLA', key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SIGLA',      key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SUCURSAL',   key: 'SUCURSAL',width: 10,style: { alignment: { horizontal: 'center' } }  },
     { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'DNI', key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
+    { header: 'DNI',        key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
     { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
     { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
-    { header: 'CANT', key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
+    { header: 'CANT',       key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
     ];
 
     //agregar Filas
@@ -541,12 +545,7 @@ async function generartxt(req, res) {
                 const fila = prefijo + valoresOrdenados.join("")+" ".repeat(90)+"02"
                 return a188Caracteres(fila+"\n");
             }))
-      
-
-
-
-
-
+     
         }
     
     // Construimos ruta con nombre de archivo .txt
@@ -554,10 +553,12 @@ async function generartxt(req, res) {
             obtenerRutaDescargas(),
             `Debitos ${Globalsigla} - ${Globalperiodo}.txt`
         );
-
+       let datosaux = datos.map(obj => {
+             return Object.values(obj).map(v => String(v ?? "")).join(" "); 
+            }).join("\n");
         // Escribimos el archivo
-        await writeFile(ruta,'Hola','utf8');
-        await writeFile(ruta, filas, 'utf8');
+        //await writeFile(ruta,'Hola','utf8');
+        await writeFile(ruta, (filas?filas:datosaux), 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
         res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
 
@@ -574,12 +575,18 @@ async function grabardatos(req, res) {
   try {
     let { sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
     // Paso 1: borrar coincidencias por COD_DEB y FECHA
-    await DebitosTotales.destroy({
-      where: {
-      COD_DEB : sinagrupar[0].COD_DEB,
-      FECHA:    sinagrupar[0].FECHA   
+    const inicio= primerDiaDelMes(wfecha)
+    const final = ultimoDiaDelMes(wfecha)
+    
+
+ await DebitosTotales.destroy({
+    where: {
+        COD_DEB: sinagrupar[0].COD_DEB,
+        FECHA: {
+        [Op.between]: [inicio, final]
+        }
     }
-    });
+    })
 
     // Paso 2: insertar todos los nuevos registros
     sinagrupar.forEach(item => {
