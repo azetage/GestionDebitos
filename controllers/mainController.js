@@ -232,7 +232,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const totalPesos = total //total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
     
 
-//    await DebitosTotales.bulkCreate(datos)
 //////////////////////////////////////////////////
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 //////////////////////////////////////////////////
@@ -316,13 +315,18 @@ const consultarDebitos = async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
     let periodo =       req.query.enviosPeriodo
     let debitos = await generarDebitos(codigo_debito,periodo,sigla)
+    let grabados= await consultaGrabados()
 
         return res.render('main/enviodebitos', {
             pagina :    "ENVIO DEBITOS",
             datos:      debitos.datos,
             Organismos: await ConsultarOrganismos(),
             totalPesos: debitos.totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
-            cant_reg:   debitos.datos.length
+            cant_reg:   debitos.datos.length,
+            tablaAux : grabados
+
+
+
             })
 }
 
@@ -622,6 +626,10 @@ async function consultaGrabados(){
       [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
     ],
     group: ['SIGLA','FECHA'],
+    order: [
+        ['FECHA', 'ASC'],   // primero por fecha ascendente
+        ['SIGLA', 'ASC']    // luego por sigla ascendente
+        ],
     raw: true
   });
 }
