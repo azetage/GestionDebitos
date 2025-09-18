@@ -40,7 +40,7 @@ try {
     await db_debitos.authenticate();
 
     console.log('Autenticacion Sincronizado')
-    //db_debitos.sync()
+    db_debitos.sync()
     console.log('Conexion Correcta a la base de datos: Debitos')
     } catch (error) {
     console.log(error)

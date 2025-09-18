@@ -7,7 +7,7 @@ import Organismos from '../models/Organismos.js';
 import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
-import { Op } from "sequelize";
+import { Op, Sequelize} from "sequelize";
 
 
 global.GlobalenviosOrganismo= ""
@@ -27,7 +27,6 @@ function obtenerRutaDescargas(){
     return 'public/descargas'
 }
 
-
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
     return organismos
@@ -36,6 +35,7 @@ async function ConsultarOrganismos(){
 function primerDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth(), 1);
 }
+
 function ultimoDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
 }
@@ -47,6 +47,7 @@ function a128Caracteres(str) {
   // Si es más corto, rellena con espacios al final
   return str.padEnd(128, " ");
 }
+
 function a188Caracteres(str) {
   // Si es más largo, corta a 188
   str = str.slice(0, 188);
@@ -328,9 +329,11 @@ const consultarDebitos = async (req,res)=>{
 async function generarExcel (req,res){
 
     console.log(GlobalenviosOrganismo+Globalperiodo)
-    let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
 
+    //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+   let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
    
+
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
@@ -410,7 +413,8 @@ async function generarDbf(req, res) {
 
   console.log(`Archivo DBF creado: ${dbf.path}`);
 
-  let { datos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+  let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+
 
   const registros = datos.map(d => ({
     FECHA:      String(d.FECHA),
@@ -435,14 +439,15 @@ async function generarDbf(req, res) {
   //generarDbf().catch(console.error);
 }
 
-
-
-
-
-
 async function generartxt(req, res) {
   try {
-    let { datos, totalPesos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+    let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+    let totalPesos=0
+    datos.map(item   => {
+                  totalPesos += item.MTO_CUO}
+                )
+
+    //let { datos, totalPesos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
     console.log(totalPesos)
     // Fechas
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
@@ -554,8 +559,9 @@ async function generartxt(req, res) {
             `Debitos ${Globalsigla} - ${Globalperiodo}.txt`
         );
        let datosaux = datos.map(obj => {
-             return Object.values(obj).map(v => String(v ?? "")).join(" "); 
-            }).join("\n");
+            const plain = obj.get({ plain: true });
+            return Object.values(plain).map(v => String(v ?? "")).join("\t"); // tab en vez de espacio
+        }).join("\n");
         // Escribimos el archivo
         //await writeFile(ruta,'Hola','utf8');
         await writeFile(ruta, (filas?filas:datosaux), 'utf8');
@@ -567,10 +573,7 @@ async function generartxt(req, res) {
     }
 }
 
-
-
 async function grabardatos(req, res) {
-  console.log("grabar datos");
 
   try {
     let { sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
@@ -579,20 +582,24 @@ async function grabardatos(req, res) {
     const final = ultimoDiaDelMes(wfecha)
     
 
- await DebitosTotales.destroy({
-    where: {
-        COD_DEB: sinagrupar[0].COD_DEB,
-        FECHA: {
-        [Op.between]: [inicio, final]
+    await DebitosTotales.destroy({
+        where: {
+            COD_DEB: sinagrupar[0].COD_DEB,
+            FECHA: {
+            [Op.between]: [inicio, final]
+            }
         }
-    }
-    })
+        }
+    )
 
     // Paso 2: insertar todos los nuevos registros
-    sinagrupar.forEach(item => {
-    item.FECHA = new Date().toISOString().split('T')[0]; // solo la fecha, sin hora
-    });
-    await DebitosTotales.bulkCreate(sinagrupar);
+    const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
+    sinagrupar = sinagrupar.map((item) => ({
+        ...item,
+        FECHA: hoy, // actualiza el campo FECHA
+        }));
+    
+        await DebitosTotales.bulkCreate(sinagrupar);
 
     // Paso 3: responder al cliente
     res.render("templates/mensaje", {
@@ -605,6 +612,56 @@ async function grabardatos(req, res) {
 
   }
 }
+
+async function consultaGrabados(){
+  return await DebitosTotales.findAll({
+    attributes: [
+      'FECHA',
+      'SIGLA',
+      [Sequelize.fn('COUNT', Sequelize.col('SIGLA')), 'REGISTOS'],
+      [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
+    ],
+    group: ['SIGLA','FECHA'],
+    raw: true
+  });
+}
+
+async function cierreEjercicio(req,res) {
+  try {
+    const [result] = await db_debitos.query(`
+      INSERT INTO Debitos.dbo.DEBITOS_TOTAL
+          (fecha,tipo,cod,cod_deb,sigla,sucursal,nro_agente,cuil,dni_desc,
+          apeynom,monto, plazo, pago, NRO)
+      SELECT
+          FECHA,
+          LEFT(OPERATORIA, 10) AS tipo,          -- truncar a 10 chars
+          TRY_CAST(COD AS INT) AS cod,           -- string a int
+          TRY_CAST(COD_DEB AS INT) AS cod_deb,   -- string a int
+          LEFT(SIGLA, 3) AS sigla,               -- truncar a 3 chars
+          TRY_CAST(SUCURSAL AS INT) AS sucursal, -- string a int
+          LEFT(NRO_AGENTE, 25) AS nro_agente,    -- truncar a 25 chars
+          NULL AS cuil,                          -- no viene de Aux
+          TRY_CAST(DNI_DESC AS INT) AS dni_desc, -- string a int
+          LEFT(APEYNOM, 35) AS apeynom,          -- truncar a 35 chars
+          MTO_CUO AS monto,                      -- decimal ok
+          TRY_CAST(cantidad AS INT) AS plazo,    -- mapear cantidad a plazo
+          NULL AS pago,                          -- no viene de Aux
+          0 AS NRO                               -- valor por defecto
+      FROM Debitos.dbo.DebitosTotalesAux;
+    `);
+     // Paso 3: responder al cliente
+    res.render("templates/mensaje", {
+      pagina: "DEBITOS GRABADO EN BASE DE DATOS",
+      mensaje: "¡ Operacion Realizada Satisfactoriamente!",
+      ruta: "/main/enviodebitos"
+    })
+   
+  } catch (err) {
+    console.error("Error en cierreEjercicio:", err);
+
+  }
+}
+
 
 //async function reportePDFBasico(){
 //     const doc = new jsPDF()
@@ -678,11 +735,12 @@ const paginainicio= async (req,res)=> {
 const debitosindex = async (req,res)=>{
 
     let Organismos = await ConsultarOrganismos();
-
+    let grabados= await consultaGrabados()
     return res.render('main/enviodebitos', {
         pagina : "ENVIO DEBITOS",
         datos: null,
-        Organismos
+        Organismos,
+        tablaAux : grabados
         })
 
 }
@@ -696,5 +754,6 @@ export {
     generartxt,
     consultarDebitos,
     generarDbf,
-    grabardatos
+    grabardatos,
+    cierreEjercicio
 }

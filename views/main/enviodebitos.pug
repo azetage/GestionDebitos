@@ -9,10 +9,42 @@ block contenido
         div(class="max-w-md mx-auto my-10")
             each error in errores
                 p(class= "bg-red-600 text-white uppercase text-xs text-center p-2 mb-1 font-bold")= error.msg
+    
+    
+    div(name= 'CONSULTA GRABADOS')            
+        div.mt-8.mx-auto.max-w-full.px-6.items-center
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                .space-y-5
+                    fieldset.px-10.py-1 
+                        legend.px-3.py-3.mt-2.font-bold DEBITOS GRABADOS:   
+                           
+                        div(class="overflow-y-auto max-h-96")    
+                            table#TablaDebitos.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
+                                thead.bg-gray-200.text-gray-500.py-3
+                                    tr
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 #
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 FECHA
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 SIGLA
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CANTIDAD DE REGISTROS
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MONTO
+                                    
+                                    tbody
+                                        each item, i in tablaAux || []
+                                            tr.bg-white
+                                            td.italic.border.border-slate-300.px-4 #{i + 1}
+                                            td.italic.border.border-slate-300.px-4= item.FECHA || ''
+                                            td.italic.border.border-slate-300.px-4= item.SIGLA || ''
+                                            td.italic.border.border-slate-300.px-4= item.REGISTOS || 0
+                                            - var valor = (item.MONTO ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
+                                            td.italic.border.border-slate-300.px-4= valor
+                                                                                                            
+                            
+
+    
     div(name= 'busqueda_principal')
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
 
-            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+            .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 form.space-y-5(method= "GET" action="/main/enviodebitos/consultasDebito" name="formConsulta" noValidate)
                     fieldset.px-10.py-1 
                         legend.px-3.py-3.mt-2.font-bold  CONSULTA POR ORGANISMO 
@@ -87,48 +119,61 @@ block contenido
                             span.text-xs.text-center.pt-2 Con Gastos Administrativos
                         
                         
-    br
-    .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-        div.grid.grid-cols-1.sm.grid-cols-2.lg.grid-cols-4.gap-6
-        
-            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                    form.space-y-5(action=`/main/index/generarExcel` method="GET")   
-                        fieldset.px-10.py-1 
-                            legend.px-3.py-3.mt-2.font-bold
-                                div
-                                    input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                            type= 'submit' value= '   Generar Excel   ')
+    div(name= 'busqueda_principal')
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
 
-            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-        
-                    form.space-y-5(action=`/main/index/generarTxt` method="GET")   
-                        fieldset.px-10.py-1 
-                            legend.px-3.py-3.mt-2.font-bold 
-                                div
-                                    input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                            type= 'submit' value= '   Generar TXT   ')
-            
-            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-        
-                    form.space-y-5(action=`/main/index/generarDbf` method="GET")   
-                        fieldset.px-10.py-1 
-                            legend.px-3.py-3.mt-2.font-bold  
-                                div
-                                    input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                            type= 'submit' value= '   Generar DBF   ')
-            
-            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-        
-                    form.space-y-5(action=`/main/index/grabardatos` method="GET")   
-                        fieldset.px-10.py-1 
-                            legend.px-3.py-3.mt-2.font-bold  
-                                div
-                                    input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
-                                            type= 'submit' value= '   Grabar   ')
+    
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                div.grid.grid-cols-1.sm.grid-cols-2.lg.grid-cols-5.gap-6
+                
+                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                            form.space-y-5(action=`/main/index/generarExcel` method="GET")   
+                                fieldset.px-10.py-1 
+                                    legend.px-3.py-3.mt-2.font-bold
+                                        div
+                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                    type= 'submit' value= '   Generar Excel   ')
+
+                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                
+                            form.space-y-5(action=`/main/index/generarTxt` method="GET")   
+                                fieldset.px-10.py-1 
+                                    legend.px-3.py-3.mt-2.font-bold 
+                                        div
+                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                    type= 'submit' value= '   Generar TXT   ')
+                    
+                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                
+                            form.space-y-5(action=`/main/index/generarDbf` method="GET")   
+                                fieldset.px-10.py-1 
+                                    legend.px-3.py-3.mt-2.font-bold  
+                                        div
+                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                    type= 'submit' value= '   Generar DBF   ')
+                    
+                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                
+                            form.space-y-5(action=`/main/index/grabardatos` method="GET")   
+                                fieldset.px-10.py-1 
+                                    legend.px-3.py-3.mt-2.font-bold  
+                                        div
+                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-blue-500 hover:bg-blue-700 focus:outline-2 focus:outline-offset-2 focus:outline-blue-500 active:bg-blue-700" 
+                                                    type= 'submit' value= '   Grabar   ')
+
+                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                
+                            form.space-y-5(action=`/main/index/cierreejercicio` method="GET")   
+                                fieldset.px-10.py-1 
+                                    legend.px-3.py-3.mt-2.font-bold  
+                                        div
+                                            input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
+                                                    type= 'submit' value= '   Cierre ejercicio   ')
 
 
 
