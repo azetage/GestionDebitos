@@ -310,6 +310,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     return {datos,totalPesos,sinagrupar}
 
 }
+const seleccionarGrabados= async (req,res)=>{
+let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+GlobalenviosOrganismo= codigo_debito
+Globalsigla= sigla
+}
 
 const consultarDebitos = async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
@@ -763,5 +768,6 @@ export {
     consultarDebitos,
     generarDbf,
     grabardatos,
-    cierreEjercicio
+    cierreEjercicio,
+    seleccionarGrabados
 }
