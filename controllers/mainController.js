@@ -314,6 +314,16 @@ const seleccionarGrabados= async (req,res)=>{
 let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
 GlobalenviosOrganismo= codigo_debito
 Globalsigla= sigla
+console.log("selecciono "+ GlobalenviosOrganismo)
+    
+    return res.render('main/enviodebitos', {
+            pagina :    "ENVIO DEBITOS",
+            Organismos: await ConsultarOrganismos(),
+            tablaAux :  await consultaGrabados(),
+            selecion: "CODIGO DEBITO: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
+
+            })
+
 }
 
 const consultarDebitos = async (req,res)=>{
@@ -328,11 +338,9 @@ const consultarDebitos = async (req,res)=>{
             Organismos: await ConsultarOrganismos(),
             totalPesos: debitos.totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
             cant_reg:   debitos.datos.length,
-            tablaAux : grabados
-
-
-
+            tablaAux :  grabados
             })
+
 }
 
 async function generarExcel (req,res){
