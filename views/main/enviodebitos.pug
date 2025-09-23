@@ -127,7 +127,7 @@ block contenido
     div(name= 'Generar_Documentacion')
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
             .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                form.space-y-5(method= "GET" action="/main/enviodebitos/seleccionarGrabados" name="formConsulta" noValidate)
+                form.space-y-5(method= "GET"  name="formConsulta" noValidate)
                         fieldset.px-10.py-1 
                             legend.px-3.py-3.mt-2.font-bold  ORGANISMO GRABADOS: 
 
@@ -143,8 +143,12 @@ block contenido
                                                 
                                                             
                                     div(class= "inline-flex flex flex-row")
-                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                type= 'submit' value= 'SELECCIONAR')  
+                                            input(   formaction="/main/enviodebitos/seleccionarGrabados" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                type= 'submit' value= 'SELECCIONAR')
+
+                                    div(class= "inline-flex flex flex-row")
+                                            input(    formaction="/main/index/generarExcel" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                type= 'submit' value= 'GENERAR CONSULTA')   
 
 
             
@@ -152,7 +156,7 @@ block contenido
                 
                     div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                            form.space-y-5(action=`/main/index/generarExcel` method="GET")   
+                            form.space-y-5(action='/main/index/generarExcelFormateado' method="GET")   
                                 fieldset.px-10.py-1 
                                     legend.px-3.py-3.mt-2.font-bold
                                         div

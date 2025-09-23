@@ -1,6 +1,6 @@
 import express from 'express';
 
-import {paginainicio, generarExcel, debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
+import {paginainicio, generarExcel, generarExcelFormateado,debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
 } from '../controllers/mainController.js';
 
 //crear app
@@ -14,6 +14,7 @@ router.get('/enviodebitos',debitosindex)
 router.get('/enviodebitos/consultasDebito', consultarDebitos)
 router.get('/enviodebitos/seleccionarGrabados', seleccionarGrabados)
 router.get('/index/generarExcel',generarExcel)
+router.get('/index/generarExcelFormateado',generarExcelFormateado)
 router.get('/index/generarTxt', generartxt)
 router.get('/index/generarDbf', generarDbf)
 router.get('/index/grabardatos', grabardatos)

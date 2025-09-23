@@ -377,6 +377,61 @@ async function generarExcel (req,res){
                 }
             })
 }
+async function generarExcelFormateado (req,res){
+
+    console.log(GlobalenviosOrganismo+Globalperiodo)
+
+    //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+   let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+    //crear archivo excel
+    const workbook= new ExcelJS.Workbook();
+    const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
+    
+    ///////////////////
+    /////EXCEL FORMATO DIO
+    //////////////////
+    if (['2'].includes(GlobalenviosOrganismo)){
+    //crear columnas de la hoja1
+    worksheet.columns = [
+        { header: 'CODIGO',     key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
+        { header: 'DNI',        key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+        { header: 'SEXO',       key: 'SEXO',       width: 10,  style: { alignment: { horizontal: 'center' } }  },
+        { header: 'FECHA',      key: 'FECHA',       width: 15,  style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
+        { header: 'IMPORTE',    key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },  
+    ];
+
+
+    // agregar filas con CODIGO fijo en 257
+    datos.forEach(item => {
+        worksheet.addRow({
+            CODAUX: '257', // valor fijo
+            DNI_DESC: item.DNI_DESC,
+            SEXO: " * ",
+            FECHA: item.FECHA,
+            MTO_CUO: item.MTO_CUO
+        });
+    });
+    
+    //guardar archivo
+    const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
+    await workbook.xlsx.writeFile(ruta);
+    console.log(`excel generado: ${ruta}`)
+    
+    //generar archivo descargable en el Navegador web
+    res.download(ruta, `Debitos ${Globalsigla} - ${Globalperiodo} .xls`,
+        (err) => {
+                if (err) {
+                    console.error('Error al descargar el archivo:', err);
+                    res.status(500).send('Hubo un problema al descargar el archivo');
+                }
+            })
+
+    }
+ 
+
+
+
+}
 async function  cargarArchivo() {
     const fileStream = fs.createReadStream('./uploads/archiveto.txt');
 
@@ -769,5 +824,6 @@ export {
     generarDbf,
     grabardatos,
     cierreEjercicio,
-    seleccionarGrabados
+    seleccionarGrabados,
+    generarExcelFormateado
 }
