@@ -320,7 +320,7 @@ console.log("selecciono "+ GlobalenviosOrganismo)
             pagina :    "ENVIO DEBITOS",
             Organismos: await ConsultarOrganismos(),
             tablaAux :  await consultaGrabados(),
-            selecion: "CODIGO DEBITO: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
+            selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
 
             })
 
@@ -522,6 +522,8 @@ async function generartxt(req, res) {
     //let { datos, totalPesos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
     console.log(totalPesos)
     // Fechas
+    let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
+    let ultimoDia =ultimoDiaDelMes(wfecha)
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
     let filas
