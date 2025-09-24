@@ -396,30 +396,64 @@ async function generarExcelFormateado (req,res){
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
     
     ///////////////////
-    /////EXCEL FORMATO DIO
+    /////EXCEL FORMATO DIO / EDU
     //////////////////
-    if (['2'].includes(GlobalenviosOrganismo)){
-    //crear columnas de la hoja1
-    worksheet.columns = [
-        { header: 'CODIGO',     key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
-        { header: 'DNI',        key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
-        { header: 'SEXO',       key: 'SEXO',       width: 10,  style: { alignment: { horizontal: 'center' } }  },
-        { header: 'FECHA',      key: 'FECHA',       width: 15,  style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
-        { header: 'IMPORTE',    key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },  
-    ];
+    let codigoAuxiliar 
 
-
-    // agregar filas con CODIGO fijo en 257
-    datos.forEach(item => {
-        worksheet.addRow({
-            CODAUX: '257', // valor fijo
-            DNI_DESC: item.DNI_DESC,
-            SEXO: " * ",
-            FECHA: item.FECHA,
-            MTO_CUO: item.MTO_CUO
+    if (['2'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '257'} 
+    if (['8'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '4721'}
+    if(['2','8'].includes(GlobalenviosOrganismo)){
+        //crear columnas de la hoja1
+        worksheet.columns = [
+            { header: 'CODIGO',         key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'DOCUMENTO',      key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'SEXO',           key: 'SEXO',       width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'FECHA',          key: 'FECHA',       width: 15,  style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
+            { header: 'IMPORTE',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },  
+            { header: 'NUMERO CREDITO', key: 'NRO_AGENTE',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'NUMERO CUOTA',   key: 'CUOTA',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+        ];
+        // agregar filas con CODIGO fijo en 257
+        datos.forEach(item => {
+            worksheet.addRow({
+                CODAUX: codigoAuxiliar, // valor fijo
+                DNI_DESC: item.DNI_DESC,
+                SEXO: " * ",
+                FECHA: item.FECHA,
+                MTO_CUO: item.MTO_CUO,
+                NRO_AGENTE : item.NRO_AGENTE
+            });
         });
-    });
-    
+    }
+
+    ///////////////////
+    /////EXCEL FORMATO CAP / SEN
+    //////////////////
+
+     if(['7','55'].includes(GlobalenviosOrganismo)){
+        //crear columnas de la hoja1
+        worksheet.columns = [
+            { header: 'NRO AGENTE',         key: 'NRO_AGENTE',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'APELLIDO Y NOMBRE',  key: 'APEYNOM',width: 40 },
+            { header: 'DNI',                key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'MONTO',              key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
+            
+        ];
+        // agregar filas con CODIGO fijo en 257
+        datos.forEach(item=>{ worksheet.addRow(item) })
+        // datos.forEach(item => {
+        //     worksheet.addRow({
+        //         CODAUX: codigoAuxiliar, // valor fijo
+        //         DNI_DESC: item.DNI_DESC,
+        //         SEXO: " * ",
+        //         FECHA: item.FECHA,
+        //         MTO_CUO: item.MTO_CUO,
+        //         NRO_AGENTE : item.NRO_AGENTE
+        //     });
+        // });
+    }
+
+
     //guardar archivo
     const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
     await workbook.xlsx.writeFile(ruta);
@@ -439,7 +473,7 @@ async function generarExcelFormateado (req,res){
 
 
 
-}
+
 async function  cargarArchivo() {
     const fileStream = fs.createReadStream('./uploads/archiveto.txt');
 
