@@ -188,19 +188,22 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 ////////////////////////////// DEBITOS OPERATORIAS2
 //////////////////////////////////////////////////
 
-    let datosOperatorias2 = await db_vistaDebitos.query(
-        `SELECT * FROM v_debitos 
-        WHERE COD_DEB = :codigoDebito
-        ORDER BY agente_debito ASC`,
 
+//   `SELECT * FROM v_debitos 
+//         WHERE COD_DEB = :codigoDebito
+//         ORDER BY agente_debito ASC`
+
+   let datosOperatorias2 = await db_vistaDebitos.query(
+    `EXEC obtenerDebitos @anio=:anio, @mes=:mes, @cod_deb=:codigoDebito`,
     {
         replacements: {
             codigoDebito: codigo_debito,
-            fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
-            ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
+            anio: wfecha.getFullYear(),           // año (2025)
+            mes:  wfecha.getMonth() + 1           // mes (1-12)
         },
-        type: db_debitos.QueryTypes.SELECT
-    });
+        type: db_vistaDebitos.QueryTypes.SELECT
+    }
+);
 
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
@@ -236,7 +239,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 //////////////////////////////////////////////////
 
-    if (['25','7','11'].includes(codigo_debito)) {
+    if (['25','7','11','48'].includes(codigo_debito)) {
 
     const agrupados = datos.reduce((acc, item) => {
         
@@ -268,7 +271,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     
     // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $200 
     if (codigo_debito === '11') { Object.values(agrupados).forEach(item => item.MTO_CUO += 200); }
-
+    if (codigo_debito === '48') { Object.values(agrupados).forEach(item => item.MTO_CUO += 25); }
+    
     datos = Object.values(agrupados);
     }
 
@@ -439,18 +443,9 @@ async function generarExcelFormateado (req,res){
             { header: 'MONTO',              key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
             
         ];
-        // agregar filas con CODIGO fijo en 257
+        // agregar filas 
         datos.forEach(item=>{ worksheet.addRow(item) })
-        // datos.forEach(item => {
-        //     worksheet.addRow({
-        //         CODAUX: codigoAuxiliar, // valor fijo
-        //         DNI_DESC: item.DNI_DESC,
-        //         SEXO: " * ",
-        //         FECHA: item.FECHA,
-        //         MTO_CUO: item.MTO_CUO,
-        //         NRO_AGENTE : item.NRO_AGENTE
-        //     });
-        // });
+        
     }
 
 
@@ -559,7 +554,9 @@ async function generartxt(req, res) {
     let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
     let ultimoDia =ultimoDiaDelMes(wfecha)
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(wfecha.getDay).padStart(2,"0")
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
+
     let filas
 
     //////////////////////////////////////////////////
@@ -660,8 +657,35 @@ async function generartxt(req, res) {
             }))
      
         }
+
+    //////////////////////////////////////////////////
+    ////////////////////////////// TXT BANCO GALICIA
+    //////////////////////////////////////////////////
+
+    if(["48"].includes(GlobalenviosOrganismo)){
+        const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
+        const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
+        
+        // Encabezado
+
+        const tiporeg = "0001"
+        const nroprest = "0037"
+        const servicio = "C"
+        const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
+        const idarchivo = "1"
+        const origen = "EMPRESA"
+        const importetotal = String(totalPesosEntero).padStart(14, "0")
+        const cantreg = String(datos.length).padStart(7,"0")
+        const espacios = "*".repeat(304)
+        const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
+        
+        filas= [encabezado + "\n"];
     
-    // Construimos ruta con nombre de archivo .txt
+    
+    
+    
+    }
+        // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
             `Debitos ${Globalsigla} - ${Globalperiodo}.txt`
