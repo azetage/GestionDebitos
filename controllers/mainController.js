@@ -33,11 +33,11 @@ async function ConsultarOrganismos(){
 }
 
 function primerDiaDelMes(fecha) {
-  return new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+  return new Date(fecha.getFullYear(), fecha.getMonth(), 1)
 }
 
 function ultimoDiaDelMes(fecha) {
-  return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+  return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0)
 }
 
 //funcion devuelve string con 128 caracteres fijos
@@ -214,8 +214,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 COD:        item.codigo,
                 COD_DEB:    codigo_debito,
                 SIGLA:      sigla,
-                SUCURSAL:   item.agente_debito.slice(1,4), 
-                NRO_AGENTE: item.agente_debito,
+                SUCURSAL:   item.agente_debito.slice(0,4), 
+                NRO_AGENTE: item.agente_debito.slice(4,item.agente_debito.length),
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
@@ -706,23 +706,32 @@ async function generartxt(req, res) {
 }
 
 async function grabardatos(req, res) {
-
-  try {
+console.log("boton grabar")
+try {
     let { sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
-    // Paso 1: borrar coincidencias por COD_DEB y FECHA
-    const inicio= primerDiaDelMes(wfecha)
-    const final = ultimoDiaDelMes(wfecha)
+
+    if (!sinagrupar || sinagrupar.length === 0) {
+        throw new Error("No se encontraron registros en generarDebitos");
+    }
+
+    const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
+    const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
     
+
+    console.log(sinagrupar[0])
+    console.log(inicio,final)
 
     await DebitosTotales.destroy({
         where: {
             COD_DEB: sinagrupar[0].COD_DEB,
             FECHA: {
-            [Op.between]: [inicio, final]
+                [Op.between]: [inicio, final]
             }
         }
-        }
-    )
+    });
+
+    
+
 
     // Paso 2: insertar todos los nuevos registros
     const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
