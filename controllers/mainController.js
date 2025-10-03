@@ -9,10 +9,13 @@ import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
 import { Op, Sequelize} from "sequelize";
 
+global.globalDatosSinAgrup= ""
+global.globalDatosAgrup= ""
 
 global.GlobalenviosOrganismo= ""
 global.Globalperiodo=""
 global.Globalsigla=""
+
 global.wfecha= ""
 global.ultimoDia= ""
 
@@ -55,6 +58,12 @@ function a188Caracteres(str) {
   return str.padEnd(188, " ");
 }
 
+
+
+
+
+
+
 //////////////////////////////////////////////////
 //////////////////////////////FUNCION GENERAR  DEBITO
 //////////////////////////////////////////////////
@@ -64,20 +73,12 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     GlobalenviosOrganismo= codigo_debito
     Globalperiodo=periodo
     Globalsigla= sigla
+   
+    console.log("DATOS DE ENTRADA : codigo debito "+ codigo_debito+" periodo :" +periodo )
 
-    console.log("********************************************************************")
-    console.log("******************        CONSOLA          *************************")
-    console.log("********************************************************************")
-
-    console.log("codigo debito "+ codigo_debito+" periodo :" +periodo )
     const [year, month, day] = periodo.split('-').map(Number)
-    console.log ("FECHA SEPADARA", year, month, day)
     wfecha = new Date(year, month-1, day)
-    console.log ("NUEVA DATE DESDE FECHA SEPARADA", wfecha.toLocaleDateString('es-AR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }))
+    
     
     ultimoDia = ultimoDiaDelMes(wfecha);
     console.log("ULTIMO DIA DEL MES ",ultimoDia.toLocaleDateString('es-AR', {
@@ -85,7 +86,16 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
-    console.log("=".repeat(68))
+   
+
+
+   // Array con Objeto de consulta Debitos
+    let datos
+    // Acumuladores de Monto Total Generado por Operatoria
+    
+    let totalFonavi= 0
+    let totalPlanes = 0
+    let totalOperatoria2=0
 
 //////////////////////////////////////////////////
 //////////////////////////////GENERAR DEBITOS FONAVI
@@ -97,12 +107,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //      AND FEC_VTO >= :fechaSQL
 //    ORDER BY NRO_AGENTE ASC`,
 
-    let datos
-    let totalFonavi= 0
-    let totalPlanes = 0
-    let totalOperatoria2=0
-    
-    // MAPEO FONAVI
+
+// consulta Vista EnvioDebitos
     const datosfonavi = await db_debitos.query(
     `SELECT * FROM VISTA_ENVIODEBITOS 
         WHERE COD_DEB = :codigoDebito
@@ -117,6 +123,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         type: db_debitos.QueryTypes.SELECT
     });
 
+//Mapeo Datos ViviendaFonavi
     datos = datosfonavi.map(item   => { 
                     const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
                     totalFonavi += suma
@@ -135,13 +142,15 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                             }
                     }
                 )
-                
+    // respuesta de consulta.
     console.log(" CONSULTA FONAVI          [" + datosfonavi.length + "]     MONTO: " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
 //////////////////////////////////////////////////
 //////////////////////////////DEBITOS PLANES
 //////////////////////////////////////////////////
- 
+
+
+// consulta Envio Planes
      let datosPlanes = await db_debitos.query(
         `SELECT * FROM VISTA_ENVIOPLANES 
         WHERE COD_DEB = :codigoDebito
@@ -158,7 +167,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         },
         type: db_debitos.QueryTypes.SELECT
     });
-
+//Mapeo Datos Operatoria Planes 
     let datos1 = datosPlanes.map(item   => {
          const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
          totalPlanes += suma
@@ -180,19 +189,18 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
                 }
             )
+    // respuesta de la consulta Planes        
     console.log(" CONSULTA PLANES          [" + datos1.length + "]     MONTO: "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
+    //Agregar Elementos de consulta debitos Planes en array Datos
     datos.push(...datos1)
+
 
 //////////////////////////////////////////////////
 ////////////////////////////// DEBITOS OPERATORIAS2
 //////////////////////////////////////////////////
 
-
-//   `SELECT * FROM v_debitos 
-//         WHERE COD_DEB = :codigoDebito
-//         ORDER BY agente_debito ASC`
-
+// consulta Operatorias2
    let datosOperatorias2 = await db_vistaDebitos.query(
     `EXEC obtenerDebitos @anio=:anio, @mes=:mes, @cod_deb=:codigoDebito`,
     {
@@ -205,6 +213,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     }
 );
 
+// Mapeo de datos de Operatorias 2
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
         return{
@@ -223,22 +232,31 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                         }
 
         })
+    //respuesta de la consulta de debitos de Operatorias2
     console.log(" CONSULTA OPERATORIAS2    [" + datos2.length + "]     MONTO: " + totalOperatoria2.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
+    // agregar elemntos de la consulta de operatorias a array datos
     datos.push(...datos2) 
 
-    let sinagrupar= datos    
-    let total= totalFonavi+totalPlanes+totalOperatoria2
+    const sinagrupar= datos    
+    const MontoTotalSinAgrupar= totalFonavi+totalPlanes+totalOperatoria2
     
     console.log("-".repeat(68))
-    console.log(" CANT REG SIN AGRUPAR    [" +datos.length+ "]     MONTO: " + total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}) )   
-    const totalPesos = total //total.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2});
-    
+    console.log(" CANT REG SIN AGRUPAR    [" +datos.length+ "]     MONTO: " + MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}) )   
+       
+return {MontoTotalSinAgrupar,sinagrupar}
+
+}
 
 //////////////////////////////////////////////////
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 //////////////////////////////////////////////////
 
+function agruparCodigoDebito(datos){
+   
+    console.log("\n datos sin agrupar: "+ JSON.stringify(datos?datos[0]:"vacio")+"\n" )
+    const codigo_debito = datos[0]? datos[0].COD_DEB:""
+    console.log(codigo_debito)
     if (['25','7','11','48'].includes(codigo_debito)) {
 
     const agrupados = datos.reduce((acc, item) => {
@@ -306,46 +324,64 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
             item.MTO_CUO += 1;
             });
     }
-    
     console.log("=".repeat(68))
-    console.log(" CANTIDAD DE REGISTROS    [ "+Object.keys(datos).length +"]--- TOTAL " + totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
-    console.log("=".repeat(68))
+    console.log(" CANTIDAD DE REGISTROS AGRUPADOS    [ "+Object.keys(datos).length+"]" )
 
-    return {datos,totalPesos,sinagrupar}
-
+    let MontoTotalAgrupados=0
+    Object.values(datos).forEach(item => {
+            MontoTotalAgrupados+=item.MTO_CUO ;
+            });
+    console.log(MontoTotalAgrupados)        
+    return {datos,MontoTotalAgrupados}
+ 
 }
-const seleccionarGrabados= async (req,res)=>{
-let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-GlobalenviosOrganismo= codigo_debito
-Globalsigla= sigla
-console.log("selecciono "+ GlobalenviosOrganismo)
-    
-    return res.render('main/enviodebitos', {
-            pagina :    "ENVIO DEBITOS",
-            Organismos: await ConsultarOrganismos(),
-            tablaAux :  await consultaGrabados(),
-            selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
 
-            })
 
-}
 
 const consultarDebitos = async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
     let periodo =       req.query.enviosPeriodo
-    let debitos = await generarDebitos(codigo_debito,periodo,sigla)
+    
+    let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
+    let {datos,MontoTotalAgrupados}=  agruparCodigoDebito(sinagrupar)
+
+    globalDatosSinAgrup =   sinagrupar
+    globalDatosAgrup    =   datos
+  
+   
     let grabados= await consultaGrabados()
+
 
         return res.render('main/enviodebitos', {
             pagina :    "ENVIO DEBITOS",
-            datos:      debitos.datos,
+            datos:      datos,
             Organismos: await ConsultarOrganismos(),
-            totalPesos: debitos.totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
-            cant_reg:   debitos.datos.length,
+            Reg_SinAgrup: sinagrupar.length,
+            total_SinAgrup: MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
+            Total_Agrup: MontoTotalAgrupados.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
+            Reg_Agrup:   datos.length,
             tablaAux :  grabados
+            
             })
 
 }
+const seleccionarGrabados= async (req,res)=>{
+    let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+    GlobalenviosOrganismo= codigo_debito
+    Globalsigla= sigla
+    console.log("selecciono "+ GlobalenviosOrganismo)
+        
+        return res.render('main/enviodebitos', {
+                pagina :    "ENVIO DEBITOS",
+                Organismos: await ConsultarOrganismos(),
+                tablaAux :  await consultaGrabados(),
+                selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
+
+                })
+
+}
+
+
 
 async function generarExcel (req,res){
 
@@ -389,12 +425,27 @@ async function generarExcel (req,res){
                 }
             })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function generarExcelFormateado (req,res){
 
-    console.log(GlobalenviosOrganismo+Globalperiodo)
-
     //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
-   let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+   let Aux = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+   let {datos} = agruparCodigoDebito(Aux)
+   
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
@@ -447,8 +498,26 @@ async function generarExcelFormateado (req,res){
         datos.forEach(item=>{ worksheet.addRow(item) })
         
     }
+    if(!['7','55','2','8'].includes(GlobalenviosOrganismo)){
+     //crear columnas de la hoja1
+    worksheet.columns = [
+    { header: 'FECHA',      key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
+    { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
+    { header: 'CODIGO',     key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
+    { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SIGLA',      key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SUCURSAL',   key: 'SUCURSAL',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'DNI',        key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
+    { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
+    { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
+    { header: 'CANT',       key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
+    ];
 
+    //agregar Filas
+        datos.forEach(item=>{   worksheet.addRow(item)  })
 
+    }
     //guardar archivo
     const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
     await workbook.xlsx.writeFile(ruta);
@@ -708,7 +777,8 @@ async function generartxt(req, res) {
 async function grabardatos(req, res) {
 console.log("boton grabar")
 try {
-    let { sinagrupar } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
+    
+    let sinagrupar= globalDatosSinAgrup
 
     if (!sinagrupar || sinagrupar.length === 0) {
         throw new Error("No se encontraron registros en generarDebitos");
@@ -893,14 +963,24 @@ const debitosindex = async (req,res)=>{
 
 export {
     paginainicio,
+    
     generarExcel,
+    
     debitosindex,
+    
     generarDebitos,
+
     generartxt,
+    
     consultarDebitos,
+    
     generarDbf,
+
     grabardatos,
+
     cierreEjercicio,
+
     seleccionarGrabados,
+
     generarExcelFormateado
 }

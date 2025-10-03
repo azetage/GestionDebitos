@@ -42,7 +42,7 @@ block contenido
                                                         
                                 div(class= "inline-flex flex flex-row")
                                         input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                            type= 'submit' value= 'BUSCAR')
+                                            type= 'submit' value= 'GENERAR CONSULTA')
                             
 
     div(name= 'debitos')            
@@ -88,9 +88,13 @@ block contenido
                                              td.italic.border.border-slate-300.px-4= item.cantidad
     
                     div(class="grid gap-6 mb-3 md:grid-cols-2 shadow-lg shadow-gray-500/50").py-2.text-center.text-xl.font-bold.bg-gray-200.text-gray-500.py-3
-                        h3 Elementos: #{cant_reg}
-                        h3 Monto Total: #{totalPesos} 
-                            span.text-xs.text-center.pt-2 Con Gastos Administrativos
+                        div
+                            h3 Elementos sin Agrupar : #{Reg_SinAgrup}
+                            h3 Monto Total sin Agrupar: #{total_SinAgrup} 
+                        div
+                            h3 Elementos Agrupados: #{Reg_Agrup}
+                            h3 Monto Total Agrupados: #{Total_Agrup} 
+                                span.text-xs.text-center.pt-2 Con Gastos Administrativos
 
 
          
@@ -148,7 +152,7 @@ block contenido
 
                                     div(class= "inline-flex flex flex-row")
                                             input(    formaction="/main/index/generarExcel" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                type= 'submit' value= 'GENERAR CONSULTA')   
+                                               type= 'submit' value= 'GENERAR CONSULTA')   
                 div.flex.justify-center.mt-10
                     span.text-xl.font-bold.text-blue-500.px-3 Resultado: #{selecion}
 
