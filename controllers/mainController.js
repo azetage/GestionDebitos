@@ -9,6 +9,7 @@ import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
 import { Op, Sequelize} from "sequelize";
 
+
 global.globalDatosSinAgrup= ""
 global.globalDatosAgrup= ""
 
@@ -564,66 +565,84 @@ async function  cargarArchivo() {
 
 }
 
+
 async function generarDbf(req, res) {
-  const campos = [
-    { name: 'FECHA', type: 'C', size: 8 },
-    { name: 'OPERATORIA', type: 'C', size: 20 },
-    { name: 'COD', type: 'N', size: 20 },
-    { name: 'COD_DEB', type: 'N', size: 20 },
-    { name: 'SIGLA', type: 'C', size: 20 },
-    { name: 'NRO_AGENTE', type: 'N', size: 20 },
-    { name: 'DNI_DESC', type: 'N', size: 20 },
-    { name: 'APEYNOM', type: 'C', size: 20 },
-    { name: 'MTO_CUO', type: 'N', size: 20, decimals: 2 },
-    { name: 'cantidad', type: 'N', size: 10 },
-  ];
 
-  const rutaArchivo = path.join(obtenerRutaDescargas(), `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
+    
+const campos = [
+  { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
+  { name: 'OPERATORIA', type: 'C', size: 20 },
+  { name: 'COD', type: 'N', size: 10 },
+  { name: 'COD_DEB', type: 'N', size: 10 },
+  { name: 'SIGLA', type: 'C', size: 10 },
+  { name: 'NRO_AGENTE', type: 'N', size: 12 },
+  { name: 'DNI_DESC', type: 'N', size: 12 },
+  { name: 'APEYNOM', type: 'C', size: 50 },
+  { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
+  { name: 'cantidad', type: 'N', size: 8 },
+];
+
+
+
+  const rutaArchivo = path.join(
+    obtenerRutaDescargas(),
+    `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
+  );
+
+  // ⚡ Si ya existe, lo sobrescribe
   const dbf = await DBFFile.create(rutaArchivo, campos);
-
   console.log(`Archivo DBF creado: ${dbf.path}`);
 
-  let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+  // Buscar datos
+  let Aux = await DebitosTotales.findAll({
+    where: { COD_DEB: GlobalenviosOrganismo }
+  });
+  let { datos } = agruparCodigoDebito(Aux);
 
-
+  // Transformar registros
   const registros = datos.map(d => ({
-    FECHA:      String(d.FECHA),
-    OPERATORIA: String(d.OPERATORIA),
+    FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
+    OPERATORIA: String(d.OPERATORIA ?? ""),
     COD:        Number(d.COD) || 0,
-    COD_DEB:    Number(d.COD_DEB),
-    SIGLA:      String(d.SIGLA),
-    NRO_AGENTE: Number(d.NRO_AGENTE),
-    DNI_DESC:   Number(d.DNI_DESC),
-    APEYNOM:    String(d.APEYNOM),
+    COD_DEB:    Number(d.COD_DEB) || 0,
+    SIGLA:      String(d.SIGLA ?? ""),
+    NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
+    DNI_DESC:   Number(d.DNI_DESC) || 0,
+    APEYNOM:    String(d.APEYNOM ?? ""),
     MTO_CUO:    Number(d.MTO_CUO) || 0,
     cantidad:   Number(d.cantidad) || 0
   }));
 
-  await dbf.appendRecords(registros);
+  // Insertar filas
+  await dbf.append(registros);
   console.log(`Se agregaron ${registros.length} registros`);
 
+  // Enviar archivo al cliente
   if (res) {
     res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
   }
-  
-  //generarDbf().catch(console.error);
 }
 
 async function generartxt(req, res) {
   try {
-    let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+    
+    let Aux = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+    let {datos} = agruparCodigoDebito(Aux)
+       
     let totalPesos=0
+
     datos.map(item   => {
                   totalPesos += item.MTO_CUO}
                 )
 
     //let { datos, totalPesos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
     console.log(totalPesos)
+    
     // Fechas
     let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
     let ultimoDia =ultimoDiaDelMes(wfecha)
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
-    const dia = String(wfecha.getDay).padStart(2,"0")
+    const dia = String(wfecha.getDate()).padStart(2,"0")
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
 
     let filas
@@ -636,31 +655,32 @@ async function generartxt(req, res) {
         // Encabezado
         const encabezado = `1315504660048000PE${mes}01${wfecha.getFullYear()}${mes}${diaFin}REE`;
 
-         filas= [a128Caracteres(encabezado) + "\n"];
+        filas= [a128Caracteres(encabezado) + "\n"];
 
         // Orden de campos
         const orden = ["SUCURSAL", "NRO_AGENTE", "MTO_CUO"];
 
         filas.push(
-        ...datos.map(obj => {
-            const valoresOrdenados = orden.map(k => {
-            if (k === "SUCURSAL") {
-                return String(obj[k] ?? "").padStart(4, "0") + "CA";
-            }
-            if (k === "NRO_AGENTE") {
-                return String(obj[k] ?? "").padStart(11, "0");
-            }
-            if (k === "MTO_CUO") {
-                const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
-                return String(montoEntero).padStart(15, "0");
-            }
-            return obj[k] ?? "";
-            });
+            ...datos.map(obj => {
+                const valoresOrdenados = orden.map(k => {
+                if (k === "SUCURSAL") {
+                    return String(obj[k] ?? "").padStart(4, "0") + "CA";
+                }
+                if (k === "NRO_AGENTE") {
+                    return String(obj[k] ?? "").padStart(11, "0");
+                }
+                if (k === "MTO_CUO") {
+                    const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
+                    return String(montoEntero).padStart(15, "0");
+                }
+                return obj[k] ?? "";
+                });
 
-            const fila = "2" + valoresOrdenados.join("");
-            return a128Caracteres(fila+"0".repeat(9))+"\n";
-        })
+                const fila = "2" + valoresOrdenados.join("");
+                return a128Caracteres(fila+"0".repeat(9))+"\n";
+            })
         );
+
         // Pie de Pagina
         const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
         const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
@@ -670,6 +690,7 @@ async function generartxt(req, res) {
         const pie = a128Caracteres(pieStr) + "\n";
         filas.push(pie);
     }   
+
     //////////////////////////////////////////////////
     ////////////////////////////// TXT BANCO SANTIAGO
     //////////////////////////////////////////////////
@@ -731,39 +752,41 @@ async function generartxt(req, res) {
     ////////////////////////////// TXT BANCO GALICIA
     //////////////////////////////////////////////////
 
-    if(["48"].includes(GlobalenviosOrganismo)){
-        const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
-        const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
+    // if(["48"].includes(GlobalenviosOrganismo)){
+    //     const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
+    //     const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
         
-        // Encabezado
+    //     // Encabezado
 
-        const tiporeg = "0001"
-        const nroprest = "0037"
-        const servicio = "C"
-        const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
-        const idarchivo = "1"
-        const origen = "EMPRESA"
-        const importetotal = String(totalPesosEntero).padStart(14, "0")
-        const cantreg = String(datos.length).padStart(7,"0")
-        const espacios = "*".repeat(304)
-        const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
+    //     const tiporeg = "0001"
+    //     const nroprest = "0037"
+    //     const servicio = "C"
+    //     const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
+    //     const idarchivo = "1"
+    //     const origen = "EMPRESA"
+    //     const importetotal = String(totalPesosEntero).padStart(14, "0")
+    //     const cantreg = String(datos.length).padStart(7,"0")
+    //     const espacios = "*".repeat(304)
+    //     const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
         
-        filas= [encabezado + "\n"];
+    //     filas= [encabezado + "\n"];
     
     
     
     
-    }
-        // Construimos ruta con nombre de archivo .txt
+    // }
+    //     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
             `Debitos ${Globalsigla} - ${Globalperiodo}.txt`
         );
-       let datosaux = datos.map(obj => {
-            const plain = obj.get({ plain: true });
-            return Object.values(plain).map(v => String(v ?? "")).join("\t"); // tab en vez de espacio
+
+        let datosaux = datos.map(obj => {
+        const plain = obj.get ? obj.get({ plain: true }) : obj;
+        return Object.values(plain).map(v => String(v ?? "")).join("\t");
         }).join("\n");
         // Escribimos el archivo
+
         //await writeFile(ruta,'Hola','utf8');
         await writeFile(ruta, (filas?filas:datosaux), 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
