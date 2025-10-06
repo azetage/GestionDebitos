@@ -431,16 +431,6 @@ async function generarExcel (req,res){
 
 
 
-
-
-
-
-
-
-
-
-
-
 async function generarExcelFormateado (req,res){
 
     //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
@@ -533,7 +523,7 @@ async function generarExcelFormateado (req,res){
                 }
             })
 
-    }
+}
  
 
 
@@ -564,64 +554,70 @@ async function  cargarArchivo() {
     }
 
 }
+ 
+
+
 
 
 async function generarDbf(req, res) {
-
     
-const campos = [
-  { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
-  { name: 'OPERATORIA', type: 'C', size: 20 },
-  { name: 'COD', type: 'N', size: 10 },
-  { name: 'COD_DEB', type: 'N', size: 10 },
-  { name: 'SIGLA', type: 'C', size: 10 },
-  { name: 'NRO_AGENTE', type: 'N', size: 12 },
-  { name: 'DNI_DESC', type: 'N', size: 12 },
-  { name: 'APEYNOM', type: 'C', size: 50 },
-  { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
-  { name: 'cantidad', type: 'N', size: 8 },
-];
+    const campos = [
+    { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
+    { name: 'OPERATORIA', type: 'C', size: 20 },
+    { name: 'COD', type: 'N', size: 10 },
+    { name: 'COD_DEB', type: 'N', size: 10 },
+    { name: 'SIGLA', type: 'C', size: 10 },
+    { name: 'NRO_AGENTE', type: 'N', size: 12 },
+    { name: 'DNI_DESC', type: 'N', size: 12 },
+    { name: 'APEYNOM', type: 'C', size: 50 },
+    { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
+    { name: 'cantidad', type: 'N', size: 8 },
+    ];
 
 
 
-  const rutaArchivo = path.join(
-    obtenerRutaDescargas(),
-    `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
-  );
+    const rutaArchivo = path.join(
+        obtenerRutaDescargas(),
+        `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
+    );
 
-  // ⚡ Si ya existe, lo sobrescribe
-  const dbf = await DBFFile.create(rutaArchivo, campos);
-  console.log(`Archivo DBF creado: ${dbf.path}`);
+    // ⚡ Si ya existe, lo sobrescribe
+    const dbf = await DBFFile.create(rutaArchivo, campos);
+    console.log(`Archivo DBF creado: ${dbf.path}`);
 
-  // Buscar datos
-  let Aux = await DebitosTotales.findAll({
-    where: { COD_DEB: GlobalenviosOrganismo }
-  });
-  let { datos } = agruparCodigoDebito(Aux);
+    // Buscar datos
+    let Aux = await DebitosTotales.findAll({
+        where: { COD_DEB: GlobalenviosOrganismo }
+    });
+    let { datos } = agruparCodigoDebito(Aux);
 
-  // Transformar registros
-  const registros = datos.map(d => ({
-    FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
-    OPERATORIA: String(d.OPERATORIA ?? ""),
-    COD:        Number(d.COD) || 0,
-    COD_DEB:    Number(d.COD_DEB) || 0,
-    SIGLA:      String(d.SIGLA ?? ""),
-    NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
-    DNI_DESC:   Number(d.DNI_DESC) || 0,
-    APEYNOM:    String(d.APEYNOM ?? ""),
-    MTO_CUO:    Number(d.MTO_CUO) || 0,
-    cantidad:   Number(d.cantidad) || 0
-  }));
+    // Transformar registros
+    const registros = datos.map(d => ({
+        FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
+        OPERATORIA: String(d.OPERATORIA ?? ""),
+        COD:        Number(d.COD) || 0,
+        COD_DEB:    Number(d.COD_DEB) || 0,
+        SIGLA:      String(d.SIGLA ?? ""),
+        NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
+        DNI_DESC:   Number(d.DNI_DESC) || 0,
+        APEYNOM:    String(d.APEYNOM ?? ""),
+        MTO_CUO:    Number(d.MTO_CUO) || 0,
+        cantidad:   Number(d.cantidad) || 0
+    }));
 
-  // Insertar filas
-  await dbf.append(registros);
-  console.log(`Se agregaron ${registros.length} registros`);
+    // Insertar filas
+    await dbf.append(registros);
+    console.log(`Se agregaron ${registros.length} registros`);
 
-  // Enviar archivo al cliente
-  if (res) {
-    res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
+    // Enviar archivo al cliente
+    if (res) {
+        res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
   }
 }
+ 
+
+
+
 
 async function generartxt(req, res) {
   try {
@@ -796,35 +792,36 @@ async function generartxt(req, res) {
         console.error('Error al escribir el archivo:', err);
     }
 }
+ 
+
+
+
 
 async function grabardatos(req, res) {
-console.log("boton grabar")
-try {
-    
-    let sinagrupar= globalDatosSinAgrup
+    console.log("boton grabar")
+    try {
+        
+        let sinagrupar= globalDatosSinAgrup
 
-    if (!sinagrupar || sinagrupar.length === 0) {
-        throw new Error("No se encontraron registros en generarDebitos");
-    }
-
-    const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
-    const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
-    
-
-    console.log(sinagrupar[0])
-    console.log(inicio,final)
-
-    await DebitosTotales.destroy({
-        where: {
-            COD_DEB: sinagrupar[0].COD_DEB,
-            FECHA: {
-                [Op.between]: [inicio, final]
-            }
+        if (!sinagrupar || sinagrupar.length === 0) {
+            throw new Error("No se encontraron registros en generarDebitos");
         }
-    });
 
-    
+        const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
+        const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
+        
 
+        console.log(sinagrupar[0])
+        console.log(inicio,final)
+
+        await DebitosTotales.destroy({
+            where: {
+                COD_DEB: sinagrupar[0].COD_DEB,
+                FECHA: {
+                    [Op.between]: [inicio, final]
+                }
+            }
+        });
 
     // Paso 2: insertar todos los nuevos registros
     const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
@@ -846,6 +843,10 @@ try {
 
   }
 }
+ 
+
+
+
 
 async function consultaGrabados(){
   return await DebitosTotales.findAll({
@@ -863,6 +864,10 @@ async function consultaGrabados(){
     raw: true
   });
 }
+ 
+
+
+
 
 async function cierreEjercicio(req,res) {
   try {
@@ -969,6 +974,10 @@ const paginainicio= async (req,res)=> {
          })
 
 }
+ 
+
+
+
 
 const debitosindex = async (req,res)=>{
 
@@ -983,27 +992,16 @@ const debitosindex = async (req,res)=>{
 
 }
 
-
 export {
     paginainicio,
-    
     generarExcel,
-    
     debitosindex,
-    
     generarDebitos,
-
     generartxt,
-    
     consultarDebitos,
-    
     generarDbf,
-
     grabardatos,
-
     cierreEjercicio,
-
     seleccionarGrabados,
-
     generarExcelFormateado
 }
