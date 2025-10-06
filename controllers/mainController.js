@@ -8,6 +8,11 @@ import DebitosTotales from '../models/DebitosTotales.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
 import { Op, Sequelize} from "sequelize";
+import PdfPrinter from 'pdfmake';
+
+
+
+
 
 
 global.globalDatosSinAgrup= ""
@@ -366,6 +371,10 @@ const consultarDebitos = async (req,res)=>{
             })
 
 }
+
+
+
+
 const seleccionarGrabados= async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
     GlobalenviosOrganismo= codigo_debito
@@ -560,59 +569,59 @@ async function  cargarArchivo() {
 
 
 async function generarDbf(req, res) {
-    
-    const campos = [
-    { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
-    { name: 'OPERATORIA', type: 'C', size: 20 },
-    { name: 'COD', type: 'N', size: 10 },
-    { name: 'COD_DEB', type: 'N', size: 10 },
-    { name: 'SIGLA', type: 'C', size: 10 },
-    { name: 'NRO_AGENTE', type: 'N', size: 12 },
-    { name: 'DNI_DESC', type: 'N', size: 12 },
-    { name: 'APEYNOM', type: 'C', size: 50 },
-    { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
-    { name: 'cantidad', type: 'N', size: 8 },
-    ];
+    reportePDFBasico()
+//     const campos = [
+//     { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
+//     { name: 'OPERATORIA', type: 'C', size: 20 },
+//     { name: 'COD', type: 'N', size: 10 },
+//     { name: 'COD_DEB', type: 'N', size: 10 },
+//     { name: 'SIGLA', type: 'C', size: 10 },
+//     { name: 'NRO_AGENTE', type: 'N', size: 12 },
+//     { name: 'DNI_DESC', type: 'N', size: 12 },
+//     { name: 'APEYNOM', type: 'C', size: 50 },
+//     { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
+//     { name: 'cantidad', type: 'N', size: 8 },
+//     ];
 
 
 
-    const rutaArchivo = path.join(
-        obtenerRutaDescargas(),
-        `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
-    );
+//     const rutaArchivo = path.join(
+//         obtenerRutaDescargas(),
+//         `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
+//     );
 
-    // ⚡ Si ya existe, lo sobrescribe
-    const dbf = await DBFFile.create(rutaArchivo, campos);
-    console.log(`Archivo DBF creado: ${dbf.path}`);
+//     // ⚡ Si ya existe, lo sobrescribe
+//     const dbf = await DBFFile.create(rutaArchivo, campos);
+//     console.log(`Archivo DBF creado: ${dbf.path}`);
 
-    // Buscar datos
-    let Aux = await DebitosTotales.findAll({
-        where: { COD_DEB: GlobalenviosOrganismo }
-    });
-    let { datos } = agruparCodigoDebito(Aux);
+//     // Buscar datos
+//     let Aux = await DebitosTotales.findAll({
+//         where: { COD_DEB: GlobalenviosOrganismo }
+//     });
+//     let { datos } = agruparCodigoDebito(Aux);
 
-    // Transformar registros
-    const registros = datos.map(d => ({
-        FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
-        OPERATORIA: String(d.OPERATORIA ?? ""),
-        COD:        Number(d.COD) || 0,
-        COD_DEB:    Number(d.COD_DEB) || 0,
-        SIGLA:      String(d.SIGLA ?? ""),
-        NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
-        DNI_DESC:   Number(d.DNI_DESC) || 0,
-        APEYNOM:    String(d.APEYNOM ?? ""),
-        MTO_CUO:    Number(d.MTO_CUO) || 0,
-        cantidad:   Number(d.cantidad) || 0
-    }));
+//     // Transformar registros
+//     const registros = datos.map(d => ({
+//         FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
+//         OPERATORIA: String(d.OPERATORIA ?? ""),
+//         COD:        Number(d.COD) || 0,
+//         COD_DEB:    Number(d.COD_DEB) || 0,
+//         SIGLA:      String(d.SIGLA ?? ""),
+//         NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
+//         DNI_DESC:   Number(d.DNI_DESC) || 0,
+//         APEYNOM:    String(d.APEYNOM ?? ""),
+//         MTO_CUO:    Number(d.MTO_CUO) || 0,
+//         cantidad:   Number(d.cantidad) || 0
+//     }));
 
-    // Insertar filas
-    await dbf.append(registros);
-    console.log(`Se agregaron ${registros.length} registros`);
+//     // Insertar filas
+//     await dbf.append(registros);
+//     console.log(`Se agregaron ${registros.length} registros`);
 
-    // Enviar archivo al cliente
-    if (res) {
-        res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
-  }
+//     // Enviar archivo al cliente
+//     if (res) {
+//         res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
+//   }
 }
  
 
@@ -906,65 +915,107 @@ async function cierreEjercicio(req,res) {
 }
 
 
-//async function reportePDFBasico(){
-//     const doc = new jsPDF()
-//     const datos =await consultarDebitos(34)
 
-//     const body = datos.map(item => [
-//         item.COD,
-//         item.COD_DEB,
-//         item.DNI_DESC,
-//         item.APEYNOM,
-//         item.NRO_AGENTE,
-//         item.MTO_CUO,
-//         item.OPERATORIA
-//       ]);
+async function reportePDFBasico(req, res) {
+  const fonts = {
+    Helvetica: {
+      normal: 'Helvetica',
+      bold: 'Helvetica-Bold',
+      italics: 'Helvetica-Oblique',
+      bolditalics: 'Helvetica-BoldOblique'
+    }
+  };
 
-//     doc.text('DEBITOS DIO',10,10);
+  const printer = new PdfPrinter(fonts);
+  
+  try {
+    // Obtener datos
+    const Aux = await DebitosTotales.findAll({ 
+      where: { COD_DEB: GlobalenviosOrganismo } 
+    });
+    
+    if (!Aux || Aux.length === 0) {
+      return res.status(404).send("No se encontraron datos");
+    }
 
-//     autoTable(doc, {
-//         startY: 20,
-//         head: [['COD', 'COD_DEB', 'DNI_DESC', 'APEYNOM', 'NRO_AGENTE', 'MTO_CUO', 'OPERATORIA']],
-//         body: body,
+    const { datos } = agruparCodigoDebito(Aux);
 
-//           // Estilos generales
-//         styles: {
-//             fontSize: 6,
-//             cellPadding: 4,
-//             valign: 'middle',
-//             halign: 'left', // alineación horizontal
-//             textColor: [40, 40, 40]
-//         },
+    if (!datos || datos.length === 0) {
+      return res.status(404).send("No hay datos válidos");
+    }
 
-// //    Encabezado
-//         headStyles: {
-//             fillColor: [128, 128, 128],  // color fondo
-//             textColor: [255, 255, 255], // color texto
-//             fontStyle: 'bold',
-//             halign: 'center'
-//         },
+    // Encabezados y datos simples
+    const encabezados = ["FECHA","OPERATORIA","COD","COD_DEB","SIGLA","SUCURSAL","NRO_AGENTE","DNI_DESC","APEYNOM","MTO_CUO"];
+   
+    const cuerpoTabla = datos.map(fila => 
+      encabezados.map(encabezado => fila[encabezado]?.toString() || '')
+    );
 
-// //   // Cuerpo de la tabla
-// //   bodyStyles: {
-// //     fillColor: [245, 245, 245], // fondo alterno
-// //     textColor: 50
-// //   },
+    const docDefinition = {
+      content: [
+        { 
+          text: `Reporte de Débitos - ${GlobalenviosOrganismo}`, 
+          style: 'header' 
+        },
+        { 
+          text: `Generado: ${new Date().toLocaleDateString()}`, 
+          style: 'subheader' 
+        },
+        '\n',
+        {
+          table: {
+            headerRows: 1,
+            widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*', 'auto'],
+            body: [
+              encabezados.map(encabezado => ({ text: encabezado, style: 'tableHeader' })),
+              ...cuerpoTabla
+            ]
+          }
+        }
+      ],
+      styles: {
+        header: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+        subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 10] },
+        tableHeader: { bold: true, fontSize: 10, fillColor: '#eeeeee' }
+      },
+      defaultStyle: { fontSize: 9, font: 'Helvetica' },
+       // ESTA ES LA LÍNEA QUE PONE LA HOJA EN HORIZONTAL
+      pageOrientation: 'landscape'
+    };
 
-// //   // Columnas específicas
-// //   columnStyles: {
-// //     0: { halign: 'center', cellWidth: 15 },
-// //     3: { halign: 'right' }
-// //   },
-
-// //   // Opcional: pie de tabla
-//     didDrawPage: (data) => {
-//         doc.setFontSize(8);
-//         doc.text(`Reporte generado automáticamente - Sist deb IPV - ${new Date().toLocaleString()}`, 14, doc.internal.pageSize.height - 10);         }
-
-//       });
-
-//     doc.save("reporte.pdf")
-//}
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    // Crear nombre de archivo con timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `reporte-${timestamp}.pdf`;
+    const filePath = path.join(obtenerRutaDescargas(), fileName);
+    
+    // Crear la carpeta si no existe
+    const descargasDir = path.dirname(filePath);
+    if (!fs.existsSync(descargasDir)) {
+      fs.mkdirSync(descargasDir, { recursive: true });
+    }
+    
+    // Guardar archivo
+    pdfDoc.pipe(fs.createWriteStream(filePath));
+    pdfDoc.end();
+    
+    // Esperar a que termine de generarse el PDF
+    await new Promise((resolve, reject) => {
+      pdfDoc.on('end', resolve);
+      pdfDoc.on('error', reject);
+    });
+    
+    // Responder con la ruta del archivo generado
+    
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+//    res.status(500).json({ 
+  //    success: false, 
+    //  error: "Error al generar PDF" 
+    //});
+  }
+}
 
 const paginainicio= async (req,res)=> {
    // reportePDFBasico()

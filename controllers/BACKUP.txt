@@ -1,2 +1,243 @@
 4661563971
 
+sync function reportePDFBasico() {
+  const doc = new jsPDF({
+  orientation: "landscape",
+  unit: "mm",
+  format: "a4"
+});
+
+   let Aux = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+   let {datos} = agruparCodigoDebito(Aux)
+    if (datos.length === 0) {
+     console.warn("⚠️ No hay datos para generar el PDF");
+    return;
+    }
+
+  const body = datos.map(item => [
+    item.FECHA,
+    item.OPERATORIA,
+    item.COD,
+    item.COD_DEB,
+    item.SIGLA,
+    item.SUCURSAL,
+    item.DNI_DESC,
+    item.DNI_DESC,
+    item.APEYNOM,
+    item.MTO_CUO,
+  ]);
+
+  doc.text(`${datos[0].SIGLA} - ${datos[0].FECHA}`, 10, 10);
+
+  autoTable(doc, {
+    startY: 20,
+    head: [
+      [
+        "FECHA",
+        "OPERATORIA",
+        "COD",
+        "COD_DEB",
+        "SIGLA",
+        "SUCURSAL",
+        "NRO_AGENTE",
+        "DNI_DESC",
+        "APEYNOM",
+        "MTO_CUO",
+      ],
+    ],
+    body: body,
+    styles: {
+      fontSize: 6,
+      cellPadding: 4,
+      valign: "middle",
+      halign: "left",
+      textColor: [40, 40, 40],
+    },
+    headStyles: {
+      fillColor: [128, 128, 128],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      halign: "center",
+    },
+    bodyStyles: {
+      fillColor: [245, 245, 245],
+      textColor: 50,
+    },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 15 },
+      3: { halign: "right" },
+    },
+    didDrawPage: (data) => {
+      doc.setFontSize(8);
+      doc.text(
+        `Reporte generado automáticamente - Sist deb IPV - ${new Date().toLocaleString()}`,
+        14,
+        doc.internal.pageSize.height - 10
+      );
+    },
+  });
+
+  doc.save(`REPORTE ${datos[0].SIGLA} - ${datos[0].FECHA}.pdf`);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+**************************************************************************/*/*/*/*/*************
+try {
+    const ruta = path.join(obtenerRutaDescargas(), "reporte.pdf");
+
+    // Crear PDF
+    const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 20 });
+    const stream = fs.createWriteStream(ruta);
+    doc.pipe(stream);
+
+    // Obtener datos
+    const Aux = await DebitosTotales.findAll({ where: { COD_DEB: GlobalenviosOrganismo } });
+    const { datos } = agruparCodigoDebito(Aux);
+
+    if (!datos || datos.length === 0) {
+      doc.end();
+      return res.status(404).send("⚠️ No hay datos para generar el PDF");
+    }
+
+    // Función para dibujar la cabecera
+    const headers = ["FECHA","OPERATORIA","COD","COD_DEB","SIGLA","SUCURSAL","NRO_AGENTE","DNI_DESC","APEYNOM","MTO_CUO"];
+    const dibujarCabecera = (y) => {
+      headers.forEach((h, i) => {
+        doc.text(h, doc.x + i * 80, y, { width: 80, align: "center" });
+      });
+      return y + 20;
+    };
+
+    // Título
+    doc.fontSize(8).text(`${datos[0].SIGLA} - ${datos[0].FECHA}`, { align: "left" });
+    doc.moveDown(1);
+
+    let startX = doc.x;
+    let startY = doc.y;
+
+    startY = dibujarCabecera(startY);
+
+    // Filas
+    datos.forEach(item => {
+      const row = [
+        item.FECHA, item.OPERATORIA, item.COD, item.COD_DEB,
+        item.SIGLA, item.SUCURSAL, item.NRO_AGENTE, item.DNI_DESC,
+        item.APEYNOM, item.MTO_CUO
+      ];
+
+      // Calcular altura máxima de la fila
+      let maxHeight = 0;
+      row.forEach((cell, i) => {
+        const height = doc.heightOfString(cell?.toString() ?? "", { width: 80 });
+        if (height > maxHeight) maxHeight = height;
+      });
+
+      // Dibujar fila
+      row.forEach((cell, i) => {
+        const align = (i === 8) ? "left" : "center"; // APEYNOM alineado a la izquierda
+        doc.text(cell?.toString() ?? "", startX + i * 80, startY, { width: 80, align });
+      });
+
+      startY += maxHeight + 5; // sumar margen
+
+      // Nueva página si es necesario
+      if (startY > doc.page.height - 50) {
+        doc.addPage({ size: "A4", layout: "landscape" });
+        startY = 50;
+        startY = dibujarCabecera(startY);
+      }
+    });
+
+    // Pie de página
+    doc.fontSize(8).text(
+      `Reporte generado automáticamente - Sist deb IPV - ${new Date().toLocaleString()}`,
+      20,
+      doc.page.height - 20
+    );
+
+    doc.end();
+
+    stream.on("finish", () => {
+    //   res.download(ruta, "reporte.pdf", err => {
+    //     if (err) console.error("Error al descargar PDF:", err);
+    //   });
+    });
+
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    res.status(500).send("Error al generar el PDF");
+  }
+
+*////////////////////*/**/**********************************************/*/*/*/*/*/*/*/*/*//////////////////////////////
+try 
+    // Ruta temporal para guardar el PDF
+    const ruta = path.join(obtenerRutaDescargas(), "reporte1.pdf");
+
+    // Crear PDF
+    const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 20 });
+    const stream = fs.createWriteStream(ruta);
+    doc.pipe(stream);
+
+    // Obtener datos
+    const Aux = await DebitosTotales.findAll({ where: { COD_DEB: GlobalenviosOrganismo } });
+    const { datos } = agruparCodigoDebito(Aux);
+
+    if (!datos || datos.length === 0) {
+      doc.end();
+      return res.status(404).send("⚠️ No hay datos para generar el PDF");
+    }
+
+    // Título
+    doc.fontSize(16).text("Reporte de Débitos", { align: "center" });
+    doc.moveDown(1);
+
+    // Preparar tabla
+   const table = {
+  headers: ["FECHA","OPERATORIA","COD","COD_DEB","SIGLA","SUCURSAL","NRO_AGENTE","DNI_DESC","APEYNOM","MTO_CUO,"],
+  rows: datos.map(d => [
+    d.FECHA instanceof Date ? d.FECHA.toISOString().split("T")[0] : String(d.FECHA),
+    String(d.OPERATORIA),
+    String(d.COD),
+    String(d.COD_DEB),
+    String(d.SIGLA),
+    String(d.SUCURSAL),
+    String(d.NRO_AGENTE),
+    String(d.DNI_DESC),
+    String(d.APEYNOM),
+    typeof d.MTO_CUO === "number" ? d.MTO_CUO.toFixed(2) : String(d.MTO_CUO)
+  ])
+};
+
+await doc.table(table, {
+  prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8),
+  prepareRow: (row, i) => doc.font("Helvetica").fontSize(8),
+  width: 760,
+  columnSpacing: 5,
+  padding: 5,
+  x: 20,
+  y: doc.y + 10
+});
+
+doc.end();
+
+
+    // Descargar PDF al cliente cuando termine
+    stream.on("finish", () => {
+    //   res.download(ruta, "reporte.pdf", err => {
+    //     if (err) console.error("Error al descargar PDF:", err);
+    //   });
+    });
+
+
+
+
