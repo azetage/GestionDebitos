@@ -954,11 +954,11 @@ async function reportePDFBasico(req, res) {
     const docDefinition = {
       content: [
         { 
-          text: `Reporte de Débitos - ${GlobalenviosOrganismo}`, 
+          text: `DEBITOS IPV  `, 
           style: 'header' 
         },
         { 
-          text: `Generado: ${new Date().toLocaleDateString()}`, 
+          text: `ORGANISMO :${datos[0].SIGLA} FECHA: ${datos[0].FECHA}`, 
           style: 'subheader' 
         },
         '\n',
@@ -979,44 +979,41 @@ async function reportePDFBasico(req, res) {
         tableHeader: { bold: true, fontSize: 10, fillColor: '#eeeeee' }
       },
       defaultStyle: { fontSize: 9, font: 'Helvetica' },
-       // ESTA ES LA LÍNEA QUE PONE LA HOJA EN HORIZONTAL
       pageOrientation: 'landscape'
     };
 
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     
-    // Crear nombre de archivo con timestamp
+    // Configurar headers para descarga
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `reporte-${timestamp}.pdf`;
-    const filePath = path.join(obtenerRutaDescargas(), fileName);
+    const fileName = `Reporte_${timestamp}.pdf`;
     
-    // Crear la carpeta si no existe
-    const descargasDir = path.dirname(filePath);
-    if (!fs.existsSync(descargasDir)) {
-      fs.mkdirSync(descargasDir, { recursive: true });
-    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     
-    // Guardar archivo
-    pdfDoc.pipe(fs.createWriteStream(filePath));
+    // Pipe directamente a la respuesta
+    pdfDoc.pipe(res);
     pdfDoc.end();
-    
+
     // Esperar a que termine de generarse el PDF
     await new Promise((resolve, reject) => {
-      pdfDoc.on('end', resolve);
-      pdfDoc.on('error', reject);
+      pdfDoc.on('end', () => {
+        console.log("PDF generado exitosamente");
+        resolve();
+      });
+      pdfDoc.on('error', (error) => {
+        console.error("Error al generar PDF:", error);
+        reject(error);
+      });
     });
-    
-    // Responder con la ruta del archivo generado
     
   } catch (error) {
     console.error("Error al generar PDF:", error);
-//    res.status(500).json({ 
-  //    success: false, 
-    //  error: "Error al generar PDF" 
-    //});
+    if (!res.headersSent) {
+      return res.status(500).send("Error interno del servidor");
+    }
   }
 }
-
 const paginainicio= async (req,res)=> {
    // reportePDFBasico()
     return res.render('main/index', {
@@ -1054,5 +1051,7 @@ export {
     grabardatos,
     cierreEjercicio,
     seleccionarGrabados,
-    generarExcelFormateado
+    generarExcelFormateado,
+    reportePDFBasico
+
 }

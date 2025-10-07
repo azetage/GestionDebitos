@@ -95,6 +95,17 @@ block contenido
                             h4 Elementos Agrupados: #{Reg_Agrup}
                             h4 Monto Total Agrupados: #{Total_Agrup} 
                                 span.text-xs.text-center.pt-2 Con Gastos Administrativos
+        
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+            div.py-10(class="grid gap-6 mb-3 md:grid-cols-3")
+                div
+                .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                    form.space-y-5(action=`/main/index/grabardatos` method="GET")   
+                        fieldset.px-10.py-1.center 
+                            div
+                                input(  class= "shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                        type= 'submit' value= '   Grabar Debitos   ')
+            div
 
 
          
@@ -126,7 +137,11 @@ block contenido
                                         td.italic.border.border-slate-300.px-4= item.REGISTOS || 0
                                         - var valor = (item.MONTO ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
                                         td.italic.border.border-slate-300.px-4= valor
-    
+
+                                            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                      
+
+
     
     div(name= 'Generar_Documentacion')
         div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
@@ -135,77 +150,74 @@ block contenido
                         fieldset.px-10.py-1 
                             legend.px-3.py-3.mt-2.font-bold  ORGANISMO GRABADOS: 
 
-                                div.py-10(class="grid gap-6 mb-3 md:grid-cols-3")
-                                    div(class= "inline-flex flex flex-row")   
-                                        label.py-2.px-2.block.h-3.uppercase.text-gray-500.mb-2.font-bold(for="enviosOrganismo") ORGANISMO
+                                div.py-10(class="grid gap-6 mb-3 md:grid-cols-2")
+                                    div.py-10(class="grid gap-6 mb-3 md:grid-cols-2") 
+                                        div(class= "inline-flex flex flex-row")   
+                                            label.py-2.px-2.block.h-3.uppercase.text-gray-500.mb-2.font-bold(for="enviosOrganismo") ORGANISMO
                                         div
-                                        select#enviosOrganismo(type ='select' placeholder='Seleccione Organismo' name = 'enviosOrganismo')
-                                                for item in Organismos? Organismos:''
+                                            select#enviosOrganismo(type ='select' placeholder='Seleccione Organismo' name = 'enviosOrganismo')
+                                                    for item in Organismos? Organismos:''
+                                                    
+                                                        option(value=`${item.COD_DEB}|${item.SIGLA}`)= item.REGISTRA
+                                        
                                                 
-                                                    option(value=`${item.COD_DEB}|${item.SIGLA}`)= item.REGISTRA
-                                    
-                                                
-                                                            
-                                    div(class= "inline-flex flex flex-row")
-                                            input(   formaction="/main/enviodebitos/seleccionarGrabados" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                type= 'submit' value= 'SELECCIONAR')
+                                    div  
+                                        div.py-10(class="grid gap-6 mb-3 md:grid-cols-3")                      
+                                            div(class= "inline-flex flex flex-row")
+                                                    input(   formaction="/main/enviodebitos/seleccionarGrabados" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                        type= 'submit' value= 'SELECCIONAR')
 
-                                    div(class= "inline-flex flex flex-row")
-                                            input(    formaction="/main/index/generarExcel" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                               type= 'submit' value= 'GENERAR CONSULTA')   
-                div.flex.justify-center.mt-10
+                                            div(class= "inline-flex flex flex-row")
+                                                    input(    formaction="/main/index/generarExcel" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                    type= 'submit' value= 'GENERAR REPORTE EXCEL')   
+                                            div(class= "inline-flex flex flex-row")
+
+                                                    input(    formaction="/main/index/reporte-pdf" class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                    type= 'submit' value= 'GENERAR REPORTE PDF')   
+
+
+
+
+
+                div.flex.justify-center.mt-2
                     span.text-xl.font-bold.text-blue-500.px-3 Resultado: #{selecion}
 
-                div.grid.grid-cols-1.sm.grid-cols-2.lg.grid-cols-5.gap-6
+                div.grid.grid-cols-1.sm.grid-cols-2.lg.grid-cols-4.gap-6
                 
                     div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                             form.space-y-5(action='/main/index/generarExcelFormateado' method="GET")   
-                                fieldset.px-10.py-1 
-                                    legend.px-3.py-3.mt-2.font-bold
-                                        div
-                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                    type= 'submit' value= 'Generar Excel')
+                                div
+                                    input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                            type= 'submit' value= 'Envios Excel')
 
                     div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
-                
                             form.space-y-5(action=`/main/index/generarTxt` method="GET")   
                                 fieldset.px-10.py-1 
-                                    legend.px-3.py-3.mt-2.font-bold 
-                                        div
-                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                    type= 'submit' value= 'Generar TXT')
-                    
+                                    div
+                                        input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                type= 'submit' value= 'Envios TXT')
+                
                     div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 
-                            form.space-y-5(action=`/main/index/generarDbf` method="GET")   
+                            form.space-y-5(action=`/main/index/reporte-pdf` method="GET")   
                                 fieldset.px-10.py-1 
-                                    legend.px-3.py-3.mt-2.font-bold  
-                                        div
-                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
-                                                    type= 'submit' value= 'Generar DBF')
-                    
-                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                                    div
+                                        input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" 
+                                                type= 'submit' value= 'Envios DBF')
                 
-                            form.space-y-5(action=`/main/index/grabardatos` method="GET")   
-                                fieldset.px-10.py-1 
-                                    legend.px-3.py-3.mt-2.font-bold  
-                                        div
-                                            input(  class= "shadow-lg shadow-blue-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-blue-500 hover:bg-blue-700 focus:outline-2 focus:outline-offset-2 focus:outline-blue-500 active:bg-blue-700" 
-                                                    type= 'submit' value= 'Grabar')
+                
 
                     div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 
                             form.space-y-5(action=`/main/index/cierreejercicio` method="GET")   
                                 fieldset.px-10.py-1 
-                                    legend.px-3.py-3.mt-2.font-bold  
-                                        div
-                                            input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
-                                                    type= 'submit' value= 'Cierre ejercicio')
+                                    div
+                                        input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
+                                                type= 'submit' value= 'Cierre ejercicio')
 
 
 
