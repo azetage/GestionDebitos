@@ -268,7 +268,7 @@ function agruparCodigoDebito(datos){
     console.log("\n datos sin agrupar: "+ JSON.stringify(datos?datos[0]:"vacio")+"\n" )
     const codigo_debito = datos[0]? datos[0].COD_DEB:""
     console.log(codigo_debito)
-    if (['25','7','11','48'].includes(codigo_debito)) {
+    if (['25','7','11','48','55'].includes(codigo_debito)) {
 
     const agrupados = datos.reduce((acc, item) => {
         
