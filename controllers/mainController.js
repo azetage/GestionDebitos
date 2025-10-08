@@ -222,6 +222,11 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 // Mapeo de datos de Operatorias 2
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
+
+        const sucursal = item.agente_debito.slice(0, 4);
+        const nroAgente = codigo_debito === "11"
+            ? item.agente_debito.slice(4)
+            : item.agente_debito;
         return{
                               
                 FECHA:      wfecha.toISOString().split('T')[0],
@@ -229,8 +234,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 COD:        item.codigo,
                 COD_DEB:    codigo_debito,
                 SIGLA:      sigla,
-                SUCURSAL:   item.agente_debito.slice(0,4), 
-                NRO_AGENTE: item.agente_debito.slice(4,item.agente_debito.length),
+                SUCURSAL:   sucursal,
+                NRO_AGENTE: nroAgente,
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
@@ -757,29 +762,29 @@ async function generartxt(req, res) {
     ////////////////////////////// TXT BANCO GALICIA
     //////////////////////////////////////////////////
 
-    // if(["48"].includes(GlobalenviosOrganismo)){
-    //     const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
-    //     const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
+    if(["48"].includes(GlobalenviosOrganismo)){
+        const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
+        const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
         
-    //     // Encabezado
+        // Encabezado
 
-    //     const tiporeg = "0001"
-    //     const nroprest = "0037"
-    //     const servicio = "C"
-    //     const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
-    //     const idarchivo = "1"
-    //     const origen = "EMPRESA"
-    //     const importetotal = String(totalPesosEntero).padStart(14, "0")
-    //     const cantreg = String(datos.length).padStart(7,"0")
-    //     const espacios = "*".repeat(304)
-    //     const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
+        const tiporeg = "0001"
+        const nroprest = "0037"
+        const servicio = "C"
+        const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
+        const idarchivo = "1"
+        const origen = "EMPRESA"
+        const importetotal = String(totalPesosEntero).padStart(14, "0")
+        const cantreg = String(datos.length).padStart(7,"0")
+        const espacios = "*".repeat(304)
+        const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
         
-    //     filas= [encabezado + "\n"];
+        filas= [encabezado + "\n"];
     
     
     
     
-    // }
+    }
     //     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
