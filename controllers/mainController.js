@@ -118,6 +118,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const datosfonavi = await db_debitos.query(
     `SELECT * FROM VISTA_ENVIODEBITOS 
         WHERE COD_DEB = :codigoDebito
+        AND LEN(NRO_AGENTE) > 2
         AND FEC_ENVIO <= :ultimodiaSQL 
         ORDER BY NRO_AGENTE ASC`,
     {
@@ -144,7 +145,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
-                                cantidad:   0
+                                cantidad:   0,
+                                FECHA_VTO:  item.FEC_VTO
                             }
                     }
                 )
@@ -190,7 +192,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                                 DNI_DESC:   item.DNI_DESC,
                                 APEYNOM:    item.APEYNOM,                                
                                 MTO_CUO:    suma,                            
-                                cantidad:   0  // ← contador de registros
+                                cantidad:   0,  // ← contador de registros,
+                                FECHA_VTO:  item.VTO_PLAN
+
                     }
 
                 }
@@ -239,7 +243,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
-                cantidad:   1  // ← contador de registros
+                cantidad:   1,  // ← contador de registros
+                FECHA_VTO:  item.fecha
                         }
 
         })
@@ -268,14 +273,23 @@ function agruparCodigoDebito(datos){
     console.log("\n datos sin agrupar: "+ JSON.stringify(datos?datos[0]:"vacio")+"\n" )
     const codigo_debito = datos[0]? datos[0].COD_DEB:""
     console.log(codigo_debito)
-    if (['25','7','11','48','55'].includes(codigo_debito)) {
+    if (['25','7','11','48','55','5','17'].includes(codigo_debito)) {
 
     const agrupados = datos.reduce((acc, item) => {
         
         // KEY TERNANIO SI CODIGO DEBITO ES 11 UTILIZA EL STRING COMPUESTO - SINO NRO AGENTE
         // const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
 
-        const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
+        let key;
+
+        if (codigo_debito === '11') {
+          key = `${item.SUCURSAL}-${item.NRO_AGENTE}`;
+        } else if (codigo_debito === '25') {
+          key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
+        } else {
+          key = `${item.NRO_AGENTE}`;
+        }
+
         if (!acc[key]) {
             acc[key] = {
                 FECHA:      item.FECHA,
@@ -288,7 +302,8 @@ function agruparCodigoDebito(datos){
                 DNI_DESC:   item.DNI_DESC,
                 APEYNOM:    item.APEYNOM,
                 MTO_CUO:    0,
-                cantidad:   0
+                cantidad:   0,
+                FECHA_VTO:  item.FECHA_VTO
             };
         }
 
@@ -323,7 +338,8 @@ function agruparCodigoDebito(datos){
                                     DNI_DESC:   item.DNI_DESC,
                                     APEYNOM:    item.APEYNOM,                                
                                     MTO_CUO:    item.MTO_CUO,                            
-                                    cantidad:   1
+                                    cantidad:   1,
+                                    FECHA_VTO:  item.FECHA_VTO
                             }
                     }
                 )
@@ -776,15 +792,39 @@ async function generartxt(req, res) {
         const origen = "EMPRESA"
         const importetotal = String(totalPesosEntero).padStart(14, "0")
         const cantreg = String(datos.length).padStart(7,"0")
-        const espacios = "*".repeat(304)
+        const espacios = " ".repeat(304)
         const encabezado = tiporeg+nroprest+servicio+fechagen+idarchivo+origen+importetotal+cantreg+espacios
         
         filas= [encabezado + "\n"];
-    
-    
-    
-    
-    }
+
+        // body
+        filas.push(
+                  ...datos.map((obj, index) => {
+                    const tiporeg   = "0370";
+                    const idcliente = String(obj.COD ?? "").padStart(8, "0");
+                    const espacios  = " ".repeat(14)
+                    const cbu       = String(obj.NRO_AGENTE ?? "").padStart(26, "0");
+                    const coutaipv  = "CUOTAIPV"
+                    const fecha1er  = obj.FECHA_VTO? new Date(obj.FECHA_VTO).toISOString().split("T")[0].replaceAll("-", ""): "";
+                    const importe   =     String(Math.round(Number(obj.MTO_CUO+25 ?? 0) * 100)).padStart(14, "0");
+                    const fecha2do  = "0".repeat(8)
+                    const importe2do  = "0".repeat(14)
+                    const fecha3ro  = "0".repeat(8)
+                    const importe3  = "0".repeat(14)
+                    const monedafactura= "0"
+                    const motivorechazo= " ".repeat(3)
+                    const tipodocumente= "0".repeat(4)
+                    const numerodocumento= "0".repeat(11)
+                    const nuevaidcliente= " ".repeat(22)  
+                    const nuevacbu= "0".repeat(26)
+                    const importeminimo= "0".repeat(14)
+                    const espacios1= " ".repeat(136)
+                    const linea = tiporeg + idcliente + espacios + cbu+ coutaipv +fecha1er+importe + fecha2do+importe2do+fecha3ro+importe3+monedafactura+motivorechazo
+                                  +tipodocumente+numerodocumento+ nuevaidcliente+ nuevacbu + importeminimo +espacios1 
+                    return linea + "\n";
+                  })
+                )
+              }
     //     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
             obtenerRutaDescargas(),
@@ -1020,7 +1060,6 @@ async function reportePDFBasico(req, res) {
   }
 }
 const paginainicio= async (req,res)=> {
-   // reportePDFBasico()
     return res.render('main/index', {
          pagina : "GESTION DEBITOS",
 

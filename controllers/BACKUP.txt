@@ -241,3 +241,11 @@ doc.end();
 
 
 
+SELECT 
+    dta.NRO_AGENTE,
+    dta.APEYNOM, 
+    COUNT(*) AS cantidad_registros
+FROM Debitos.dbo.DebitosTotalesAux dta
+WHERE dta.COD_DEB = 25
+GROUP BY dta.NRO_AGENTE, dta.APEYNOM
+ORDER BY dta.NRO_AGENTE ASC;
