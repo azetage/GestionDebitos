@@ -943,7 +943,7 @@ async function cierreEjercicio(req,res) {
           TRY_CAST(COD AS INT) AS cod,           -- string a int
           TRY_CAST(COD_DEB AS INT) AS cod_deb,   -- string a int
           LEFT(SIGLA, 3) AS sigla,               -- truncar a 3 chars
-          TRY_CAST(SUCURSAL AS INT) AS sucursal, -- string a int
+          TRY_CAST(SUCURSAL AS INT) AS sucursal, -- string a inttotalPesos
           LEFT(NRO_AGENTE, 25) AS nro_agente,    -- truncar a 25 chars
           NULL AS cuil,                          -- no viene de Aux
           TRY_CAST(DNI_DESC AS INT) AS dni_desc, -- string a int
@@ -993,6 +993,13 @@ async function reportePDFBasico(req, res) {
 
     const { datos } = agruparCodigoDebito(Aux);
 
+    let totalPesos=0
+
+    datos.map(item   => {
+                  totalPesos += item.MTO_CUO}
+                )
+    
+
     if (!datos || datos.length === 0) {
       return res.status(404).send("No hay datos válidos");
     }
@@ -1024,6 +1031,18 @@ async function reportePDFBasico(req, res) {
               ...cuerpoTabla
             ]
           }
+        },"\n\n",
+        {text: `Registros: ${datos.length} - Totales: ${totalPesos.toLocaleString('es-AR', { 
+        style: 'currency', 
+        currency: 'ARS', 
+        minimumFractionDigits: 2,
+        
+        })}`,
+        style: 'totalLine',
+        fontSize: 18,
+        alignment: 'right', 
+        bold: true
+
         }
       ],
       styles: {
@@ -1033,6 +1052,29 @@ async function reportePDFBasico(req, res) {
       },
       defaultStyle: { fontSize: 9, font: 'Helvetica' },
       pageOrientation: 'landscape'
+    ,
+    
+      // 👇 PIE DE PÁGINA
+      footer: function (currentPage, pageCount) {
+        return {
+          columns: [
+            { 
+              text: `INSTITUTO PROVINCIAL DE LA VIVIENDA - CATAMARCA - ORGANISMO: ${datos[0].SIGLA} PERIODO : ${datos[0].FECHA}`, 
+              alignment: 'left', 
+              fontSize: 8, 
+              margin: [20, 0, 0, 0] ,
+              bold: true
+            },
+            { 
+              text: `Numero de Registros: ${datos.length} - TOTALES: ${totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2})} //  Página ${currentPage} de ${pageCount}`, 
+              alignment: 'right', 
+              fontSize: 8, 
+              margin: [0, 0, 20, 0] ,
+              bold: true
+            }
+          ]
+        };
+      }
     };
 
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
