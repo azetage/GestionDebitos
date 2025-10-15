@@ -787,7 +787,7 @@ async function generartxt(req, res) {
         const tiporeg = "0001"
         const nroprest = "0037"
         const servicio = "C"
-        const fechagen = wfecha.toISOString().split('T')[0].replaceAll("-", "")
+        const fechagen = datos[0].FECHA? new Date(datos[0].FECHA).toISOString().split("T")[0].replaceAll("-", ""): "";
         const idarchivo = "1"
         const origen = "EMPRESA"
         const importetotal = String(totalPesosEntero).padStart(14, "0")
@@ -824,6 +824,14 @@ async function generartxt(req, res) {
                     return linea + "\n";
                   })
                 )
+              
+        // Pie de Pagina
+              const tiporeg2="0001"
+              const nroprestacion= "0037"
+              const espacios304 = " ".repeat(304)
+              const Pie =tiporeg2+nroprestacion+servicio+espacios304+fechagen+"1"+origen+importetotal+cantreg+espacios304
+
+              filas.push(Pie)
               }
     //     // Construimos ruta con nombre de archivo .txt
         const ruta = path.join(
