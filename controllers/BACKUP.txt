@@ -1,3 +1,117 @@
+async function reportePDFBasico(req, res) {
+  const fonts = {
+    Helvetica: {
+      normal: 'Helvetica',
+      bold: 'Helvetica-Bold',
+      italics: 'Helvetica-Oblique',
+      bolditalics: 'Helvetica-BoldOblique'
+    }
+  };
+
+  const printer = new PdfPrinter(fonts);
+  
+  try {
+    // Obtener datos
+    const Aux = await DebitosTotales.findAll({ 
+      where: { COD_DEB: GlobalenviosOrganismo } 
+    });
+    
+    if (!Aux || Aux.length === 0) {
+      return res.status(404).send("No se encontraron datos");
+    }
+
+    const { datos } = agruparCodigoDebito(Aux);
+
+    if (!datos || datos.length === 0) {
+      return res.status(404).send("No hay datos válidos");
+    }
+
+    // Encabezados y datos simples
+    const encabezados = ["FECHA","OPERATORIA","COD","COD_DEB","SIGLA","SUCURSAL","NRO_AGENTE","DNI_DESC","APEYNOM","MTO_CUO"];
+   
+    const cuerpoTabla = datos.map(fila => 
+      encabezados.map(encabezado => fila[encabezado]?.toString() || '')
+    );
+
+    const docDefinition = {
+      content: [
+        { text: `DEBITOS IPV`, style: 'header' },
+        { text: `ORGANISMO: ${datos[0].SIGLA}    FECHA: ${datos[0].FECHA}`, style: 'subheader' },
+        '\n',
+        {
+          table: {
+            headerRows: 1,
+            widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*', 'auto'],
+            body: [
+              encabezados.map(encabezado => ({ text: encabezado, style: 'tableHeader' })),
+              ...cuerpoTabla
+            ]
+          }
+        }
+      ],
+      styles: {
+        header: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+        subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 10] },
+        tableHeader: { bold: true, fontSize: 10, fillColor: '#eeeeee' }
+      },
+      defaultStyle: { fontSize: 9, font: 'Helvetica' },
+      pageOrientation: 'landscape',
+
+      // 👇 PIE DE PÁGINA
+      footer: function (currentPage, pageCount) {
+        return {
+          columns: [
+            { 
+              text: `Generado el: ${new Date().toLocaleString('es-AR')}`, 
+              alignment: 'left', 
+              fontSize: 8, 
+              margin: [20, 0, 0, 0] 
+            },
+            { 
+              text: `Página ${currentPage} de ${pageCount}`, 
+              alignment: 'right', 
+              fontSize: 8, 
+              margin: [0, 0, 20, 0] 
+            }
+          ]
+        };
+      }
+    };
+
+    // Generar y enviar el PDF
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `Reporte_${timestamp}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    
+    pdfDoc.pipe(res);
+    pdfDoc.end();
+
+    await new Promise((resolve, reject) => {
+      pdfDoc.on('end', () => {
+        console.log("PDF generado exitosamente");
+        resolve();
+      });
+      pdfDoc.on('error', (error) => {
+        console.error("Error al generar PDF:", error);
+        reject(error);
+      });
+    });
+
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    if (!res.headersSent) {
+      return res.status(500).send("Error interno del servidor");
+    }
+  }
+}
+
+
+
+
+
 4661563971
 
 sync function reportePDFBasico() {

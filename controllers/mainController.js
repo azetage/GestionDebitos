@@ -968,6 +968,181 @@ async function cierreEjercicio(req,res) {
 }
 
 
+async function NotasPDF (req, res) {
+  try {
+     // Obtener datos
+    const Aux = await DebitosTotales.findAll({ 
+      where: { COD_DEB: GlobalenviosOrganismo } 
+    });
+    const { datos } = agruparCodigoDebito(Aux);
+
+    let totalPesos=0
+
+    datos.map(item   => {
+                  totalPesos += item.MTO_CUO}
+                )
+    
+    if (!Aux || Aux.length === 0) {
+      return res.status(404).send("No se encontraron datos");
+    }
+    const fecha = new Date(Aux[0].FECHA)
+
+    // 1️⃣ Definir fuentes
+    const fonts = {
+      Helvetica: {
+        normal: "Helvetica",
+        bold: "Helvetica-Bold",
+        italics: "Helvetica-Oblique",
+        bolditalics: "Helvetica-BoldOblique",
+      },
+    };
+
+    const printer = new PdfPrinter(fonts);
+
+    // 2️⃣ Ruta del logotipo (asegurate que el archivo exista)
+    const logoPath = path.join(process.cwd(), "public/img", "logo2.png");
+
+    // 3️⃣ Definir el contenido del PDF
+    const docDefinition = {
+      pageMargins: [40, 100, 40, 60], // Izq, Top, Der, Abajo
+
+      // header: {
+      //   margin: [40, 20, 40, 0],
+      //   columns: [
+      //     {
+      //       image: logoPath,
+      //       width: 120,
+      //       alignment: "center",
+      //     },
+      //     {
+      //       text: "Instituto Provincial de la Vivienda \nCatamarca.",
+      //       alignment: "right",
+      //       fontSize: 14,
+      //       bold: true,
+      //       margin: [0, 20, 0, 0],
+      //     },
+      //   ],
+      // },
+      header: {
+    margin: [0, 20, 0, 0],
+    columns: [
+      {
+        width: "*", // ancho flexible
+        stack: [
+          {
+            image: logoPath, // 👈 ahora es Base64
+            width: 100,
+            alignment: "center",
+       
+          },
+          { 
+       
+            text: "\nInstituto Provincial de la Vivienda - Catamarca\n\n",
+            alignment: "center",
+            bold: true,
+            fontSize: 12,
+            margin: [0, 0, 0, 70],
+
+          },
+        ],
+      },
+    ],
+  },
+
+
+
+      content: [
+      { text: `\n\n San Fernando del Valle de Catamarca , ${fecha.toLocaleDateString("es-AR",  {
+                                                                                          day: "numeric",
+                                                                                          month: "long",
+                                                                                          year: "numeric"
+                                                                                          })} \n\n`, alignment: "right" },
+
+        {
+          text: "\n\n Secretario Contable de la Corte de Justicia\n\n CPN Jorge Adolfo del V. Olmos Morales\n\n Su Despacho:",
+          bold: true,
+          margin: [0, 20, 0, 20],
+        },
+
+     {
+        text: "Me dirijo a Ud. a los efectos de remitirle el listado de los empleados públicos a los",
+        fontSize: 12,
+        lineHeight: 1.5,
+        margin: [60, 35, 0, 10], // sangría izquierda de 40pt, margen inferior 10pt
+        alignment: "justify"
+      },
+    {
+    text: "que se les deberá descontar de su sueldo el monto correspondiente a la cuota de su vivienda.\n\n",
+    fontSize: 12,
+    lineHeight: 1.5,
+    margin: [0, 0, 0, 10],
+    alignment: "justify"
+    },
+  ,  {
+    text: ` Periodo : ${fecha.toLocaleDateString("es-AR",  {
+                                                                                          
+                                                                                          month: "long",
+                                                                                          year: "numeric"
+                                                                                          })}\n Cantidad de Agentes a Descontar: ${datos.length}\n Monto Total a Descontar: ${totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2})}`,
+    fontSize: 12,
+    lineHeight: 1.5,
+    margin: [0, 20, 0, 10],
+    alignment: "left"
+  },
+    {
+    text: "Sin otro particular saludo a Ud. atentamente\n\n",
+    fontSize: 12,
+    lineHeight: 1.5,
+    margin: [0, 20, 0, 10],
+    alignment: "right"
+  },
+  
+],
+
+      defaultStyle: {
+        font: "Helvetica",
+      },
+    };
+
+ const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    // Configurar headers para descarga
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `Reporte_${timestamp}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    
+    // Pipe directamente a la respuesta
+    pdfDoc.pipe(res);
+    pdfDoc.end();
+
+    // Esperar a que termine de generarse el PDF
+    await new Promise((resolve, reject) => {
+      pdfDoc.on('end', () => {
+        console.log("PDF generado exitosamente");
+        resolve();
+      });
+      pdfDoc.on('error', (error) => {
+        console.error("Error al generar PDF:", error);
+        reject(error);
+      });
+    });
+    
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    if (!res.headersSent) {
+      return res.status(500).send("Error interno del servidor");
+    }
+  }
+}
+
+
+
+
+
+
+
 
 async function reportePDFBasico(req, res) {
   const fonts = {
@@ -1109,6 +1284,9 @@ async function reportePDFBasico(req, res) {
     }
   }
 }
+
+
+
 const paginainicio= async (req,res)=> {
     return res.render('main/index', {
          pagina : "GESTION DEBITOS",
@@ -1146,6 +1324,7 @@ export {
     cierreEjercicio,
     seleccionarGrabados,
     generarExcelFormateado,
-    reportePDFBasico
+    reportePDFBasico,
+    NotasPDF
 
 }
