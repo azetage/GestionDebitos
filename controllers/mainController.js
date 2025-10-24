@@ -36,18 +36,36 @@ function obtenerRutaDescargas(){
     return 'public/descargas'
 }
 
+
+
+
+
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
     return organismos
 }
 
+
+
+
+
+
 function primerDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth(), 1)
 }
 
+
+
+
+
+
 function ultimoDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0)
 }
+
+
+
+
 
 //funcion devuelve string con 128 caracteres fijos
 function a128Caracteres(str) {
@@ -57,14 +75,16 @@ function a128Caracteres(str) {
   return str.padEnd(128, " ");
 }
 
+
+
+
+
 function a188Caracteres(str) {
   // Si es más largo, corta a 188
   str = str.slice(0, 188);
   // Si es más corto, rellena con espacios al final
   return str.padEnd(188, " ");
 }
-
-
 
 
 
@@ -107,50 +127,44 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //////////////////////////////GENERAR DEBITOS FONAVI
 //////////////////////////////////////////////////
 
-// `SELECT * FROM VISTA_ENVIODEBITOS 
-//    WHERE COD_DEB = :codigoDebito 
-//      AND FEC_ENVIO <= :ultimodiaSQL 
-//      AND FEC_VTO >= :fechaSQL
-//    ORDER BY NRO_AGENTE ASC`,
-
-
-// consulta Vista EnvioDebitos
-    const datosfonavi = await db_debitos.query(
-    `SELECT * FROM VISTA_ENVIODEBITOS 
-        WHERE COD_DEB = :codigoDebito
-        AND LEN(NRO_AGENTE) > 2
-        AND FEC_ENVIO <= :ultimodiaSQL 
-        ORDER BY NRO_AGENTE ASC`,
-    {
-        replacements: {
+    // consulta Vista EnvioDebitos
+      const datosfonavi = await db_debitos.query(
+        `SELECT * FROM VISTA_ENVIODEBITOS 
+            WHERE COD_DEB = :codigoDebito
+            AND LEN(NRO_AGENTE) > 2
+            AND FEC_ENVIO <= :ultimodiaSQL 
+            ORDER BY NRO_AGENTE ASC`,
+        {
+          replacements: {
             codigoDebito: codigo_debito,
             fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
             ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
-        },
-        type: db_debitos.QueryTypes.SELECT
-    });
+          },
+          type: db_debitos.QueryTypes.SELECT
+        }
+      );
 
-//Mapeo Datos ViviendaFonavi
-    datos = datosfonavi.map(item   => { 
-                    const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
-                    totalFonavi += suma
-                    return {
-                                FECHA:      wfecha.toISOString().split('T')[0],
-                                OPERATORIA: 'ADJUD',
-                                COD:        item.COD,
-                                COD_DEB:    codigo_debito,
-                                SIGLA:      sigla,
-                                SUCURSAL:   item.SUCURSAL, 
-                                NRO_AGENTE: item.NRO_AGENTE,
-                                DNI_DESC:   item.DNI_DESC,
-                                APEYNOM:    item.APEYNOM,                                
-                                MTO_CUO:    suma,                            
-                                cantidad:   0,
-                                FECHA_VTO:  item.FEC_VTO
-                            }
-                    }
-                )
-    // respuesta de consulta.
+    //Mapeo Datos ViviendaFonavi
+        datos = datosfonavi.map(item   => { 
+          const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
+          totalFonavi += suma
+          return {
+                      FECHA:      wfecha.toISOString().split('T')[0],
+                      OPERATORIA: 'ADJUD',
+                      COD:        item.COD,
+                      COD_DEB:    codigo_debito,
+                      SIGLA:      sigla,
+                      SUCURSAL:   item.SUCURSAL, 
+                      NRO_AGENTE: item.NRO_AGENTE,
+                      DNI_DESC:   item.DNI_DESC,
+                      APEYNOM:    item.APEYNOM,                                
+                      MTO_CUO:    suma,                            
+                      cantidad:   0,
+                      FECHA_VTO:  item.FEC_VTO
+                  }
+          }
+        )
+  // respuesta de consulta.
     console.log(" CONSULTA FONAVI          [" + datosfonavi.length + "]     MONTO: " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
 //////////////////////////////////////////////////
@@ -159,47 +173,47 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
 
 // consulta Envio Planes
-     let datosPlanes = await db_debitos.query(
+    let datosPlanes = await db_debitos.query(
         `SELECT * FROM VISTA_ENVIOPLANES 
         WHERE COD_DEB = :codigoDebito
         AND TIPO_PLAN = 'C'
         AND CONF_PLAN <= :ultimodiaSQL
         AND VTO_PLAN >=  :fechaSQL
         ORDER BY N_TARJETA ASC`,
-
-    {
-        replacements: {
+        {
+          replacements: {
             codigoDebito: codigo_debito,
             fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
             ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
-        },
-        type: db_debitos.QueryTypes.SELECT
-    });
+          },
+          type: db_debitos.QueryTypes.SELECT
+        }
+      );
+
 //Mapeo Datos Operatoria Planes 
     let datos1 = datosPlanes.map(item   => {
-         const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
-         totalPlanes += suma
-                 return {
+        const suma = item.MTO_CUO + item.MTO_ADIC + item.INT_CUO
+        totalPlanes += suma
+        return {
 
-                   
-                                FECHA:      wfecha.toISOString().split('T')[0],
-                                OPERATORIA: 'ADJUD',
-                                COD:        item.COD,
-                                COD_DEB:    codigo_debito,
-                                SIGLA:      sigla,
-                                SUCURSAL:   item.SUCURSAL,     
-                                NRO_AGENTE: item.N_TARJETA,
-                                DNI_DESC:   item.DNI_DESC,
-                                APEYNOM:    item.APEYNOM,                                
-                                MTO_CUO:    suma,                            
-                                cantidad:   0,  // ← contador de registros,
-                                FECHA_VTO:  item.VTO_PLAN
+          
+                      FECHA:      wfecha.toISOString().split('T')[0],
+                      OPERATORIA: 'ADJUD',
+                      COD:        item.COD,
+                      COD_DEB:    codigo_debito,
+                      SIGLA:      sigla,
+                      SUCURSAL:   item.SUCURSAL,     
+                      NRO_AGENTE: item.N_TARJETA,
+                      DNI_DESC:   item.DNI_DESC,
+                      APEYNOM:    item.APEYNOM,                                
+                      MTO_CUO:    suma,                            
+                      cantidad:   0,  // ← contador de registros,
+                      FECHA_VTO:  item.VTO_PLAN
 
-                    }
-
-                }
-            )
-    // respuesta de la consulta Planes        
+        }
+      }
+    )
+  // respuesta de la consulta Planes        
     console.log(" CONSULTA PLANES          [" + datos1.length + "]     MONTO: "+totalPlanes.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
     
     //Agregar Elementos de consulta debitos Planes en array Datos
@@ -850,9 +864,9 @@ async function generartxt(req, res) {
         console.log(`Archivo creado exitosamente: ${ruta}`);
         res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
 
-    } catch (err) {
+  } catch (err) {
         console.error('Error al escribir el archivo:', err);
-    }
+  }
 }
  
 
@@ -862,48 +876,44 @@ async function generartxt(req, res) {
 async function grabardatos(req, res) {
     console.log("boton grabar")
     try {
-        
-        let sinagrupar= globalDatosSinAgrup
+          let sinagrupar= globalDatosSinAgrup
 
-        if (!sinagrupar || sinagrupar.length === 0) {
+          if (!sinagrupar || sinagrupar.length === 0) {
             throw new Error("No se encontraron registros en generarDebitos");
-        }
-
-        const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
-        const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
+          }
+          const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
+          const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
         
+          console.log(sinagrupar[0])
+          console.log(inicio,final)
 
-        console.log(sinagrupar[0])
-        console.log(inicio,final)
-
-        await DebitosTotales.destroy({
+          await DebitosTotales.destroy({
             where: {
-                COD_DEB: sinagrupar[0].COD_DEB,
-                FECHA: {
-                    [Op.between]: [inicio, final]
-                }
-            }
-        });
+              COD_DEB: sinagrupar[0].COD_DEB,
+              FECHA:  {
+                [Op.between]: [inicio, final]
+                      }
+              }
+            })
 
-    // Paso 2: insertar todos los nuevos registros
-    const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
-    sinagrupar = sinagrupar.map((item) => ({
-        ...item,
-        FECHA: hoy, // actualiza el campo FECHA
-        }));
-    
-        await DebitosTotales.bulkCreate(sinagrupar);
+          // Paso 2: insertar todos los nuevos registros
+          const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
+          sinagrupar = sinagrupar.map((item) => ({
+              ...item,
+              FECHA: hoy, // actualiza el campo FECHA
+              }));
+          
+          await DebitosTotales.bulkCreate(sinagrupar);
 
-    // Paso 3: responder al cliente
-    res.render("templates/mensaje", {
-      pagina: "DEBITOS GRABADO EN BASE DE DATOS",
-      mensaje: "¡ Operacion Realizada Satisfactoriamente!",
-      ruta: "/main/enviodebitos"
-    });
-  } catch (error) {
-    console.error("Error en grabardatos:", error);
-
-  }
+          // Paso 3: responder al cliente
+          res.render("templates/mensaje", {
+            pagina: "DEBITOS GRABADO EN BASE DE DATOS",
+            mensaje: "¡ Operacion Realizada Satisfactoriamente!",
+            ruta: "/main/enviodebitos"
+          });
+    }catch (error) {
+      console.error("Error en grabardatos:", error);
+    }
 }
  
 
@@ -912,19 +922,20 @@ async function grabardatos(req, res) {
 
 async function consultaGrabados(){
   return await DebitosTotales.findAll({
-    attributes: [
-      'FECHA',
-      'SIGLA',
-      [Sequelize.fn('COUNT', Sequelize.col('SIGLA')), 'REGISTOS'],
-      [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
-    ],
-    group: ['SIGLA','FECHA'],
-    order: [
-        ['FECHA', 'ASC'],   // primero por fecha ascendente
-        ['SIGLA', 'ASC']    // luego por sigla ascendente
-        ],
-    raw: true
-  });
+      attributes: [
+        'FECHA',
+        'SIGLA',
+        [Sequelize.fn('COUNT', Sequelize.col('SIGLA')), 'REGISTOS'],
+        [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
+      ],
+      group: ['SIGLA','FECHA'],
+      order: [
+          ['FECHA', 'ASC'],   // primero por fecha ascendente
+          ['SIGLA', 'ASC']    // luego por sigla ascendente
+          ],
+      raw: true
+    }
+  );
 }
  
 
@@ -969,172 +980,154 @@ async function cierreEjercicio(req,res) {
 
 
 async function NotasPDF (req, res) {
-  try {
-     // Obtener datos
-    const Aux = await DebitosTotales.findAll({ 
-      where: { COD_DEB: GlobalenviosOrganismo } 
-    });
-    const { datos } = agruparCodigoDebito(Aux);
+    try {
+      // Obtener datos
+      const Aux = await DebitosTotales.findAll({ 
+        where: { COD_DEB: GlobalenviosOrganismo } 
+      });
+      const { datos } = agruparCodigoDebito(Aux);
 
-    let totalPesos=0
+      let totalPesos=0
 
-    datos.map(item   => {
-                  totalPesos += item.MTO_CUO}
-                )
-    
-    if (!Aux || Aux.length === 0) {
-      return res.status(404).send("No se encontraron datos");
-    }
-    const fecha = new Date(Aux[0].FECHA)
+      datos.map(item   => {
+                    totalPesos += item.MTO_CUO}
+                  )
+      
+      if (!Aux || Aux.length === 0) {
+        return res.status(404).send("No se encontraron datos");
+      }
+      const fecha = new Date(Aux[0].FECHA)
 
-    // 1️⃣ Definir fuentes
-    const fonts = {
-      Helvetica: {
-        normal: "Helvetica",
-        bold: "Helvetica-Bold",
-        italics: "Helvetica-Oblique",
-        bolditalics: "Helvetica-BoldOblique",
-      },
-    };
+      // 1️⃣ Definir fuentes
+      const fonts = {
+        Helvetica: {
+          normal: "Helvetica",
+          bold: "Helvetica-Bold",
+          italics: "Helvetica-Oblique",
+          bolditalics: "Helvetica-BoldOblique",
+        },
+      };
 
-    const printer = new PdfPrinter(fonts);
+      const printer = new PdfPrinter(fonts);
 
-    // 2️⃣ Ruta del logotipo (asegurate que el archivo exista)
-    const logoPath = path.join(process.cwd(), "public/img", "logo2.png");
+      // 2️⃣ Ruta del logotipo (asegurate que el archivo exista)
+      const logoPath = path.join(process.cwd(), "public/img", "logo2.png");
 
-    // 3️⃣ Definir el contenido del PDF
-    const docDefinition = {
-      pageMargins: [40, 100, 40, 60], // Izq, Top, Der, Abajo
+      // 3️⃣ Definir el contenido del PDF
+      const docDefinition = {
+        pageMargins: [40, 100, 40, 60], // Izq, Top, Der, Abajo
 
-      // header: {
-      //   margin: [40, 20, 40, 0],
-      //   columns: [
-      //     {
-      //       image: logoPath,
-      //       width: 120,
-      //       alignment: "center",
-      //     },
-      //     {
-      //       text: "Instituto Provincial de la Vivienda \nCatamarca.",
-      //       alignment: "right",
-      //       fontSize: 14,
-      //       bold: true,
-      //       margin: [0, 20, 0, 0],
-      //     },
-      //   ],
-      // },
       header: {
-    margin: [0, 20, 0, 0],
-    columns: [
-      {
-        width: "*", // ancho flexible
-        stack: [
-          {
-            image: logoPath, // 👈 ahora es Base64
-            width: 100,
-            alignment: "center",
-       
-          },
-          { 
-       
-            text: "\nInstituto Provincial de la Vivienda - Catamarca\n\n",
-            alignment: "center",
-            bold: true,
-            fontSize: 12,
-            margin: [0, 0, 0, 70],
+        margin:   [0, 20, 0, 0],
+        columns:  [
+                    {
+                      width: "*", // ancho flexible
+                      stack: [
+                              {
+                                image: logoPath, // 👈 ahora es Base64
+                                width: 100,
+                                alignment: "center",
+                          
+                              },
+                              { 
+                          
+                                text: "\nInstituto Provincial de la Vivienda - Catamarca\n\n_______________________________________________",
+                                alignment: "center",
+                                bold: true,
+                                fontSize: 12,
+                                margin: [0, 0, 0, 0],
 
-          },
-        ],
+                              },
+                      ],
+                    },
+                  ],
       },
-    ],
-  },
-
-
 
       content: [
-      { text: `\n\n San Fernando del Valle de Catamarca , ${fecha.toLocaleDateString("es-AR",  {
-                                                                                          day: "numeric",
-                                                                                          month: "long",
-                                                                                          year: "numeric"
-                                                                                          })} \n\n`, alignment: "right" },
+                  { text: `\n\n San Fernando del Valle de Catamarca , ${fecha.toLocaleDateString("es-AR",  {
+                                                                                            day: "numeric",
+                                                                                            month: "long",
+                                                                                            year: "numeric"
+                                                                                            })} \n\n`, alignment: "right" },
 
-        {
-          text: "\n\n Secretario Contable de la Corte de Justicia\n\n CPN Jorge Adolfo del V. Olmos Morales\n\n Su Despacho:",
-          bold: true,
-          margin: [0, 20, 0, 20],
-        },
+                  {
+                  text: "\n\n Secretario Contable de la Corte de Justicia\n\n CPN Jorge Adolfo del V. Olmos Morales\n\n Su Despacho:",
+                  bold: true,
+                  margin: [0, 20, 0, 20],
+                  },
 
-     {
-        text: "Me dirijo a Ud. a los efectos de remitirle el listado de los empleados públicos a los",
-        fontSize: 12,
-        lineHeight: 1.5,
-        margin: [60, 35, 0, 10], // sangría izquierda de 40pt, margen inferior 10pt
-        alignment: "justify"
-      },
-    {
-    text: "que se les deberá descontar de su sueldo el monto correspondiente a la cuota de su vivienda.\n\n",
-    fontSize: 12,
-    lineHeight: 1.5,
-    margin: [0, 0, 0, 10],
-    alignment: "justify"
-    },
-  ,  {
-    text: ` Periodo : ${fecha.toLocaleDateString("es-AR",  {
-                                                                                          
-                                                                                          month: "long",
-                                                                                          year: "numeric"
-                                                                                          })}\n Cantidad de Agentes a Descontar: ${datos.length}\n Monto Total a Descontar: ${totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2})}`,
-    fontSize: 12,
-    lineHeight: 1.5,
-    margin: [0, 20, 0, 10],
-    alignment: "left"
-  },
-    {
-    text: "Sin otro particular saludo a Ud. atentamente\n\n",
-    fontSize: 12,
-    lineHeight: 1.5,
-    margin: [0, 20, 0, 10],
-    alignment: "right"
-  },
-  
-],
+                  {
+                  text: "Me dirijo a Ud. a los efectos de remitirle el listado de los empleados públicos a los",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  margin: [60, 35, 0, 10], // sangría izquierda de 40pt, margen inferior 10pt
+                  alignment: "justify"
+                  },
+                  {
+                  text: "que se les deberá descontar de su sueldo el monto correspondiente a la cuota de su vivienda.\n\n",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  margin: [0, 0, 0, 10],
+                  alignment: "justify"
+                  },
+                  
+                  {
+                  text: ` Periodo : ${fecha.toLocaleDateString("es-AR",  {
+                                                                                                        
+                                                                                                        month: "long",
+                                                                                                        year: "numeric"
+                                                                                                        })}\n Cantidad de Agentes a Descontar: ${datos.length}\n Monto Total a Descontar: ${totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2})}`,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  margin: [0, 20, 0, 10],
+                  alignment: "left"
+                  },
+                  {
+                  text: "Sin otro particular saludo a Ud. atentamente\n\n",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  margin: [0, 20, 0, 10],
+                  alignment: "right"
+                  },
+    
+              ],
 
       defaultStyle: {
-        font: "Helvetica",
-      },
-    };
+                  font: "Helvetica",
+                  },
+      };
 
- const pdfDoc = printer.createPdfKitDocument(docDefinition);
-    
-    // Configurar headers para descarga
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `Reporte_${timestamp}.pdf`;
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    
-    // Pipe directamente a la respuesta
-    pdfDoc.pipe(res);
-    pdfDoc.end();
+      const pdfDoc = printer.createPdfKitDocument(docDefinition);
+      
+      // Configurar headers para descarga
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `Reporte_${timestamp}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      
+      // Pipe directamente a la respuesta
+      pdfDoc.pipe(res);
+      pdfDoc.end();
 
-    // Esperar a que termine de generarse el PDF
-    await new Promise((resolve, reject) => {
-      pdfDoc.on('end', () => {
-        console.log("PDF generado exitosamente");
-        resolve();
+      // Esperar a que termine de generarse el PDF
+      await new Promise((resolve, reject) => {
+        pdfDoc.on('end', () => {
+          console.log("PDF generado exitosamente");
+          resolve();
+        });
+        pdfDoc.on('error', (error) => {
+          console.error("Error al generar PDF:", error);
+          reject(error);
+        });
       });
-      pdfDoc.on('error', (error) => {
-        console.error("Error al generar PDF:", error);
-        reject(error);
-      });
-    });
-    
+      
   } catch (error) {
-    console.error("Error al generar PDF:", error);
-    if (!res.headersSent) {
-      return res.status(500).send("Error interno del servidor");
+      console.error("Error al generar PDF:", error);
+        if (!res.headersSent) {
+          return res.status(500).send("Error interno del servidor");
+        }
     }
-  }
 }
 
 

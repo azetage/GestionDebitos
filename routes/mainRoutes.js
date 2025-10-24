@@ -19,9 +19,9 @@ router.get('/index/generarTxt', generartxt)
 router.get('/index/generarDbf', generarDbf)
 router.get('/index/grabardatos', grabardatos)
 router.get('/index/cierreejercicio',cierreEjercicio)
-//router.get('/index/reporte-pdf', reportePDFBasico);
+router.get('/index/reporte-pdf', reportePDFBasico);
 
-router.get('/index/reporte-pdf', NotasPDF);
+//router.get('/index/reporte-pdf', NotasPDF);
 
 
 
