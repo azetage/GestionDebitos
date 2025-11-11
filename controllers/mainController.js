@@ -298,7 +298,7 @@ function agruparCodigoDebito(datos){
 
         if (codigo_debito === '11') {
           key = `${item.SUCURSAL}-${item.NRO_AGENTE}`;
-        } else if (codigo_debito === '25') {
+        } else if (["5","25"].includes(codigo_debito )) {
           key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
         } else {
           key = `${item.NRO_AGENTE}`;
@@ -329,7 +329,7 @@ function agruparCodigoDebito(datos){
     
     // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $200 
     if (codigo_debito === '11') { Object.values(agrupados).forEach(item => item.MTO_CUO += 200); }
-    if (codigo_debito === '48') { Object.values(agrupados).forEach(item => item.MTO_CUO += 25); }
+    if (codigo_debito === '48') { Object.values(agrupados).forEach(item => item.MTO_CUO += 500); }
     
     datos = Object.values(agrupados);
     }
@@ -410,21 +410,40 @@ const consultarDebitos = async (req,res)=>{
 
 
 
-const seleccionarGrabados= async (req,res)=>{
-    let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-    GlobalenviosOrganismo= codigo_debito
-    Globalsigla= sigla
-    console.log("selecciono "+ GlobalenviosOrganismo)
+// const seleccionarGrabados= async (req,res)=>{
+//     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+//     GlobalenviosOrganismo= codigo_debito
+//     Globalsigla= sigla
+//     console.log("selecciono "+ GlobalenviosOrganismo)
         
-        return res.render('main/enviodebitos', {
-                pagina :    "ENVIO DEBITOS",
-                Organismos: await ConsultarOrganismos(),
-                tablaAux :  await consultaGrabados(),
-                selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
+//         return res.render('main/enviodebitos', {
+//                 pagina :    "ENVIO DEBITOS",
+//                 Organismos: await ConsultarOrganismos(),
+//                 tablaAux :  await consultaGrabados(),
+//                 selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
 
-                })
+//                 })
 
-}
+// }
+
+
+const seleccionarGrabados = async (req, res) => {
+  let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+  GlobalenviosOrganismo = codigo_debito;
+  Globalsigla = sigla;
+
+  const Organismos = await ConsultarOrganismos();
+  const tablaAux = await consultaGrabados();
+
+  return res.render('main/enviodebitos', {
+    pagina: "ENVIO DEBITOS",
+    Organismos,
+    tablaAux,
+    selecion: `COD DEB: ${GlobalenviosOrganismo} - SIGLA: ${Globalsigla}`
+  });
+};
+
+
 
 
 
@@ -897,7 +916,8 @@ async function grabardatos(req, res) {
             })
 
           // Paso 2: insertar todos los nuevos registros
-          const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD
+          //const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD 
+          const hoy = wfecha.toISOString().split("T")[0];
           sinagrupar = sinagrupar.map((item) => ({
               ...item,
               FECHA: hoy, // actualiza el campo FECHA
@@ -998,6 +1018,7 @@ async function NotasPDF (req, res) {
       }
       const fecha = new Date(Aux[0].FECHA)
 
+      
       // 1️⃣ Definir fuentes
       const fonts = {
         Helvetica: {
