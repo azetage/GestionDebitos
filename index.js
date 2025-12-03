@@ -7,6 +7,7 @@ import { dirname } from 'path';
 import session from 'express-session'
 import usuarioRoutes from './routes/usuarioRoutes.js'
 import mainRoutes from './routes/mainRoutes.js'
+import uploadRoutes from './routes/upload.routes.js'
 import {db_debitos} from './config/db.js'
 
 
@@ -51,6 +52,10 @@ console.log('-----------------------------------')
 
 
 
+
+
+
+
 //habilitar pug
 app.set('view engine', 'pug')
 app.set('views', './views')
@@ -58,6 +63,9 @@ app.set('views', path.join(__dirname, 'views'));
 // habilitar carpeta publica
 
 app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
+app.use(uploadRoutes)
 
 const storage = multer.diskStorage({
   destination: (req,file,cb)=> cb(null,path.join(__dirname, 'uploads')),
@@ -82,3 +90,7 @@ app.listen(port, () => {
 console.log(`el servidor esta funcionando en el puerto ${port}`)
 console.log("http://localhost:3006/main/index")
 });
+
+
+
+export default app

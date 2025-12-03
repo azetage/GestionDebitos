@@ -1,0 +1,22 @@
+extends ../layout/plantilla  
+
+block contenido
+  div.mt-10.mx-auto.max-w-7xl.px-6
+
+    h1.text-xl.font-bold.mb-6 Resultado del Excel
+
+    if data.length
+      table.w-full.border.border-gray-400.text-sm
+        thead.bg-gray-200
+          tr
+            each key in Object.keys(data[0])
+              th.border.px-3.py-2= key
+
+        tbody
+          each fila in data
+            tr
+              each valor in fila
+                td.border.px-3.py-2= valor
+
+    else
+      p No hay datos para mostrar
