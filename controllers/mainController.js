@@ -241,7 +241,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
 
-        const sucursal = item.agente_debito.slice(0, 4);
+        const sucursal = item.agente_debito? item.agente_debito.slice(0, 4): 0
         const nroAgente = codigo_debito === "11"
             ? item.agente_debito.slice(4)
             : item.agente_debito;
@@ -253,7 +253,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 COD_DEB:    codigo_debito,
                 SIGLA:      sigla,
                 SUCURSAL:   sucursal,
-                NRO_AGENTE: nroAgente,
+                NRO_AGENTE: item.agente,
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            

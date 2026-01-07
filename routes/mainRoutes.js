@@ -22,8 +22,7 @@ router.get('/index/grabardatos', grabardatos)
 router.get('/index/cierreejercicio',cierreEjercicio)
 router.get('/index/reporte-pdf', reportePDFBasico);
 router.get('/recepcionDebitos',recepcioDebitosIndex)
-
-//router.get('/index/reporte-pdf', NotasPDF);
+router.get('/index/Notaspdf', NotasPDF);
 
 
 

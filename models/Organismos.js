@@ -1,7 +1,7 @@
-import {db_viviendas_fonavi } from "../config/db.js";
+import {db_debitos } from "../config/db.js";
 import {DataTypes} from 'sequelize'
 
-const Organismos = db_viviendas_fonavi.define('DEBITOS',{
+const Organismos = db_debitos.define('DEBITOS',{
         COD_DEB:        {       type: DataTypes.STRING,     allowNull:false, primaryKey: true  ,autoIncrement: false },
         REGISTRA:       {       type: DataTypes.STRING,     allowNull:false},
         FORMA:          {       type: DataTypes.STRING,     allowNull:false},   
