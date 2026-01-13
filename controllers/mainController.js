@@ -112,6 +112,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                     month: '2-digit',
                     day: '2-digit'
                 }))
+    console.log(ultimoDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
    
 
 
@@ -131,13 +132,12 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
       const datosfonavi = await db_debitos.query(
         `SELECT * FROM VISTA_ENVIODEBITOS 
             WHERE COD_DEB = :codigoDebito
-            AND LEN(NRO_AGENTE) > 2
+            AND LEN(NRO_AGENTE) >= 2
             AND FEC_ENVIO <= :ultimodiaSQL 
             ORDER BY NRO_AGENTE ASC`,
         {
           replacements: {
             codigoDebito: codigo_debito,
-            fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
             ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
           },
           type: db_debitos.QueryTypes.SELECT
@@ -253,7 +253,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 COD_DEB:    codigo_debito,
                 SIGLA:      sigla,
                 SUCURSAL:   sucursal,
-                NRO_AGENTE: item.agente,
+                NRO_AGENTE: item.agente_debito,
                 DNI_DESC:   item.dni,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
@@ -893,49 +893,67 @@ async function generartxt(req, res) {
 
 
 async function grabardatos(req, res) {
-    console.log("boton grabar")
-    try {
-          let sinagrupar= globalDatosSinAgrup
+  console.log("boton grabar");
 
-          if (!sinagrupar || sinagrupar.length === 0) {
-            throw new Error("No se encontraron registros en generarDebitos");
-          }
-          const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0]; // asegurate que devuelva Date o 'YYYY-MM-DD'
-          const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
-        
-          console.log(sinagrupar[0])
-          console.log(inicio,final)
+  const t = await db_debitos.transaction();
 
-          await DebitosTotales.destroy({
-            where: {
-              COD_DEB: sinagrupar[0].COD_DEB,
-              FECHA:  {
-                [Op.between]: [inicio, final]
-                      }
-              }
-            })
+  try {
+    let sinagrupar = globalDatosSinAgrup;
 
-          // Paso 2: insertar todos los nuevos registros
-          //const hoy = new Date().toISOString().split("T")[0]; // fecha YYYY-MM-DD 
-          const hoy = wfecha.toISOString().split("T")[0];
-          sinagrupar = sinagrupar.map((item) => ({
-              ...item,
-              FECHA: hoy, // actualiza el campo FECHA
-              }));
-          
-          await DebitosTotales.bulkCreate(sinagrupar);
-
-          // Paso 3: responder al cliente
-          res.render("templates/mensaje", {
-            pagina: "DEBITOS GRABADO EN BASE DE DATOS",
-            mensaje: "¡ Operacion Realizada Satisfactoriamente!",
-            ruta: "/main/enviodebitos"
-          });
-    }catch (error) {
-      console.error("Error en grabardatos:", error);
+    if (!sinagrupar || sinagrupar.length === 0) {
+      throw new Error("No se encontraron registros en generarDebitos");
     }
+
+    const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0];
+    const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
+
+    // DELETE
+    await DebitosTotales.destroy({
+      where: {
+        COD_DEB: sinagrupar[0].COD_DEB,
+        FECHA: {
+          [Op.between]: [inicio, final]
+        }
+      },
+    });
+
+    // Fecha a grabar
+    const hoy = wfecha.toISOString().split("T")[0];
+
+    sinagrupar = sinagrupar.map(item => ({
+      ...item,
+      FECHA: hoy
+    }));
+
+    // INSERT
+    await DebitosTotales.bulkCreate(sinagrupar, {
+      transaction: t,
+      validate: true
+    });
+
+    // COMMIT
+    await t.commit();
+
+    res.render("templates/mensaje", {
+      pagina: "DEBITOS GRABADO EN BASE DE DATOS",
+      mensaje: "¡ Operación realizada satisfactoriamente!",
+      ruta: "/main/enviodebitos"
+    });
+
+  } catch (error) {
+    // 🔴 ROLLBACK OBLIGATORIO
+    await t.rollback();
+
+    console.error("Error en grabardatos:", error);
+
+    res.status(500).render("templates/mensaje", {
+      pagina: "ERROR",
+      mensaje: "Ocurrió un error al grabar los débitos",
+      ruta: "/main/enviodebitos"
+    });
+  }
 }
- 
+
 
 
 
@@ -1005,6 +1023,9 @@ async function NotasPDF (req, res) {
       const Aux = await DebitosTotales.findAll({ 
         where: { COD_DEB: GlobalenviosOrganismo } 
       });
+      let datosNota = await Organismos.findAll({where: { COD_DEB: GlobalenviosOrganismo }
+      })
+      console.log(datosNota)
       const { datos } = agruparCodigoDebito(Aux);
 
       let totalPesos=0
@@ -1072,7 +1093,7 @@ async function NotasPDF (req, res) {
                                                                                             })} \n\n`, alignment: "right" },
 
                   {
-                  text: "\n\n Secretario Contable de la Corte de Justicia\n\n CPN Jorge Adolfo del V. Olmos Morales\n\n Su Despacho:",
+                  text: `\n\n ${datosNota[0].cargo}\n\n ${datosNota[0].responsable}\n\n Su Despacho:`,
                   bold: true,
                   margin: [0, 20, 0, 20],
                   },
