@@ -1,7 +1,7 @@
 import { db_debitos } from "../config/db.js";
 import { DataTypes } from 'sequelize';
 
-const DebitosTotales = db_debitos.define('DebitosTotalesAux', {
+const DebitosTotalesAux = db_debitos.define('DebitosTotalesAux', {
     FECHA:        { type: DataTypes.STRING, allowNull: false },
     OPERATORIA:   { type: DataTypes.STRING, allowNull: false },
     COD:          { type: DataTypes.STRING, allowNull: false },
@@ -26,4 +26,4 @@ const DebitosTotales = db_debitos.define('DebitosTotalesAux', {
     freezeTableName: true
 });
 
-export default DebitosTotales;
+export default DebitosTotalesAux;

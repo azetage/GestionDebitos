@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs';
 import { db_debitos,db_vistaDebitos } from '../config/db.js';
 import path from 'path';
 import Organismos from '../models/Organismos.js';
-import DebitosTotales from '../models/DebitosTotales.js';
+import DebitosTotalesAux from '../models/DebitosTotalesAux.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
 import { Op, Sequelize} from "sequelize";
@@ -452,7 +452,7 @@ async function generarExcel (req,res){
     console.log(GlobalenviosOrganismo+Globalperiodo)
 
     //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
-   let datos = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+   let datos = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
    
 
     //crear archivo excel
@@ -497,7 +497,7 @@ async function generarExcel (req,res){
 async function generarExcelFormateado (req,res){
 
     //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
-   let Aux = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+   let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
    let {datos} = agruparCodigoDebito(Aux)
    
     //crear archivo excel
@@ -685,7 +685,7 @@ async function generarDbf(req, res) {
 async function generartxt(req, res) {
   try {
     
-    let Aux = await DebitosTotales.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
+    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
     let {datos} = agruparCodigoDebito(Aux)
        
     let totalPesos=0
@@ -908,7 +908,7 @@ async function grabardatos(req, res) {
     const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
 
     // DELETE
-    await DebitosTotales.destroy({
+    await DebitosTotalesAux.destroy({
       where: {
         COD_DEB: sinagrupar[0].COD_DEB,
         FECHA: {
@@ -926,7 +926,7 @@ async function grabardatos(req, res) {
     }));
 
     // INSERT
-    await DebitosTotales.bulkCreate(sinagrupar, {
+    await DebitosTotalesAux.bulkCreate(sinagrupar, {
       transaction: t,
       validate: true
     });
@@ -959,7 +959,7 @@ async function grabardatos(req, res) {
 
 
 async function consultaGrabados(){
-  return await DebitosTotales.findAll({
+  return await DebitosTotalesAux.findAll({
       attributes: [
         'FECHA',
         'SIGLA',
@@ -1020,7 +1020,7 @@ async function cierreEjercicio(req,res) {
 async function NotasPDF (req, res) {
     try {
       // Obtener datos
-      const Aux = await DebitosTotales.findAll({ 
+      const Aux = await DebitosTotalesAux.findAll({ 
         where: { COD_DEB: GlobalenviosOrganismo } 
       });
       let datosNota = await Organismos.findAll({where: { COD_DEB: GlobalenviosOrganismo }
@@ -1193,7 +1193,7 @@ async function reportePDFBasico(req, res) {
   
   try {
     // Obtener datos
-    const Aux = await DebitosTotales.findAll({ 
+    const Aux = await DebitosTotalesAux.findAll({ 
       where: { COD_DEB: GlobalenviosOrganismo } 
     });
     

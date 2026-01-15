@@ -9,7 +9,9 @@ router.post('/upload', upload.single('archivoExcel'), (req, res) => {
     const workbook = XLSX.readFile(req.file.path)
     const sheetName = workbook.SheetNames[0]
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName])
-    console.log(data)
+    console.log(Object.keys(data[0]))
+    const firstkey = Object.keys(data[0])[0]
+    console.log(data[0][firstkey])
     res.render('main/resultadoTabla', { data })
 
   } catch (error) {
