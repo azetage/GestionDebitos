@@ -621,64 +621,76 @@ async function  cargarArchivo() {
 
 
 
-
 async function generarDbf(req, res) {
-    reportePDFBasico()
-//     const campos = [
-//     { name: 'FECHA', type: 'D' },                      // Fecha DBF nativa
-//     { name: 'OPERATORIA', type: 'C', size: 20 },
-//     { name: 'COD', type: 'N', size: 10 },
-//     { name: 'COD_DEB', type: 'N', size: 10 },
-//     { name: 'SIGLA', type: 'C', size: 10 },
-//     { name: 'NRO_AGENTE', type: 'N', size: 12 },
-//     { name: 'DNI_DESC', type: 'N', size: 12 },
-//     { name: 'APEYNOM', type: 'C', size: 50 },
-//     { name: 'MTO_CUO', type: 'N', size: 15, decs: 2 }, // 👈 corregido
-//     { name: 'cantidad', type: 'N', size: 8 },
-//     ];
+  try {
+    console.log("generarDBF");
+
+    const campos = [
+      { name: 'FECHA', type: 'D', size: 8 },
+      { name: 'OPERATORIA', type: 'C', size: 20 },
+      { name: 'COD',        type: 'N', size: 10 },
+      { name: 'COD_DEB',    type: 'N', size: 10 },
+      { name: 'SIGLA',      type: 'C', size: 10 },
+      { name: 'NRO_AGENTE', type: 'N', size: 12 },
+      { name: 'DNI_DESC',   type: 'N', size: 12 },
+      { name: 'APEYNOM',    type: 'C', size: 50 },
+      { name: 'MTO_CUO',    type: 'N', size: 15, decs: 2 },
+      { name: 'CANTIDAD',   type: 'N', size: 8 }
+    ];
+
+    const rutaArchivo = path.join(
+      obtenerRutaDescargas(),
+      `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
+    );
+
+    // Crear / sobrescribir DBF
+    const dbf = await DBFFile.create(rutaArchivo, campos);
+    console.log(`Archivo DBF creado: ${dbf.path}`);
+
+    // Buscar datos
+    const aux = await DebitosTotalesAux.findAll({
+      where: { COD_DEB: GlobalenviosOrganismo }
+    });
+
+    const { datos } = agruparCodigoDebito(aux);
+
+    if (!datos || datos.length === 0) {
+      return res.status(404).send("No hay datos para generar el DBF");
+    }
+
+    // Transformar registros
+    const registros = datos.map(d => ({
+      FECHA:      d.FECHA ? new Date(d.FECHA) : new Date(),
+      OPERATORIA: String(d.OPERATORIA ?? ""),
+      COD:        Number(d.COD) || 0,
+      COD_DEB:    Number(d.COD_DEB) || 0,
+      SIGLA:      String(d.SIGLA ?? ""),
+      NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
+      DNI_DESC:   Number(d.DNI_DESC) || 0,
+      APEYNOM:    String(d.APEYNOM ?? ""),
+      MTO_CUO:    Number(d.MTO_CUO) || 0,
+      CANTIDAD:   Number(d.cantidad) || 0
+    }));
+
+    // Insertar registros
+    await dbf.appendRecords(registros);
+    console.log(`Se agregaron ${registros.length} registros`);
 
 
+    // Descargar archivo
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="Debitos ${Globalsigla} - ${datos[0].FECHA}.dbf"`
+    );
+    res.download(rutaArchivo);
 
-//     const rutaArchivo = path.join(
-//         obtenerRutaDescargas(),
-//         `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
-//     );
-
-//     // ⚡ Si ya existe, lo sobrescribe
-//     const dbf = await DBFFile.create(rutaArchivo, campos);
-//     console.log(`Archivo DBF creado: ${dbf.path}`);
-
-//     // Buscar datos
-//     let Aux = await DebitosTotales.findAll({
-//         where: { COD_DEB: GlobalenviosOrganismo }
-//     });
-//     let { datos } = agruparCodigoDebito(Aux);
-
-//     // Transformar registros
-//     const registros = datos.map(d => ({
-//         FECHA:      new Date(d.FECHA), // ✅ se guarda como Date
-//         OPERATORIA: String(d.OPERATORIA ?? ""),
-//         COD:        Number(d.COD) || 0,
-//         COD_DEB:    Number(d.COD_DEB) || 0,
-//         SIGLA:      String(d.SIGLA ?? ""),
-//         NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
-//         DNI_DESC:   Number(d.DNI_DESC) || 0,
-//         APEYNOM:    String(d.APEYNOM ?? ""),
-//         MTO_CUO:    Number(d.MTO_CUO) || 0,
-//         cantidad:   Number(d.cantidad) || 0
-//     }));
-
-//     // Insertar filas
-//     await dbf.append(registros);
-//     console.log(`Se agregaron ${registros.length} registros`);
-
-//     // Enviar archivo al cliente
-//     if (res) {
-//         res.download(rutaArchivo, `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`);
-//   }
+  } catch (error) {
+    console.error("Error generando DBF:", error);
+    if (res && !res.headersSent) {
+      res.status(500).send("Error al generar el archivo DBF");
+    }
+  }
 }
- 
-
 
 
 
