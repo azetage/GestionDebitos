@@ -431,7 +431,6 @@ const seleccionarGrabados = async (req, res) => {
   let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
   GlobalenviosOrganismo = codigo_debito;
   Globalsigla = sigla;
-
   const Organismos = await ConsultarOrganismos();
   const tablaAux = await consultaGrabados();
 
@@ -680,7 +679,7 @@ async function generarDbf(req, res) {
     // Descargar archivo
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="Debitos ${Globalsigla} - ${datos[0].FECHA}.dbf"`
+      `attachment; filename="Debitos ${Globalsigla} - ${Globalperiodo}.dbf"`
     );
     res.download(rutaArchivo);
 

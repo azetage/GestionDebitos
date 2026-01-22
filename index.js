@@ -7,7 +7,7 @@ import { dirname } from 'path';
 import session from 'express-session'
 import usuarioRoutes from './routes/usuarioRoutes.js'
 import mainRoutes from './routes/mainRoutes.js'
-import uploadRoutes from './routes/upload.routes.js'
+import uploadRoutes from './routes/uploadRoutes.js'
 import {db_debitos} from './config/db.js'
 
 
