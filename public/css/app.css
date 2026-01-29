@@ -645,6 +645,9 @@ video {
 .justify-center {
   justify-content: center;
 }
+.justify-items-end {
+  justify-items: end;
+}
 .gap-4 {
   gap: 1rem;
 }
@@ -671,11 +674,17 @@ video {
 .border {
   border-width: 1px;
 }
+.border-2 {
+  border-width: 2px;
+}
 .border-b-2 {
   border-bottom-width: 2px;
 }
 .border-t-2 {
   border-top-width: 2px;
+}
+.border-solid {
+  border-style: solid;
 }
 .border-gray-300 {
   --tw-border-opacity: 1;

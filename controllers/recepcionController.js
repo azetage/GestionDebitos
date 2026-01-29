@@ -1,6 +1,10 @@
 import XLSX from 'xlsx'
 import upload from '../middlewares/upload.js'
+import RecepcionDebitosAux from '../models/RecepcionDebitosAux.js'
+import { db_debitos,db_vistaDebitos } from '../config/db.js';
 
+
+global.globalData= ""
 
 const recepcioDebitosIndex= (req,res)=> {
     return res.render('main/recepcioDebitos', {
@@ -56,7 +60,7 @@ const subirDebitos = [
           console.log("DEBITOS CAPITAL")
           //Mapeo Datos MUN CAPITAL
           Organismo= "MUN CAPITAL "
-          data = datos.map(item   => { 
+          data = datos.slice(0, -1).map(item   => { 
           return {
                       PERIODO:    `${item.Año}-${item.Mes}`,
                       NRO_AGENTE: item.Legajo,
@@ -73,10 +77,9 @@ const subirDebitos = [
          {
           console.log("DEBITOS DIO")
           const periodo = datos[2]['__EMPTY_8']
-          console.log(datos[0],datos[1],datos[2],datos[3])
           //Mapeo Datos DIO
           Organismo= "DIO "
-          data =   datos.slice(4).map(item   => { 
+          data =   datos.slice(4,-2).map(item   => { 
           return {
                       PERIODO:    periodo,
                       NRO_AGENTE: item.__EMPTY_5,
@@ -115,13 +118,13 @@ const subirDebitos = [
           Organismo= "EDUCACION "
           const periodo = datos[2]['__EMPTY_7']
 
-          data =   datos.slice(4).map(item   => { 
+          data =   datos.slice(4,-2).map(item   => { 
           return {
                       PERIODO:    periodo,
                       NRO_AGENTE: item.__EMPTY,
                       DNI_DESC:   item.__EMPTY,
                       APEYNOM:    item.__EMPTY_2,                                
-                      MONTO:      item.__EMPTY_17,                            
+                      MONTO:      Number(item.__EMPTY_17),                            
                  
                   }
                 })
@@ -139,13 +142,13 @@ const subirDebitos = [
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   String(item.CUIL).substring(2, 10),
                       APEYNOM:    item.APEYNOM,                                
-                      MONTO:      item.MONTO,                            
+                      MONTO:      Number(item.MONTO),                            
                  
                   }
                 })
           
          }
-  
+      globalData= data   
       res.render('main/resultadoTabla', { data, pagina : Organismo, archivo : nombreOriginal});
 
     } catch (error) {
@@ -154,10 +157,43 @@ const subirDebitos = [
     }
   }
 ];
+async function grabarDebitos(req, res) {
+  try {
+    const debitos = globalData;
+
+    if (!Array.isArray(debitos) || debitos.length === 0) {
+      throw new Error("No se encontraron registros en generarDebitos");
+    }
+
+    await db_debitos.transaction(async (t) => {
+      await RecepcionDebitosAux.bulkCreate(debitos, {
+        transaction: t,
+        validate: true
+      });
+    });
+
+    return res.render("templates/mensaje", {
+      pagina: "DEBITOS GRABADOS EN BASE DE DATOS",
+      mensaje: "¡Operación realizada satisfactoriamente!",
+      ruta: "/main/recepcionDebitos"
+    });
+
+  } catch (error) {
+    console.error("Error en grabarDebitos:", error);
+
+    return res.status(500).render("templates/mensaje", {
+      pagina: "ERROR",
+      mensaje: error.parent?.message || error.message,
+      ruta: "/main/recepcionDebitos"
+    });
+  }
+}
+
 
 export {
     recepcioDebitosIndex,
-    subirDebitos
+    subirDebitos,
+    grabarDebitos
 
 
 }

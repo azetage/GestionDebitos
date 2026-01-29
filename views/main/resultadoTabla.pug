@@ -2,6 +2,9 @@ extends ../layout/plantilla
 
   
 block contenido
+  a.text-gray-500.px-10.font-semibold.py-3.border-2.border-solid.shadow-md.cursor-pointer.rounded-sm.justify-items-end(class= "shadow-lg shadow-blue-500/50" href="/main/index") INICIO  
+  br
+  br
 
   h2.py-2.text-center.text-2xl.font-bold.text-white.bg-sky-500(class= "shadow-lg shadow-blue-500/50")= pagina
     
@@ -35,3 +38,14 @@ block contenido
                     td.border.px-3.py-2= fila[key]
       else
         p No hay datos para mostrar
+
+  div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                          .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                  
+                              form.space-y-5(action=`/upload/grabardebitos` method="POST")   
+                                  fieldset.px-10.py-1 
+                                      div
+                                          input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
+                                                  type= 'submit' value= 'Grabar Debito')
+
+
