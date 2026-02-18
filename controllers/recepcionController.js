@@ -2,6 +2,12 @@ import XLSX from 'xlsx'
 import upload from '../middlewares/upload.js'
 import RecepcionDebitosAux from '../models/RecepcionDebitosAux.js'
 import { db_debitos,db_vistaDebitos } from '../config/db.js';
+import fs from "fs";
+
+import path from 'path';
+
+
+
 
 
 global.globalData= ""
@@ -11,13 +17,31 @@ const recepcioDebitosIndex= (req,res)=> {
          pagina : "RECEPCION DEBITOS",
 
          })
-
 }
-const subirDebitos = [
-  upload.single('archivoExcel'),
-  (req, res) => {
+
+
+const TipoDocumento = [
+  upload.single('archivoExcel'), // 👈 SOLO AQUÍ
+
+  (req, res, next) => {
+    const extension = path.extname(req.file.originalname).toLowerCase();
+
+    if (['.xls', '.xlsx'].includes(extension)) req.tipo = 'excel';
+    else if (extension === '.txt') req.tipo = 'txt';
+    else if (extension === '.dbf') req.tipo = 'dbf';
+    else return res.status(400).send('Formato no soportado');
+
+    next();
+  }
+];
+
+
+
+const subirDebitos = (req, res) => {
+  const workbook = XLSX.readFile(req.file.path);
     try {
       const nombreOriginal = req.file.originalname;
+      
       const workbook = XLSX.readFile(req.file.path);
       const sheetName = workbook.SheetNames[0];
       const datos = XLSX.utils.sheet_to_json(
@@ -25,6 +49,7 @@ const subirDebitos = [
         { defval: "" }
       );
       const encabezados= Object.keys(datos[0])
+      const Unca = [ 'LEGAJO', 'APELLIDO', 'NOMBRE', 'DOCUMENTO', 'IMPORTE', 'CODIGO' ]
       const MunCapital= ['Legajo','Apellido y nombres','Documento','Mes','Año','Importe']
       const Dio = [ '__EMPTY',    '__EMPTY_1',  '__EMPTY_2',
                     '__EMPTY_3',  '__EMPTY_4',  '__EMPTY_5',
@@ -36,7 +61,8 @@ const subirDebitos = [
                     '__EMPTY_21', '__EMPTY_22', '__EMPTY_23',
                     '__EMPTY_24', '__EMPTY_25', '__EMPTY_26',
                     '__EMPTY_27', '__EMPTY_28', '__EMPTY_29']
-      const Diputados= [ 'NRO_AGENTE','APEYNOM', 'CUIL','MONTO','COD','PAGO','TIPO','DNI_DESC']
+
+      const Diputados = [ 'Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', 'INSTITUTO PROV. DE LA VIVIENDA']
 
       const Educacion= [
                     '__EMPTY',    '__EMPTY_1',
@@ -50,12 +76,57 @@ const subirDebitos = [
                     '__EMPTY_16', '__EMPTY_17',
                     '__EMPTY_18', '__EMPTY_19'
                     ]
-      const PoderJudicial = [ 'CUIL', 'NRO_AGENTE', 'APEYNOM', 'MONTO','COD','PAGO','TIPO','DNI_DESC']
+      
+      const PoderJudicial = [
+                              'CUIL',       'NRO_AGENTE',
+                              'NOMBRE',     'DESCUENTO',
+                              'DESCONTADO', 'DISPONIBLE',
+                              'CODIGO',     'AÑO',
+                              'MES'
+                            ]
 
+      const Senadores = [
+                          '__EMPTY',
+                          'REPORTE DE DESCUENTOS CAMARA DE SENADORES\r\n' +
+                            'LIQUIDACION: ENERO 2026\r\n' +
+                            'ORGANISMO: I P V',
+                          '__EMPTY_1',
+                          '__EMPTY_2',
+                          '__EMPTY_3',
+                          '__EMPTY_4',
+                          '__EMPTY_5',
+                          '__EMPTY_6',
+                          '__EMPTY_7',
+                          '__EMPTY_8',
+                          '__EMPTY_9'
+                        ]
       let data //datos mapa formateados
       let Organismo= ""
       console.log(encabezados); // encabezados
-      if (JSON.stringify(encabezados) == JSON.stringify(MunCapital))
+      
+      
+      
+      
+      if (JSON.stringify(encabezados) == JSON.stringify(Unca)) {
+ 
+          console.log("UNCa")
+          console.log(encabezados)
+
+          Organismo= "UNCa"
+          data =   datos.map(item   => { 
+          return {
+                      PERIODO:    nombreOriginal,
+                      NRO_AGENTE: item.LEGAJO,
+                      DNI_DESC:   String(item.DOCUMENTO),//.substring(2, 10),
+                      APEYNOM:    `${item.APELLIDO} ${item.NOMBRE}`,                                
+                      MONTO:      Number(item.IMPORTE),                            
+                 
+                  }
+                })
+          
+         }
+
+      else if (JSON.stringify(encabezados) == JSON.stringify(MunCapital))
         {
           console.log("DEBITOS CAPITAL")
           //Mapeo Datos MUN CAPITAL
@@ -91,25 +162,27 @@ const subirDebitos = [
                 })
                          // console.log(data)
               }
+
       else if (JSON.stringify(encabezados) == JSON.stringify(Diputados)) {
  
           console.log("diputados")
           console.log(encabezados)
 
-          Organismo= "DIPUTADOS "
+          Organismo= "Diputados "
           data =   datos.map(item   => { 
           return {
                       PERIODO:    nombreOriginal,
-                      NRO_AGENTE: item.NRO_AGENTE,
-                      DNI_DESC:   item.DNI_DESC,
-                      APEYNOM:    item.APEYNOM,                                
-                      MONTO:      item.MONTO,                            
+                      NRO_AGENTE: item['Nro. Legajo'],
+                      DNI_DESC:   String(item['C.U.I.L.']).substring(2, 10),
+                      APEYNOM:    `${item.Apellido} ${item.Nombre}`,                                
+                      MONTO:      item['INSTITUTO PROV. DE LA VIVIENDA']*-1,                            
                  
                   }
                 })
           
          }
-          else if (JSON.stringify(encabezados) == JSON.stringify(Educacion)) {
+      
+      else if (JSON.stringify(encabezados) == JSON.stringify(Educacion)) {
  
           console.log("Educacion")
           console.log(encabezados)
@@ -130,7 +203,8 @@ const subirDebitos = [
                 })
           
          }
-         else if (JSON.stringify(encabezados) == JSON.stringify(PoderJudicial)) {
+
+      else if (JSON.stringify(encabezados) == JSON.stringify(PoderJudicial)) {
  
           console.log("PoderJudicial")
           console.log(encabezados)
@@ -138,15 +212,44 @@ const subirDebitos = [
           Organismo= "PODER JUDICIAL "
           data =   datos.map(item   => { 
           return {
-                      PERIODO:    nombreOriginal,
+                      PERIODO:    `${item.AÑO}-${item.MES}` ,
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   String(item.CUIL).substring(2, 10),
-                      APEYNOM:    item.APEYNOM,                                
-                      MONTO:      Number(item.MONTO),                            
+                      APEYNOM:    item.NOMBRE,                                
+                      MONTO:      Number(item.DESCUENTO),                            
                  
                   }
                 })
           
+         }
+
+      else if (JSON.stringify(encabezados) == JSON.stringify(Senadores)) {
+ 
+          console.log("Senadores")
+          console.log(encabezados)
+          console.log(datos[5])
+          console.log(datos[7])
+          console.log(datos[9])
+
+
+
+
+          Organismo= " Senadores "
+          data =   datos.slice(1).map(item   => { 
+          return {
+                      PERIODO:    item.__EMPTY ,
+                      NRO_AGENTE: item.__EMPTY_1,
+                      DNI_DESC:   item.__EMPTY_1,
+                      APEYNOM:    `${item.__EMPTY_3} ${item.__EMPTY_4}`,                                
+                      MONTO:      Number(item.__EMPTY_5),                            
+                 
+                  }
+                })
+          
+         }
+         
+         else{
+              throw new error
          }
       globalData= data   
       res.render('main/resultadoTabla', { data, pagina : Organismo, archivo : nombreOriginal});
@@ -156,7 +259,49 @@ const subirDebitos = [
       res.send('Error al procesar el archivo');
     }
   }
-];
+
+const subirDebitosBanco = (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió archivo TXT' });
+    }
+
+    const contenido = fs.readFileSync(req.file.path, 'utf8');
+
+    const lineas = contenido
+      .split(/\r?\n/)
+     // .filter(l => l.trim() !== '');
+
+    let datos = lineas.map(item => {
+            return {
+              codigo:         item.slice(0, 6),
+              fechaInicio :   item.slice(8,16),
+              fechaFin :      item.slice(16,24),
+              periodo:        item.slice(24,30)
+               
+
+            };
+          });
+    
+    console.log(datos);
+    
+  
+
+    res.json({
+   
+      datos: datos,
+      ok: true,
+      registros: lineas.length,
+      filas: lineas,   // 👈 texto original crudo
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
 async function grabarDebitos(req, res) {
   try {
     const debitos = globalData;
@@ -189,11 +334,18 @@ async function grabarDebitos(req, res) {
   }
 }
 
+async function compararDebitos(req,res) {
 
+  let DatosDebitosTotales = db_debitos
+  
+}
 export {
     recepcioDebitosIndex,
     subirDebitos,
-    grabarDebitos
+    subirDebitosBanco,
+    grabarDebitos,
+    TipoDocumento
+    
 
 
 }
