@@ -1,0 +1,38 @@
+extends ../layout/plantilla  
+
+  
+block contenido
+  a.text-gray-500.px-10.font-semibold.py-3.border-2.border-solid.shadow-md.cursor-pointer.rounded-sm.justify-items-end(class= "shadow-lg shadow-blue-500/50" href="/main/index") INICIO  
+  br
+  br
+
+  h2.py-2.text-center.text-2xl.font-bold.text-white.bg-sky-500(class= "shadow-lg shadow-blue-500/50")= pagina
+        
+    h3.py-2.text-center.text-xl.font-bold= archivo
+
+    div.mt-10.mx-auto.max-w-7xl.px-6
+        h2 Listado de Débitos
+
+        table.table-auto.w-full.border-collapse.border
+            thead.bg-gray-200
+                tr
+                    th.border.p-2 Reg
+                    th.border.p-2 Sucursal
+                    th.border.p-2 Tipo Cuenta
+                    th.border.p-2 Nro Agente
+                    th.border.p-2 Importe
+                    th.border.p-2 Fecha
+                    th.border.p-2 Estado
+                    th.border.p-2 Observacion
+
+            tbody
+                each item in data
+                    tr
+                        td.border.p-2= item.registro
+                        td.border.p-2= item.sucursal
+                        td.border.p-2= item.tipo
+                        td.border.p-2= item.nro_agente
+                        td.border.p-2= item.importe.toFixed(2)
+                        td.border.p-2= item.fecha
+                        td.border.p-2= item.estado
+                        td.border.p-2= item.observacion

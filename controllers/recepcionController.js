@@ -7,9 +7,6 @@ import fs from "fs";
 import path from 'path';
 
 
-
-
-
 global.globalData= ""
 
 const recepcioDebitosIndex= (req,res)=> {
@@ -114,7 +111,8 @@ const subirDebitos = (req, res) => {
 
           Organismo= "UNCa"
           data =   datos.map(item   => { 
-          return {
+          return {    
+                      ORGANISMO: Organismo,
                       PERIODO:    nombreOriginal,
                       NRO_AGENTE: item.LEGAJO,
                       DNI_DESC:   String(item.DOCUMENTO),//.substring(2, 10),
@@ -124,7 +122,7 @@ const subirDebitos = (req, res) => {
                   }
                 })
           
-         }
+        }
 
       else if (JSON.stringify(encabezados) == JSON.stringify(MunCapital))
         {
@@ -133,6 +131,7 @@ const subirDebitos = (req, res) => {
           Organismo= "MUN CAPITAL "
           data = datos.slice(0, -1).map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    `${item.Año}-${item.Mes}`,
                       NRO_AGENTE: item.Legajo,
                       DNI_DESC:   item.Documento,
@@ -141,7 +140,7 @@ const subirDebitos = (req, res) => {
                  
                   }
                 })
-              }
+        }
  
       
       else if (JSON.stringify(encabezados) == JSON.stringify(Dio)) 
@@ -152,6 +151,7 @@ const subirDebitos = (req, res) => {
           Organismo= "DIO "
           data =   datos.slice(4,-2).map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    periodo,
                       NRO_AGENTE: item.__EMPTY_5,
                       DNI_DESC:   item.__EMPTY,
@@ -161,7 +161,7 @@ const subirDebitos = (req, res) => {
                   }
                 })
                          // console.log(data)
-              }
+        }
 
       else if (JSON.stringify(encabezados) == JSON.stringify(Diputados)) {
  
@@ -171,6 +171,7 @@ const subirDebitos = (req, res) => {
           Organismo= "Diputados "
           data =   datos.map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    nombreOriginal,
                       NRO_AGENTE: item['Nro. Legajo'],
                       DNI_DESC:   String(item['C.U.I.L.']).substring(2, 10),
@@ -180,7 +181,7 @@ const subirDebitos = (req, res) => {
                   }
                 })
           
-         }
+        }
       
       else if (JSON.stringify(encabezados) == JSON.stringify(Educacion)) {
  
@@ -193,6 +194,7 @@ const subirDebitos = (req, res) => {
 
           data =   datos.slice(4,-2).map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    periodo,
                       NRO_AGENTE: item.__EMPTY,
                       DNI_DESC:   item.__EMPTY,
@@ -202,7 +204,7 @@ const subirDebitos = (req, res) => {
                   }
                 })
           
-         }
+        }
 
       else if (JSON.stringify(encabezados) == JSON.stringify(PoderJudicial)) {
  
@@ -212,6 +214,7 @@ const subirDebitos = (req, res) => {
           Organismo= "PODER JUDICIAL "
           data =   datos.map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    `${item.AÑO}-${item.MES}` ,
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   String(item.CUIL).substring(2, 10),
@@ -221,15 +224,13 @@ const subirDebitos = (req, res) => {
                   }
                 })
           
-         }
+        }
 
       else if (JSON.stringify(encabezados) == JSON.stringify(Senadores)) {
  
           console.log("Senadores")
           console.log(encabezados)
-          console.log(datos[5])
-          console.log(datos[7])
-          console.log(datos[9])
+   
 
 
 
@@ -237,6 +238,7 @@ const subirDebitos = (req, res) => {
           Organismo= " Senadores "
           data =   datos.slice(1).map(item   => { 
           return {
+                      ORGANISMO: Organismo,
                       PERIODO:    item.__EMPTY ,
                       NRO_AGENTE: item.__EMPTY_1,
                       DNI_DESC:   item.__EMPTY_1,
@@ -246,11 +248,12 @@ const subirDebitos = (req, res) => {
                   }
                 })
           
-         }
+        }
          
-         else{
+      else{
               throw new error
          }
+      
       globalData= data   
       res.render('main/resultadoTabla', { data, pagina : Organismo, archivo : nombreOriginal});
 
@@ -260,7 +263,7 @@ const subirDebitos = (req, res) => {
     }
   }
 
-const subirDebitosBanco = (req, res) => {
+  const subirDebitosBanco = (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió archivo TXT' });
@@ -268,37 +271,37 @@ const subirDebitosBanco = (req, res) => {
 
     const contenido = fs.readFileSync(req.file.path, 'utf8');
 
-    const lineas = contenido
-      .split(/\r?\n/)
-     // .filter(l => l.trim() !== '');
+    const lineas = contenido.split(/\r?\n/).filter(l => l.trim())
 
-    let datos = lineas.map(item => {
-            return {
-              codigo:         item.slice(0, 6),
-              fechaInicio :   item.slice(8,16),
-              fechaFin :      item.slice(16,24),
-              periodo:        item.slice(24,30)
-               
 
-            };
-          });
+     const data = lineas.slice(1,-1).map(l => {
+      return {
+        registro:l.slice(0,1),
+        sucursal: l.slice(1, 5),
+        tipo: l.slice(5, 7),
+        nro_agente: l.slice(7, 18),
+        importe: Number(l.slice(18, 33)) / 100,
+        fecha: l.slice(33, 41),
+        estado: l.slice(41, 42),
+        observacion:l.slice(42, 72),
+      }
+    })
+    console.log(data);
     
-    console.log(datos);
-    
-  
-
-    res.json({
+    // res.json({
    
-      datos: datos,
-      ok: true,
-      registros: lineas.length,
-      filas: lineas,   // 👈 texto original crudo
-    });
+    //   datos: datos,
+    //   ok: true,
+    //   registros: lineas.length,
+    //   filas: lineas,   // 👈 texto original crudo
+    // });
+    
+    res.render('main/resultadoTablatxt', { data });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+  };
 
 
 
