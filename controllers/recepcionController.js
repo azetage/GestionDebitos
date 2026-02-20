@@ -295,7 +295,7 @@ const subirDebitos = (req, res) => {
       Organismo = "BSE JUBILIDOS"
       data = lineas.map(l => {
         return {
-          tipo:l.slice(0,1),
+          ttipo:l.slice(0,1),
           cod_emp: l.slice(1, 5),
           cod_serv: l.slice(5, 8),
           desde: l.slice(8, 16),
@@ -303,14 +303,13 @@ const subirDebitos = (req, res) => {
           venc: l.slice(24,32),
           cbu_1:l.slice(32,40),
           cbu_2:l.slice(40,54),
-          nro_agente:l.slice(44,50),
+          nro_agente:l.slice(43,53),
           periodo:l.slice(54,60),
           importe: Number(l.slice(60, 74)) / 100,
           comprobante: l.slice(74, 81),
           fecha_cobro: l.slice(81, 89),
-          estado: l.slice(89, 96),
-          observacion: l.slice(96, 216),
-          
+          estado: l.slice(89, 90),
+          observacion: l.slice(90, 210),
         }
       })
     }
@@ -328,13 +327,13 @@ const subirDebitos = (req, res) => {
           venc: l.slice(24,32),
           cbu_1:l.slice(32,40),
           cbu_2:l.slice(40,54),
-          nro_agente:l.slice(44,50),
+          nro_agente:l.slice(43,53),
           periodo:l.slice(54,60),
           importe: Number(l.slice(60, 74)) / 100,
           comprobante: l.slice(74, 81),
           fecha_cobro: l.slice(81, 89),
-          estado: l.slice(89, 96),
-          observacion: l.slice(96, 216),
+          estado: l.slice(89, 90),
+          observacion: l.slice(90, 210),
           
         }
       })
