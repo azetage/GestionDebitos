@@ -265,16 +265,19 @@ const subirDebitos = (req, res) => {
 
   const subirDebitosBanco = (req, res) => {
   try {
+    let Organismo
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió archivo TXT' });
     }
 
     const contenido = fs.readFileSync(req.file.path, 'utf8');
-
+    let data
     const lineas = contenido.split(/\r?\n/).filter(l => l.trim())
 
-
-     const data = lineas.slice(1,-1).map(l => {
+    if(lineas[0].includes("REE")){
+      console.log("BANCO NACION")   
+      Organismo = "BANCO NACION" 
+      data = lineas.slice(1,-1).map(l => {
       return {
         registro:l.slice(0,1),
         sucursal: l.slice(1, 5),
@@ -286,17 +289,59 @@ const subirDebitos = (req, res) => {
         observacion:l.slice(42, 72),
       }
     })
-    console.log(data);
-    
-    // res.json({
+    }
+    else if(lineas[0].includes("848"))
+    { console.log("BSE JUBILADOS")
+      Organismo = "BSE JUBILIDOS"
+      data = lineas.map(l => {
+        return {
+          tipo:l.slice(0,1),
+          cod_emp: l.slice(1, 5),
+          cod_serv: l.slice(5, 8),
+          desde: l.slice(8, 16),
+          hasta: l.slice(16,24),
+          venc: l.slice(24,32),
+          cbu_1:l.slice(32,40),
+          cbu_2:l.slice(40,54),
+          nro_agente:l.slice(44,50),
+          periodo:l.slice(54,60),
+          importe: Number(l.slice(60, 74)) / 100,
+          comprobante: l.slice(74, 81),
+          fecha_cobro: l.slice(81, 89),
+          estado: l.slice(89, 96),
+          observacion: l.slice(96, 216),
+          
+        }
+      })
+    }
+    else if(lineas[0].includes("849")){
+      console.log("BSE SUELDOS")
+      Organismo = "BSE SUELDOS"
+
+      data = lineas.map(l => {
+        return {
+          tipo:l.slice(0,1),
+          cod_emp: l.slice(1, 5),
+          cod_serv: l.slice(5, 8),
+          desde: l.slice(8, 16),
+          hasta: l.slice(16,24),
+          venc: l.slice(24,32),
+          cbu_1:l.slice(32,40),
+          cbu_2:l.slice(40,54),
+          nro_agente:l.slice(44,50),
+          periodo:l.slice(54,60),
+          importe: Number(l.slice(60, 74)) / 100,
+          comprobante: l.slice(74, 81),
+          fecha_cobro: l.slice(81, 89),
+          estado: l.slice(89, 96),
+          observacion: l.slice(96, 216),
+          
+        }
+      })
+    }
+    console.log(Object.keys(data[0]))
    
-    //   datos: datos,
-    //   ok: true,
-    //   registros: lineas.length,
-    //   filas: lineas,   // 👈 texto original crudo
-    // });
-    
-    res.render('main/resultadoTablatxt', { data });
+    res.render('main/resultadoTablatxt', { data , archivo : Organismo});
 
   } catch (error) {
     res.status(500).json({ error: error.message });

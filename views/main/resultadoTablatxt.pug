@@ -13,26 +13,32 @@ block contenido
     div.mt-10.mx-auto.max-w-7xl.px-6
         h2 Listado de Débitos
 
-        table.table-auto.w-full.border-collapse.border
-            thead.bg-gray-200
-                tr
-                    th.border.p-2 Reg
-                    th.border.p-2 Sucursal
-                    th.border.p-2 Tipo Cuenta
-                    th.border.p-2 Nro Agente
-                    th.border.p-2 Importe
-                    th.border.p-2 Fecha
-                    th.border.p-2 Estado
-                    th.border.p-2 Observacion
+        div(class="overflow-y-auto max-h-96")    
 
-            tbody
-                each item in data
+            table#TablaDebitosTxT.table-auto.w-full.border-collapse.border
+                thead.bg-gray-200
                     tr
-                        td.border.p-2= item.registro
-                        td.border.p-2= item.sucursal
-                        td.border.p-2= item.tipo
-                        td.border.p-2= item.nro_agente
-                        td.border.p-2= item.importe.toFixed(2)
-                        td.border.p-2= item.fecha
-                        td.border.p-2= item.estado
-                        td.border.p-2= item.observacion
+                        each key in Object.keys(data[0])
+                            th.border.px-2.py-1= key
+
+                tbody
+                    each row in data
+                        tr
+                            each key in Object.keys(row)
+                                td.border.px-2.py-1= row[key]
+
+
+
+    script.
+        $(document).ready(function () {
+            $('#TablaDebitosTxT').DataTable({
+            paging: false,
+            searching: true,
+            ordering: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
+            }
+            });
+            // activar encabezados fijos
+            new $.fn.dataTable.FixedHeader(table);
+        });
