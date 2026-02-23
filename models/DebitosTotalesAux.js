@@ -13,7 +13,7 @@ const DebitosTotalesAux = db_debitos.define('DebitosTotalesAux', {
     APEYNOM:      { type: DataTypes.STRING, allowNull: false },
     MTO_CUO:      { type: DataTypes.DECIMAL(10,2), allowNull: false },
     cantidad:     { type: DataTypes.STRING, allowNull: false },
-    FECHA_VTO:    {       type: DataTypes.DATE,       allowNull:true},
+    FECHA_VTO:    { type: DataTypes.DATE,       allowNull:true},
 },{
   indexes: [
     {

@@ -5,6 +5,7 @@ import { db_debitos,db_vistaDebitos } from '../config/db.js';
 import fs from "fs";
 
 import path from 'path';
+import { ro } from 'date-fns/locale';
 
 
 global.globalData= ""
@@ -266,6 +267,7 @@ const subirDebitos = (req, res) => {
   const subirDebitosBanco = async (req, res) => {
   try {
     let Organismo
+    let codigoDebito
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió archivo TXT' });
     }
@@ -277,6 +279,7 @@ const subirDebitos = (req, res) => {
     if(lineas[0].includes("REE")){
       console.log("BANCO NACION")   
       Organismo = "BANCO NACION" 
+      codigoDebito = 11
       data = lineas.slice(1,-1).map(l => {
       return {
         registro:l.slice(0,1),
@@ -292,7 +295,9 @@ const subirDebitos = (req, res) => {
     }
     else if(lineas[0].includes("848"))
     { console.log("BSE JUBILADOS")
-      Organismo = "BSE JUBILIDOS"
+      Organismo = "BSE JUBILADOS"
+      codigoDebito = 34
+
       data = lineas.map(l => {
         return {
           ttipo:l.slice(0,1),
@@ -316,6 +321,8 @@ const subirDebitos = (req, res) => {
     else if(lineas[0].includes("849")){
       console.log("BSE SUELDOS")
       Organismo = "BSE SUELDOS"
+      codigoDebito = 37
+
 
       data = lineas.map(l => {
         return {
@@ -341,19 +348,41 @@ const subirDebitos = (req, res) => {
     console.log(Object.keys(data[0]))
 
 
+  const agentes = data
+  .map(x => String(Number(x.nro_agente)))
+  .filter(a => a && a !== "NaN");
+
+const rows = await db_debitos.query(
+  `SELECT nro_agente, dni_desc, apeynom
+   FROM Debitos.dbo.DEBITOS_TOTAL
+   WHERE nro_agente IN (:agentes)
+   AND cod_deb = :codigoDebito`,
+  {
+    replacements: { agentes, codigoDebito },
+    type: db_debitos.QueryTypes.SELECT
+  }
+);
+
+// 👉 convertir a mapa por nro_agente
+const mapa = Object.fromEntries(
+  rows.map(r => [String(r.nro_agente), r])
+);
+
+// 👉 UNA sola iteración real
+data = data.map(item => {
+  const info = mapa[String(Number(item.nro_agente))] || {};
+
+  return {
+    ORGANISMO: Organismo,
+    PERIODO: item.periodo || item.fecha,
+    NRO_AGENTE: item.nro_agente,
+    DNI_DESC: info.dni_desc || "",
+    APEYNOM: info.apeynom || "",
+    MONTO: Number(item.importe)
+  };
+});
 
 
-    data =   data.map(item   => { 
-          return {    
-                      ORGANISMO: Organismo,
-                      PERIODO:    item.periodo||item.fecha,
-                      NRO_AGENTE: item.nro_agente,
-                      DNI_DESC:   "",
-                      APEYNOM:    "",                                
-                      MONTO:      Number(item.importe),                            
-                 
-                  }
-                })
     let suma = 0,cantidad =0;
     data.forEach(item => {
       suma += item.MONTO,
