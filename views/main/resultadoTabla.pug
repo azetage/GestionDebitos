@@ -38,9 +38,15 @@ block contenido
                     td.border.px-3.py-2= fila[key]
       else
         p No hay datos para mostrar
-
+       
+      div(class="grid gap-6 mb-3 md:grid-cols-2 shadow-lg shadow-gray-500/50").py-2.text-xl.font-bold.bg-gray-200.text-gray-500.py-3
+        div
+            h4 Elementos : #{cantidad}
+        div
+            h4 Monto Total : #{suma} 
   div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                          .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+     
+      .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                   
                               form.space-y-5(action=`/upload/grabardebitos` method="POST")   
                                   fieldset.px-10.py-1 

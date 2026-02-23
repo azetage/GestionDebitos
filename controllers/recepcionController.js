@@ -256,7 +256,14 @@ const subirDebitos = (req, res) => {
          }
       
       globalData= data   
-      res.render('main/resultadoTabla', { data, pagina : Organismo, archivo : nombreOriginal});
+
+    let suma = 0,cantidad =0;
+    data.forEach(item => {
+      suma += item.MONTO,
+      cantidad = cantidad +1
+    });
+
+      res.render('main/resultadoTabla', { data, pagina : Organismo, archivo : nombreOriginal, suma:suma.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),cantidad:cantidad});
 
     } catch (error) {
       console.error(error);
