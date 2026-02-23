@@ -263,7 +263,7 @@ const subirDebitos = (req, res) => {
     }
   }
 
-  const subirDebitosBanco = (req, res) => {
+  const subirDebitosBanco = async (req, res) => {
   try {
     let Organismo
     if (!req.file) {
@@ -339,8 +339,28 @@ const subirDebitos = (req, res) => {
       })
     }
     console.log(Object.keys(data[0]))
-   
-    res.render('main/resultadoTablatxt', { data , archivo : Organismo});
+
+
+
+
+    data =   data.map(item   => { 
+          return {    
+                      ORGANISMO: Organismo,
+                      PERIODO:    item.periodo||item.fecha,
+                      NRO_AGENTE: item.nro_agente,
+                      DNI_DESC:   "",
+                      APEYNOM:    "",                                
+                      MONTO:      Number(item.importe),                            
+                 
+                  }
+                })
+    let suma = 0,cantidad =0;
+    data.forEach(item => {
+      suma += item.MONTO,
+      cantidad = cantidad +1
+    });
+
+  res.render('main/resultadoTablatxt', { data , archivo : Organismo, suma: suma.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}), cantidad: cantidad});
 
   } catch (error) {
     res.status(500).json({ error: error.message });
