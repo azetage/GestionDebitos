@@ -219,6 +219,7 @@ const subirDebitos = (req, res) => {
                       PERIODO:    `${item.AÑO}-${item.MES}` ,
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   String(item.CUIL).substring(2, 10),
+                      CUIL:       item.CUIL,
                       APEYNOM:    item.NOMBRE,                                
                       MONTO:      Number(item.DESCUENTO),                            
                  

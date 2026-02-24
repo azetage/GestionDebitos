@@ -314,6 +314,7 @@ function agruparCodigoDebito(datos){
                 SUCURSAL:   item.SUCURSAL,
                 NRO_AGENTE: item.NRO_AGENTE,
                 DNI_DESC:   item.DNI_DESC,
+                CUIL:       item.CUIL,
                 APEYNOM:    item.APEYNOM,
                 MTO_CUO:    0,
                 cantidad:   0,
@@ -620,6 +621,7 @@ async function  cargarArchivo() {
 
 
 
+
 async function generarDbf(req, res) {
   try {
     console.log("generarDBF");
@@ -630,25 +632,37 @@ async function generarDbf(req, res) {
       { name: 'COD',        type: 'N', size: 10 },
       { name: 'COD_DEB',    type: 'N', size: 10 },
       { name: 'SIGLA',      type: 'C', size: 10 },
-      { name: 'NRO_AGENTE', type: 'N', size: 12 },
+
+      // ⚠️ identificadores mejor char para no perder ceros
+      { name: 'NRO_AGENTE', type: 'C', size: 15 },
       { name: 'DNI_DESC',   type: 'N', size: 12 },
+      { name: 'CUIL', type: 'C', size: 15 },
       { name: 'APEYNOM',    type: 'C', size: 50 },
       { name: 'MTO_CUO',    type: 'N', size: 15, decs: 2 },
       { name: 'CANTIDAD',   type: 'N', size: 8 }
     ];
 
+    // ✅ nombre único (evita EEXIST)
+    const nombreArchivo = `Debitos-${Globalsigla}-${Globalperiodo}-${Date.now()}.dbf`;
+
     const rutaArchivo = path.join(
       obtenerRutaDescargas(),
-      `Debitos ${Globalsigla} - ${Globalperiodo}.dbf`
+      nombreArchivo
     );
 
-    // Crear / sobrescribir DBF
+    // ✅ borrar si existe (doble seguridad)
+    if (fs.existsSync(rutaArchivo)) {
+      fs.unlinkSync(rutaArchivo);
+    }
+
+    // Crear DBF
     const dbf = await DBFFile.create(rutaArchivo, campos);
-    console.log(`Archivo DBF creado: ${dbf.path}`);
+    console.log(`Archivo DBF creado: ${rutaArchivo}`);
 
     // Buscar datos
     const aux = await DebitosTotalesAux.findAll({
-      where: { COD_DEB: GlobalenviosOrganismo }
+      where: { COD_DEB: GlobalenviosOrganismo },
+      raw: true
     });
 
     const { datos } = agruparCodigoDebito(aux);
@@ -664,8 +678,12 @@ async function generarDbf(req, res) {
       COD:        Number(d.COD) || 0,
       COD_DEB:    Number(d.COD_DEB) || 0,
       SIGLA:      String(d.SIGLA ?? ""),
-      NRO_AGENTE: Number(d.NRO_AGENTE) || 0,
+
+      // ✅ mantener como texto (no perder ceros)
+      NRO_AGENTE: String(d.NRO_AGENTE ?? ""),
       DNI_DESC:   Number(d.DNI_DESC) || 0,
+      CUIL:       String(d.CUIL ?? "NO"),
+
       APEYNOM:    String(d.APEYNOM ?? ""),
       MTO_CUO:    Number(d.MTO_CUO) || 0,
       CANTIDAD:   Number(d.cantidad) || 0
@@ -673,23 +691,31 @@ async function generarDbf(req, res) {
 
     // Insertar registros
     await dbf.appendRecords(registros);
+
     console.log(`Se agregaron ${registros.length} registros`);
 
-
-    // Descargar archivo
+    // Headers descarga
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="Debitos ${Globalsigla} - ${Globalperiodo}.dbf"`
+      `attachment; filename="${nombreArchivo}"`
     );
-    res.download(rutaArchivo);
+
+    // Descargar
+    res.download(rutaArchivo, nombreArchivo, (err) => {
+      // ✅ limpiar archivo temporal luego de enviar
+      fs.unlink(rutaArchivo, () => {});
+      if (err) console.error(err);
+    });
 
   } catch (error) {
     console.error("Error generando DBF:", error);
-    if (res && !res.headersSent) {
+
+    if (!res.headersSent) {
       res.status(500).send("Error al generar el archivo DBF");
     }
   }
 }
+
 
 
 
@@ -941,6 +967,14 @@ async function grabardatos(req, res) {
       transaction: t,
       validate: true
     });
+    await db_debitos.query(
+  `EXEC dbo.CargarCuil`,
+  {
+    transaction: t,
+    type: db_debitos.QueryTypes.SELECT
+  }
+);
+
 
     // COMMIT
     await t.commit();
