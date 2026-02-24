@@ -360,7 +360,7 @@ const subirDebitos = (req, res) => {
   .filter(a => a && a !== "NaN");
 
 const rows = await db_debitos.query(
-  `SELECT nro_agente, dni_desc, apeynom
+  `SELECT  nro_agente, dni_desc, apeynom
    FROM Debitos.dbo.DEBITOS_TOTAL
    WHERE nro_agente IN (:agentes)
    AND cod_deb = :codigoDebito`,
