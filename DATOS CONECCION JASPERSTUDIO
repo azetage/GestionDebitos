@@ -1,0 +1,51 @@
+// SQLServerAmazon
+// com.microsoft.sqlserver.jdbc.SQLServerDriver
+// jdbc:sqlserver://dbsigevi.cwrnyczk66wq.sa-east-1.rds.amazonaws.com:1433;databaseName=Debitos;encrypt=true;trustServerCertificate=true
+// admin
+// kx0nbATWcwAzMVCpL2uX
+
+
+// JasperReports Server
+// http://54.94.40.190/jasperserver/
+// jasperadmin
+// WNIVpb1Cgcx=
+
+
+
+
+// export async function POST(request: Request) {
+//     const body = await request.json();
+//     // const { token, fecha, ...otrosParams } = body;
+//     const { ficha , dni_tit, reportName} = body;
+
+//     try {
+//         const jasperClient = axios.create({
+//             baseURL: 'http://54.94.40.190/jasperserver/rest_v2/reports/',
+//             auth: {
+//                 username: 'jasperadmin',
+//                 password: 'WNIVpb1Cgcx=',
+//             }
+//         });
+
+//         const response = await jasperClient.get(
+//             `Reports/Postulantes/${reportName}.pdf`,
+//             {
+//                 params: { ficha, dni_tit },
+//                 responseType: 'arraybuffer'
+//             }
+//         );
+
+//         return new NextResponse(response.data, {
+//             status: 200,
+//             headers: {
+//                 'Content-Type': 'application/pdf',
+//                 'Content-Disposition': `attachment; filename=${reportName}-${ficha}.pdf`,
+//             },
+//         });
+//     } catch (error: any) {
+//         console.error('Error generating report:', error);
+//         return NextResponse.json({
+//             message: error.response?.data?.message || 'Error al generar el reporte'
+//         }, { status: 500 });
+//     }
+// }
