@@ -10,6 +10,8 @@ import { writeFile } from 'fs/promises';
 import { Op, Sequelize} from "sequelize";
 import PdfPrinter from 'pdfmake';
 import axios from "axios";
+import { PDFDocument } from "pdf-lib";
+
 
 
 
@@ -1073,7 +1075,7 @@ async function NotasPDF (req, res) {
 
     try {
         const response = await axios.get(
-          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/NotaEnvioOrganismos.pdf',
+          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/ORGANISMOS/NotaEnvioOrganismos.pdf',
           {
               auth: {
                   username: 'jasperadmin',
@@ -1289,7 +1291,7 @@ const ReporteBancoSantiago = async (req, res) => {
 
     try {
         const response = await axios.get(
-          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/NotaEnvioBSE.pdf',
+          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BSE/BSENotaEnvio.pdf',
           {
               auth: {
                   username: 'jasperadmin',
@@ -1323,6 +1325,84 @@ const ReporteBancoSantiago = async (req, res) => {
 }
 };
 
+
+  const ReporteBancoNacion = async (req, res) => {
+       console.log("reporteBNA");
+
+       try {
+        // 🔹 Traer ambos PDFs en paralelo
+        const [notaRes, debitosRes] = await Promise.all([
+            axios.get(
+                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BNA/BNANotaEnvios.pdf',
+                {
+                    auth: {
+                        username: 'jasperadmin',
+                        password: 'WNIVpb1Cgcx=',
+                    },
+                    responseType: 'arraybuffer',
+                    params: { codigoenvio: 11 }
+                }
+            ),
+            axios.get(
+                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BNA/BNAReporteDebitos.pdf',
+                {
+                    auth: {
+                        username: 'jasperadmin',
+                        password: 'WNIVpb1Cgcx=',
+                    },
+                    responseType: 'arraybuffer'
+                }
+            )
+        ]);
+
+        // 🔹 Crear PDF final
+        const pdfFinal = await PDFDocument.create();
+
+        // 🔹 Cargar PDFs
+        const pdfNota = await PDFDocument.load(notaRes.data);
+        const pdfDebitos = await PDFDocument.load(debitosRes.data);
+
+        // 🔹 Copiar páginas del primero
+        const pagesNota = await pdfFinal.copyPages(
+            pdfNota,
+            pdfNota.getPageIndices()
+        );
+        pagesNota.forEach(page => pdfFinal.addPage(page));
+
+        // 🔹 Copiar páginas del segundo
+        const pagesDebitos = await pdfFinal.copyPages(
+            pdfDebitos,
+            pdfDebitos.getPageIndices()
+        );
+        pagesDebitos.forEach(page => pdfFinal.addPage(page));
+
+        // 🔹 Generar PDF final
+        const pdfBytes = await pdfFinal.save();
+
+        // 🔹 Enviar al cliente
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "inline; filename=BNA_Completo.pdf");
+
+        return res.send(Buffer.from(pdfBytes));
+
+    } catch (error) {
+        const data = error.response?.data;
+
+        if (data) {
+            const mensaje = Buffer.from(data).toString("utf-8");
+            console.error("ERROR JASPER:", mensaje);
+        } else {
+            console.error("ERROR:", error.message);
+        }
+
+        return res.status(500).json({
+            error: "No se pudieron generar los reportes"
+        });
+    }
+
+ 
+};
+
 const GenerarNotas = (req, res) => {
 
   if (['34','37'].includes(GlobalenviosOrganismo)) {
@@ -1333,7 +1413,7 @@ const GenerarNotas = (req, res) => {
   } else if (['11'].includes(GlobalenviosOrganismo)) {
 
     console.log("nota banco nacion");
-    return NotasPDF(req, res);
+    return ReporteBancoNacion(req, res);
 
   }else{
     console.log("notas organismos");
@@ -1359,6 +1439,7 @@ export {
     reportePDFBasico,
     NotasPDF,
     ReporteBancoSantiago,
+    ReporteBancoNacion,
     GenerarNotas
 
 }
