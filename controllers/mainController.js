@@ -16,7 +16,9 @@ import { PDFDocument } from "pdf-lib";
 
 
 
-
+//////////////////////////////////////////////////
+////////////////////////////// VARIABLES GLOBALES
+//////////////////////////////////////////////////
 
 global.globalDatosSinAgrup= ""
 global.globalDatosAgrup= ""
@@ -39,36 +41,18 @@ function obtenerRutaDescargas(){
     return 'public/descargas'
 }
 
-
-
-
-
 async function ConsultarOrganismos(){
     let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
     return organismos
 }
 
-
-
-
-
-
 function primerDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth(), 1)
 }
 
-
-
-
-
-
 function ultimoDiaDelMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0)
 }
-
-
-
-
 
 //funcion devuelve string con 128 caracteres fijos
 function a128Caracteres(str) {
@@ -78,10 +62,6 @@ function a128Caracteres(str) {
   return str.padEnd(128, " ");
 }
 
-
-
-
-
 function a188Caracteres(str) {
   // Si es más largo, corta a 188
   str = str.slice(0, 188);
@@ -90,11 +70,8 @@ function a188Caracteres(str) {
 }
 
 
-
-
-
 //////////////////////////////////////////////////
-//////////////////////////////FUNCION GENERAR  DEBITO
+//////////////////////////////FUNCIONES  
 //////////////////////////////////////////////////
 
 const generarDebitos = async (codigo_debito, periodo, sigla)=>{
@@ -128,7 +105,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     let totalOperatoria2=0
 
 //////////////////////////////////////////////////
-//////////////////////////////GENERAR DEBITOS FONAVI
+////////////////////////////// DEBITOS FONAVI
 //////////////////////////////////////////////////
 
     // consulta Vista EnvioDebitos
@@ -281,9 +258,9 @@ return {MontoTotalSinAgrupar,sinagrupar}
 
 }
 
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////AGRUPA POR CODIGO DEBITO
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function agruparCodigoDebito(datos){
    
@@ -342,9 +319,9 @@ function agruparCodigoDebito(datos){
     datos = Object.values(agrupados);
     }
 
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// CAMBIO DE MAPEO DE DATOS SEGUN ORGANISMO
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
  
     if (['2', '8'].includes(datos[0]?.COD_DEB)) {
@@ -415,26 +392,6 @@ const consultarDebitos = async (req,res)=>{
 
 }
 
-
-
-
-// const seleccionarGrabados= async (req,res)=>{
-//     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-//     GlobalenviosOrganismo= codigo_debito
-//     Globalsigla= sigla
-//     console.log("selecciono "+ GlobalenviosOrganismo)
-        
-//         return res.render('main/enviodebitos', {
-//                 pagina :    "ENVIO DEBITOS",
-//                 Organismos: await ConsultarOrganismos(),
-//                 tablaAux :  await consultaGrabados(),
-//                 selecion: "COD DEB: " + GlobalenviosOrganismo + " - SIGLA: "+Globalsigla
-
-//                 })
-
-// }
-
-
 const seleccionarGrabados = async (req, res) => {
   let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
   GlobalenviosOrganismo = codigo_debito;
@@ -449,8 +406,6 @@ const seleccionarGrabados = async (req, res) => {
     selecion: `COD DEB: ${GlobalenviosOrganismo} - SIGLA: ${Globalsigla}`
   });
 };
-
-
 
 
 
@@ -498,67 +453,106 @@ async function generarExcel (req,res){
 }
 
 
-
-
-
 async function generarExcelFormateado (req,res){
-
-    //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+    
    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
    let {datos} = agruparCodigoDebito(Aux)
+   console.log(datos[0])
    
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
+  
     
-    ///////////////////
-    /////EXCEL FORMATO DIO / EDU
-    //////////////////
+    /////////////////////////////////////////////////////////////////////
+    /////     EXCEL FORMATO DIO / EDU
+    /////////////////////////////////////////////////////////////////////
     let codigoAuxiliar 
 
     if (['2'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '257'} 
     if (['8'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '4721'}
+    
     if(['2','8'].includes(GlobalenviosOrganismo)){
         //crear columnas de la hoja1
         worksheet.columns = [
             { header: 'CODIGO',         key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
             { header: 'DOCUMENTO',      key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
             { header: 'SEXO',           key: 'SEXO',       width: 10,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'FECHA',          key: 'FECHA',       width: 15,  style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
-            { header: 'IMPORTE',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },  
-            { header: 'NUMERO CREDITO', key: 'NRO_AGENTE',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'FECHA',          key: 'FECHA',       width: 15,  style: { numFmt: 'mm/yyyy', alignment: { horizontal: 'center' } } },
+            { header: 'IMPORTE',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
+            { header: 'NUMERO CREDITO', key: 'CODIGO',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
             { header: 'NUMERO CUOTA',   key: 'CUOTA',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
         ];
         // agregar filas con CODIGO fijo en 257
-        datos.forEach(item => {
-            worksheet.addRow({
-                CODAUX: codigoAuxiliar, // valor fijo
-                DNI_DESC: item.DNI_DESC,
-                SEXO: " * ",
-                FECHA: item.FECHA,
-                MTO_CUO: item.MTO_CUO,
-                NRO_AGENTE : item.NRO_AGENTE
-            });
+      datos.forEach(item => {
+        const fecha = new Date(item.FECHA);
+        const periodo = (fecha.getMonth() + 1) + '' + fecha.getFullYear();
+
+        worksheet.addRow({
+            CODAUX: codigoAuxiliar,
+            DNI_DESC: item.DNI_DESC,
+            SEXO: " * ",
+            FECHA: periodo,
+            MTO_CUO: item.MTO_CUO,
+            CODIGO: item.COD
         });
+    });
     }
 
-    ///////////////////
+    /////////////////////////////////////////////////////////////////////
     /////EXCEL FORMATO CAP / SEN
-    //////////////////
+    /////////////////////////////////////////////////////////////////////
 
      if(['7','55'].includes(GlobalenviosOrganismo)){
+
+      let label=""
+      if(['7'].includes(GlobalenviosOrganismo)){
+          label= "Mun. Capital"
+      }else if (['55'].includes(GlobalenviosOrganismo)){
+          label= "Camara Senadores"
+      }
+
         //crear columnas de la hoja1
         worksheet.columns = [
-            { header: 'NRO AGENTE',         key: 'NRO_AGENTE',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'APELLIDO Y NOMBRE',  key: 'APEYNOM',width: 40 },
-            { header: 'DNI',                key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'MONTO',              key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
+            { header: 'Nº Agente',          key: 'NRO_AGENTE',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'Nombre y Apellido',  key: 'APEYNOM',width: 40 },
+            { header: 'Nº Doc',             key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'Monto Cuota',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
             
         ];
+
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(2, []);
+        worksheet.insertRow(3, []);
+        worksheet.insertRow(4, ['Instituto Provincial de la Vivienda - Catamarca']);
+        worksheet.mergeCells('A4:D4');
+        worksheet.getCell('A4').font = { bold: false, size: 14 };
+        worksheet.getCell('A4').alignment = { horizontal: 'center' };
+        worksheet.insertRow(5, []);
+        worksheet.insertRow(6, []);
+        worksheet.insertRow(7, ['DEBITOS ENVIADOS EN EL PERIODO:']);
+        worksheet.mergeCells('A7:D7');
+        worksheet.getCell('A7').font = { bold: true, size: 14 };
+        worksheet.getCell('A7').alignment = { horizontal: 'center' };
+        worksheet.insertRow(8, []); // fila vacía
+        worksheet.insertRow(9, []); // fila vacía
+        worksheet.insertRow(10, [label]);
+        worksheet.mergeCells('A10:D10');
+        worksheet.getCell('A10').font = { bold: true, size: 10 };
+        worksheet.getCell('A10').alignment = { horizontal: 'center' };
+        worksheet.insertRow(11, []); // fila vacía
+
+        
+        
+        
         // agregar filas 
         datos.forEach(item=>{ worksheet.addRow(item) })
         
     }
+ /////////////////////////////////////////////////////////////////////
+    /////EXCEL FORMATO 
+    /////////////////////////////////////////////////////////////////////
+
     if(!['7','55','2','8'].includes(GlobalenviosOrganismo)){
      //crear columnas de la hoja1
     worksheet.columns = [
@@ -738,7 +732,6 @@ async function generartxt(req, res) {
                   totalPesos += item.MTO_CUO}
                 )
 
-    //let { datos, totalPesos } = await generarDebitos(GlobalenviosOrganismo, Globalperiodo, Globalsigla);
     console.log(totalPesos)
     
     // Fechas
@@ -945,9 +938,9 @@ async function grabardatos(req, res) {
   try {
     let sinagrupar = globalDatosSinAgrup;
 
-    if (!sinagrupar || sinagrupar.length === 0) {
+    if(!sinagrupar || sinagrupar.length === 0) {
       throw new Error("No se encontraron registros en generarDebitos");
-    }
+      }
 
     const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0];
     const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
@@ -966,22 +959,22 @@ async function grabardatos(req, res) {
     const hoy = wfecha.toISOString().split("T")[0];
 
     sinagrupar = sinagrupar.map(item => ({
-      ...item,
-      FECHA: hoy
-    }));
+        ...item,
+        FECHA: hoy
+      }));
 
     // INSERT
     await DebitosTotalesAux.bulkCreate(sinagrupar, {
       transaction: t,
       validate: true
     });
-    await db_debitos.query(
-  `EXEC dbo.CargarCuil`,
-  {
-    transaction: t,
-    type: db_debitos.QueryTypes.SELECT
-  }
-);
+
+    await db_debitos.query( `EXEC dbo.CargarCuil`,
+      {
+        transaction: t,
+        type: db_debitos.QueryTypes.SELECT
+      }
+    );
 
 
     // COMMIT
@@ -1068,16 +1061,6 @@ async function cierreEjercicio(req,res) {
 
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
