@@ -300,11 +300,14 @@ function agruparCodigoDebito(datos){
         let key;
 
         if (codigo_debito === '11') {
-          key = `${item.SUCURSAL}-${item.NRO_AGENTE}`;
-        } else if (["5","25"].includes(codigo_debito )) {
-          key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
-        } else {
-          key = `${item.NRO_AGENTE}`;
+            //key = `${item.SUCURSAL}-${item.NRO_AGENTE}-${item.APEYNOM}`;
+            key = `${item.NRO_AGENTE}`;
+        } 
+        else if (["5","25"].includes(codigo_debito )) {
+            key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
+        } 
+        else {
+            key = `${item.NRO_AGENTE}`;
         }
 
         if (!acc[key]) {
@@ -333,6 +336,7 @@ function agruparCodigoDebito(datos){
     
     // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $200 
     if (codigo_debito === '11') { Object.values(agrupados).forEach(item => item.MTO_CUO += 200); }
+    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $500 
     if (codigo_debito === '48') { Object.values(agrupados).forEach(item => item.MTO_CUO += 500); }
     
     datos = Object.values(agrupados);
@@ -1069,45 +1073,6 @@ async function cierreEjercicio(req,res) {
 
 
 
-async function NotasPDF (req, res) {
-  
-  console.log("reporte ORGANISMOS");
-
-    try {
-        const response = await axios.get(
-          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/ORGANISMOS/NotaEnvioOrganismos.pdf',
-          {
-              auth: {
-                  username: 'jasperadmin',
-                  password: 'WNIVpb1Cgcx=',
-              },
-              responseType: 'arraybuffer',
-              params: {
-                  codigodebito: GlobalenviosOrganismo
-              }
-          }
-      );
-
-        // 👇 Headers CLAVE
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", "inline; filename=reporte.pdf");
-        res.setHeader("Content-Length", response.data.length);
-
-        return res.send(response.data);
-
-    } catch (error) {
-    const data = error.response?.data;
-
-    if (data) {
-        const mensaje = Buffer.from(data).toString("utf-8");
-        console.error("ERROR JASPER:", mensaje);
-    }
-
-    return res.status(500).json({
-        error: "No se pudo generar el reporte"
-    });
-}
-  }
 
 
 
@@ -1326,7 +1291,7 @@ const ReporteBancoSantiago = async (req, res) => {
 };
 
 
-  const ReporteBancoNacion = async (req, res) => {
+const ReporteBancoNacion = async (req, res) => {
        console.log("reporteBNA");
 
        try {
@@ -1403,6 +1368,46 @@ const ReporteBancoSantiago = async (req, res) => {
  
 };
 
+
+async function ReporteOrganismo (req, res) {
+  
+  console.log("reporte ORGANISMOS");
+
+    try {
+        const response = await axios.get(
+          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/ORGANISMOS/NotaEnvioOrganismos.pdf',
+          {
+              auth: {
+                  username: 'jasperadmin',
+                  password: 'WNIVpb1Cgcx=',
+              },
+              responseType: 'arraybuffer',
+              params: {
+                  codigodebito: GlobalenviosOrganismo
+              }
+          }
+      );
+
+        // 👇 Headers CLAVE
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "inline; filename=reporte.pdf");
+        res.setHeader("Content-Length", response.data.length);
+
+        return res.send(response.data);
+
+    } catch (error) {
+    const data = error.response?.data;
+
+    if (data) {
+        const mensaje = Buffer.from(data).toString("utf-8");
+        console.error("ERROR JASPER:", mensaje);
+    }
+
+    return res.status(500).json({
+        error: "No se pudo generar el reporte"
+    });
+}
+  }
 const GenerarNotas = (req, res) => {
 
   if (['34','37'].includes(GlobalenviosOrganismo)) {
@@ -1417,11 +1422,11 @@ const GenerarNotas = (req, res) => {
 
   }else{
     console.log("notas organismos");
-    return NotasPDF(req, res);
+    return ReporteOrganismo(req, res);
   }
   
 
-  //NotasPDF()
+  
 }
 
 export {
@@ -1437,7 +1442,7 @@ export {
     seleccionarGrabados,
     generarExcelFormateado,
     reportePDFBasico,
-    NotasPDF,
+    ReporteOrganismo,
     ReporteBancoSantiago,
     ReporteBancoNacion,
     GenerarNotas
