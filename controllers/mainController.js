@@ -106,15 +106,19 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
 //////////////////////////////////////////////////
 ////////////////////////////// DEBITOS FONAVI
-//////////////////////////////////////////////////
-
+// //////////////////////////////////////////////////
+// `SELECT * FROM VISTA_ENVIODEBITOS 
+//             WHERE COD_DEB = :codigoDebito
+//             AND LEN(NRO_AGENTE) > 1
+//             AND FEC_ENVIO <= :ultimodiaSQL 
+//             ORDER BY NRO_AGENTE ASC`
     // consulta Vista EnvioDebitos
       const datosfonavi = await db_debitos.query(
-        `SELECT * FROM VISTA_ENVIODEBITOS 
-            WHERE COD_DEB = :codigoDebito
-            AND LEN(NRO_AGENTE) >= 2
-            AND FEC_ENVIO <= :ultimodiaSQL 
-            ORDER BY NRO_AGENTE ASC`,
+      `SELECT * FROM VISTA_ENVIODEBITOS 
+             WHERE COD_DEB = :codigoDebito
+             AND LEN(NRO_AGENTE) > 1
+             AND FEC_ENVIO <= :ultimodiaSQL 
+             ORDER BY NRO_AGENTE ASC`,
         {
           replacements: {
             codigoDebito: codigo_debito,
@@ -157,9 +161,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         `SELECT * FROM VISTA_ENVIOPLANES 
         WHERE COD_DEB = :codigoDebito
         AND TIPO_PLAN = 'C'
-        AND CONF_PLAN <= :ultimodiaSQL
-        AND VTO_PLAN >=  :fechaSQL
-        ORDER BY N_TARJETA ASC`,
+        --AND CONF_PLAN <= :ultimodiaSQL
+        --AND VTO_PLAN >=  :fechaSQL
+       -- ORDER BY N_TARJETA ASC`,
         {
           replacements: {
             codigoDebito: codigo_debito,
@@ -504,8 +508,9 @@ async function generarExcelFormateado (req,res){
     /////////////////////////////////////////////////////////////////////
 
      if(['7','55'].includes(GlobalenviosOrganismo)){
-
-      let label=""
+       let label=""
+       const fecha = new Date(datos[0].FECHA);
+        const periodo = (fecha.getMonth() + 1) + '' + fecha.getFullYear();
       if(['7'].includes(GlobalenviosOrganismo)){
           label= "Mun. Capital"
       }else if (['55'].includes(GlobalenviosOrganismo)){
@@ -530,7 +535,7 @@ async function generarExcelFormateado (req,res){
         worksheet.getCell('A4').alignment = { horizontal: 'center' };
         worksheet.insertRow(5, []);
         worksheet.insertRow(6, []);
-        worksheet.insertRow(7, ['DEBITOS ENVIADOS EN EL PERIODO:']);
+        worksheet.insertRow(7, [`DEBITOS ENVIADOS EN EL PERIODO: ${periodo}`]);
         worksheet.mergeCells('A7:D7');
         worksheet.getCell('A7').font = { bold: true, size: 14 };
         worksheet.getCell('A7').alignment = { horizontal: 'center' };
@@ -549,29 +554,81 @@ async function generarExcelFormateado (req,res){
         datos.forEach(item=>{ worksheet.addRow(item) })
         
     }
+
+    /////////////////////////////////////////////////////////////////////
+    /////EXCEL FORMATO DIPUTADOS
+    /////////////////////////////////////////////////////////////////////
+
+     if(['25'].includes(GlobalenviosOrganismo)){
+      datos.forEach(item => {
+        item.MTO_CUO = Math.round(item.MTO_CUO * 100);
+      });
+
+      let label="Camara de Diputados"
+      
+      const [anio, mes, dia] = datos[0].FECHA.split('-');
+      const fecha= new Date(anio, mes - 1, dia);
+
+      const periodo = `${String(fecha.getMonth() + 1).padStart(2, '0')}/${fecha.getFullYear()}`;
+     
+      const cod = "10"
+
+        //crear columnas de la hoja1
+        worksheet.columns = [
+            { header: '',        key: 'NRO_AGENTE',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: '',        key: 'codaux',          width: 15 },
+            { header: '',        key: 'FECHA',           width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: '',        key: 'cod',             width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: '',        key: 'MTO_CUO',         width: 15,  style: { alignment: { horizontal: 'right' } } },
+            
+        ];
+
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(2, []);
+        worksheet.insertRow(3, []);
+        worksheet.insertRow(4, [label]);
+        worksheet.mergeCells('A4:D4');
+        worksheet.getCell('A4').font = { bold: false, size: 14 };
+        worksheet.getCell('A4').alignment = { horizontal: 'center' };
+        worksheet.insertRow(5, []);
+        worksheet.insertRow(6, []);
+        worksheet.insertRow(7, [`LISTADO DE ENVIO DE DEBITOS`]);
+        worksheet.mergeCells('A7:D7');
+        worksheet.getCell('A7').font = { bold: true, size: 14 };
+        worksheet.getCell('A7').alignment = { horizontal: 'center' };
+        worksheet.insertRow(8, []); // fila vacía
+        worksheet.insertRow(9, []); // fila vacía
+        worksheet.insertRow(10, [label +` ${periodo}`]);
+        worksheet.mergeCells('A10:D10');
+        worksheet.getCell('A10').font = { bold: true, size: 10 };
+        worksheet.getCell('A10').alignment = { horizontal: 'center' };
+        worksheet.insertRow(11, []); // fila vacía
+
+        
+        
+        
+        // agregar filas 
+        datos.forEach(item=>{  
+           worksheet.addRow({
+            NRO_AGENTE: item.NRO_AGENTE,
+            codaux: "5257",
+            FECHA: fecha,
+            MTO_CUO: item.MTO_CUO,
+            cod: "10"
+        });
+        })
+        
+    }
  /////////////////////////////////////////////////////////////////////
     /////EXCEL FORMATO 
     /////////////////////////////////////////////////////////////////////
 
-    if(!['7','55','2','8'].includes(GlobalenviosOrganismo)){
-     //crear columnas de la hoja1
-    worksheet.columns = [
-    { header: 'FECHA',      key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
-    { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
-    { header: 'CODIGO',     key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
-    { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'SIGLA',      key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'SUCURSAL',   key: 'SUCURSAL',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'DNI',        key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
-    { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
-    { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
-    { header: 'CANT',       key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
-    ];
-
-    //agregar Filas
-        datos.forEach(item=>{   worksheet.addRow(item)  })
-
+    if(!['7','55','2','8','25'].includes(GlobalenviosOrganismo)){
+     return res.render("templates/mensaje", {
+      pagina: "DEBITOS",
+      mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO EXCEL!",
+      ruta: "/main/enviodebitos"
+    });
     }
     //guardar archivo
     const ruta = path.join(obtenerRutaDescargas(),`Debitos ${Globalsigla}.xls`)
@@ -725,7 +782,6 @@ async function generartxt(req, res) {
     
     let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
     let {datos} = agruparCodigoDebito(Aux)
-       
     let totalPesos=0
 
     datos.map(item   => {
@@ -737,11 +793,60 @@ async function generartxt(req, res) {
     // Fechas
     let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
     let ultimoDia =ultimoDiaDelMes(wfecha)
+    const anio =String(wfecha.getFullYear())
     const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
     const dia = String(wfecha.getDate()).padStart(2,"0")
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
 
-    let filas
+    let filas = []
+
+    //////////////////////////////////////////////////
+    ////////////////////////////// TXT DIO
+    //////////////////////////////////////////////////
+let codigoAuxiliar 
+const periodo = (wfecha.getMonth() + 1) + '' + wfecha.getFullYear();
+
+
+ if (['2'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '257'} 
+ if (['8'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '4721'}
+    
+     if(["2"].includes(GlobalenviosOrganismo)){
+      console.log("TXT DIO")
+      filas.push(
+                  ...datos.map((obj, index) => {
+            const CODIGO = codigoAuxiliar;
+            const DOCUMENTO = obj.DNI_DESC;
+            const SEXO = "*";
+            const FECHA = periodo;
+            const IMPORTE = String(
+        Math.round(Number((obj.MTO_CUO ?? 0) + 25) * 100)
+      ).padStart(14, "0");
+            const NUMERO_CREDITO = obj.COD;
+            const linea = CODIGO+"-" + DOCUMENTO+"-" + SEXO + FECHA+"-" + IMPORTE +"-"+ NUMERO_CREDITO;
+
+      return linea + "\n";
+                  })
+                )
+    }
+
+
+    //////////////////////////////////////////////////
+    ////////////////////////////// TXT CAMARA DIPUTADOS
+    //////////////////////////////////////////////////
+    if(["25"].includes(GlobalenviosOrganismo)){
+      filas.push(
+                  ...datos.map((obj, index) => {
+                    NRO_AGENTE    = obj.NRO_AGENTE
+                    CODAUX        = 5257
+                    periodo       = `${dia}${mes}${anio}`
+                    codigo        = "10"
+                    monto         = String(Math.round(Number(obj.MTO_CUO+25 ?? 0) * 100)).padStart(14, "0");
+                    linea         = NRO_AGENTE +CODAUX+periodo+codigo+monto   
+                    return linea + "\n";
+                  })
+                )
+    }
+
 
     //////////////////////////////////////////////////
     ////////////////////////////// TXT BANCO NACION
@@ -1414,20 +1519,27 @@ const GenerarNotas = (req, res) => {
 
 export {
     paginainicio,
-    generarExcel,
+       
     debitosindex,
+    
     generarDebitos,
     generartxt,
-    consultarDebitos,
     generarDbf,
+    
+    consultarDebitos,
+    
     grabardatos,
     cierreEjercicio,
     seleccionarGrabados,
+
+    generarExcel,
     generarExcelFormateado,
+    
     reportePDFBasico,
     ReporteOrganismo,
     ReporteBancoSantiago,
     ReporteBancoNacion,
+    
     GenerarNotas
 
 }
