@@ -490,7 +490,8 @@ async function generarExcelFormateado (req,res){
         // agregar filas con CODIGO fijo en 257
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
-        const periodo = (fecha.getMonth() + 1) + '' + fecha.getFullYear();
+        
+        const periodo = (fecha.getMonth() +2) + '' + fecha.getFullYear();
 
         worksheet.addRow({
             CODAUX: codigoAuxiliar,
@@ -620,8 +621,8 @@ async function generarExcelFormateado (req,res){
         
     }
  /////////////////////////////////////////////////////////////////////
-    /////EXCEL FORMATO 
-    /////////////////////////////////////////////////////////////////////
+ /////SI NO SON ESTOS CODIGOS DE DEBITO NO GENERA EL EXCEL
+ /////////////////////////////////////////////////////////////////////
 
     if(!['7','55','2','8','25'].includes(GlobalenviosOrganismo)){
      return res.render("templates/mensaje", {
@@ -680,106 +681,225 @@ async function  cargarArchivo() {
 
 
 
+// async function generarDbf(req, res) {
+//   try {
+//     if(['17'].includes(GlobalenviosOrganismo)){
+//           console.log("generarDBF");
+
+//           const campos = [
+//             { name: 'NRO AGENTE', type: 'N', size: 11 },
+//             { name: 'CUIL',       type: 'N', size: 11 },
+//             { name: 'NOMBRE',     type: 'C', size: 30 },
+//             { name: 'DESCUENTO',  type: 'N', size: 16,decs: 2 },
+//             { name: 'DESCONTADO', type: 'N', size: 10,decs: 2 },
+//             { name: 'DISPONIBLE', type: 'N', size: 10,decs: 2 },
+//             { name: 'CODIGO',     type: 'N', size: 3 },
+//             { name: 'MES',        type: 'N', size: 2 },
+//             { name: 'ANIO',       type: 'N', size: 4 },
+
+//             // ⚠️ identificadores mejor char para no perder ceros
+//             { name: 'NRO_AGENTE', type: 'C', size: 11 },
+//             { name: 'DNI_DESC',   type: 'N', size: 11 },
+//             { name: 'CUIL',       type: 'C', size: 11 },
+//             { name: 'APEYNOM',    type: 'C', size: 30 },
+//             { name: 'MTO_CUO',    type: 'N', size: 16, decs: 2 },
+//             { name: 'CANTIDAD',   type: 'N', size: 8 }
+//           ];
+
+//           // ✅ nombre único (evita EEXIST)
+//           const nombreArchivo = `Debitos-${Globalsigla}-${Globalperiodo}-${Date.now()}.dbf`;
+
+//           const rutaArchivo = path.join(
+//             obtenerRutaDescargas(),
+//             nombreArchivo
+//           );
+
+//           // ✅ borrar si existe (doble seguridad)
+//           if (fs.existsSync(rutaArchivo)) {
+//             fs.unlinkSync(rutaArchivo);
+//           }
+
+//           // Crear DBF
+//           const dbf = await DBFFile.create(rutaArchivo, campos);
+//           console.log(`Archivo DBF creado: ${rutaArchivo}`);
+
+//           // Buscar datos
+//           const aux = await DebitosTotalesAux.findAll({
+//             where: { COD_DEB: GlobalenviosOrganismo },
+//             raw: true
+//           });
+
+//           const { datos } = agruparCodigoDebito(aux);
+
+//           if (!datos || datos.length === 0) {
+//             return res.status(404).send("No hay datos para generar el DBF");
+//           }
+
+//           // Transformar registros
+//           const registros = datos.map(d => ({
+
+//             // { name: 'NRO AGENTE', type: 'N', size: 11 },
+//             // { name: 'CUIL',       type: 'N', size: 11 },
+//             // { name: 'NOMBRE',     type: 'C', size: 30 },
+//             // { name: 'DESCUENTO',  type: 'N', size: 16,decs: 2 },
+//             // { name: 'DESCONTADO', type: 'N', size: 10,decs: 2 },
+//             // { name: 'DISPONIBLE', type: 'N', size: 10,decs: 2 },
+//             // { name: 'CODIGO',     type: 'N', size: 3 },
+//             // { name: 'MES',        type: 'N', size: 2 },
+//             // { name: 'ANIO',       type: 'N', size: 4 },
+            
+//             NRO_AGENTE: String(d.NRO_AGENTE ?? ""),
+//             CUIL:       String(d.CUIL ?? "NO"),
+//             NOMBRE:     String(d.APEYNOM ?? ""),
+//             DESCUENTO:  Number(d.MTO_CUO) || 0,
+//             DESCONTADO: "",
+//             DISPONIBLE: "",
+//             CODIGO:     257,
+//             MES :       d.FECHA.getMonth()+1 ? new Date(d.FECHA) : new Date(),
+//             ANIO:       String(d.OPERATORIA ?? ""),
+                        
+//           }));
+
+//           // Insertar registros
+//           await dbf.appendRecords(registros);
+
+//           console.log(`Se agregaron ${registros.length} registros`);
+
+//           // Headers descarga
+//           res.setHeader(
+//             "Content-Disposition",
+//             `attachment; filename="${nombreArchivo}"`
+//           );
+
+//           // Descargar
+//           res.download(rutaArchivo, nombreArchivo, (err) => {
+//             // ✅ limpiar archivo temporal luego de enviar
+//             fs.unlink(rutaArchivo, () => {});
+//             if (err) console.error(err);
+//           });
+//     }
+//     else {
+
+//       return res.render("templates/mensaje", {
+//       pagina: "DEBITOS",
+//       mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO DBF!",
+//       ruta: "/main/enviodebitos"
+//     });
+//     }
+//   } catch (error) {
+//     console.error("Error generando DBF:", error);
+
+//     if (!res.headersSent) {
+//       res.status(500).send("Error al generar el archivo DBF");
+//     }
+//   }
+// }
+
+
 async function generarDbf(req, res) {
   try {
-    console.log("generarDBF");
+    if (['17'].includes(GlobalenviosOrganismo)) {
+      console.log("generarDBF");
 
-    const campos = [
-      { name: 'FECHA', type: 'D', size: 8 },
-      { name: 'OPERATORIA', type: 'C', size: 20 },
-      { name: 'COD',        type: 'N', size: 10 },
-      { name: 'COD_DEB',    type: 'N', size: 10 },
-      { name: 'SIGLA',      type: 'C', size: 10 },
+      const campos = [
+        { name: 'NRO_AGENTE', type: 'C', size: 11 },
+        { name: 'CUIL',       type: 'C', size: 11 },
+        { name: 'NOMBRE',     type: 'C', size: 30 },
 
-      // ⚠️ identificadores mejor char para no perder ceros
-      { name: 'NRO_AGENTE', type: 'C', size: 15 },
-      { name: 'DNI_DESC',   type: 'N', size: 12 },
-      { name: 'CUIL', type: 'C', size: 15 },
-      { name: 'APEYNOM',    type: 'C', size: 50 },
-      { name: 'MTO_CUO',    type: 'N', size: 15, decs: 2 },
-      { name: 'CANTIDAD',   type: 'N', size: 8 }
-    ];
+        { name: 'DESCUENTO',  type: 'N', size: 16, decs: 2 },
+        { name: 'DESCONTADO', type: 'N', size: 16, decs: 2 },
+        { name: 'DISPONIBLE', type: 'N', size: 16, decs: 2 },
 
-    // ✅ nombre único (evita EEXIST)
-    const nombreArchivo = `Debitos-${Globalsigla}-${Globalperiodo}-${Date.now()}.dbf`;
+        { name: 'CODIGO',     type: 'N', size: 3 },
+        { name: 'MES',        type: 'N', size: 2 },
+        { name: 'ANIO',       type: 'N', size: 4 },
 
-    const rutaArchivo = path.join(
-      obtenerRutaDescargas(),
-      nombreArchivo
-    );
+        
+      ];
 
-    // ✅ borrar si existe (doble seguridad)
-    if (fs.existsSync(rutaArchivo)) {
-      fs.unlinkSync(rutaArchivo);
-    }
+      // Nombre único
+      const nombreArchivo = `Debitos-${Globalsigla}-${Globalperiodo}-${Date.now()}.dbf`;
 
-    // Crear DBF
-    const dbf = await DBFFile.create(rutaArchivo, campos);
-    console.log(`Archivo DBF creado: ${rutaArchivo}`);
+      const rutaArchivo = path.join(
+        obtenerRutaDescargas(),
+        nombreArchivo
+      );
 
-    // Buscar datos
-    const aux = await DebitosTotalesAux.findAll({
-      where: { COD_DEB: GlobalenviosOrganismo },
-      raw: true
-    });
+      // Borrar si existe
+      if (fs.existsSync(rutaArchivo)) {
+        fs.unlinkSync(rutaArchivo);
+      }
 
-    const { datos } = agruparCodigoDebito(aux);
+      // Crear DBF
+      const dbf = await DBFFile.create(rutaArchivo, campos);
+      console.log(`Archivo DBF creado: ${rutaArchivo}`);
 
-    if (!datos || datos.length === 0) {
-      return res.status(404).send("No hay datos para generar el DBF");
-    }
+      // Obtener datos
+      const aux = await DebitosTotalesAux.findAll({
+        where: { COD_DEB: GlobalenviosOrganismo },
+        raw: true
+      });
 
-    // Transformar registros
-    const registros = datos.map(d => ({
-      FECHA:      d.FECHA ? new Date(d.FECHA) : new Date(),
-      OPERATORIA: String(d.OPERATORIA ?? ""),
-      COD:        Number(d.COD) || 0,
-      COD_DEB:    Number(d.COD_DEB) || 0,
-      SIGLA:      String(d.SIGLA ?? ""),
+      const { datos } = agruparCodigoDebito(aux);
 
-      // ✅ mantener como texto (no perder ceros)
-      NRO_AGENTE: String(d.NRO_AGENTE ?? ""),
-      DNI_DESC:   Number(d.DNI_DESC) || 0,
-      CUIL:       String(d.CUIL ?? "NO"),
+      if (!datos || datos.length === 0) {
+        return res.status(404).send("No hay datos para generar el DBF");
+      }
 
-      APEYNOM:    String(d.APEYNOM ?? ""),
-      MTO_CUO:    Number(d.MTO_CUO) || 0,
-      CANTIDAD:   Number(d.cantidad) || 0
-    }));
+      // Mapear datos correctamente
+      const registros = datos.map(d => {
+        const fecha = d.FECHA ? new Date(d.FECHA) : null;
 
-    // Insertar registros
-    await dbf.appendRecords(registros);
+        return {
+          NRO_AGENTE: String(d.NRO_AGENTE ?? ""),
+          CUIL:       String(d.CUIL ?? ""),
+          NOMBRE:     String(d.APEYNOM ?? ""),
 
-    console.log(`Se agregaron ${registros.length} registros`);
+          DESCUENTO:  Number(d.MTO_CUO) || 0,
+          DESCONTADO: null,
+          DISPONIBLE: null,
 
-    // Headers descarga
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${nombreArchivo}"`
-    );
+          CODIGO:     257,
 
-    // Descargar
-    res.download(rutaArchivo, nombreArchivo, (err) => {
-      // ✅ limpiar archivo temporal luego de enviar
-      fs.unlink(rutaArchivo, () => {});
-      if (err) console.error(err);
-    });
+          MES:  fecha ? fecha.getMonth() + 2 : 0,
+          ANIO: fecha ? fecha.getFullYear() : 0,
 
+        };
+      });
+
+      // Insertar registros
+      await dbf.appendRecords(registros);
+      console.log(`Se agregaron ${registros.length} registros`);
+
+      // Headers descarga
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${nombreArchivo}"`
+      );
+
+      // Descargar archivo
+      res.download(rutaArchivo, nombreArchivo, (err) => {
+        // Eliminar archivo temporal
+        fs.unlink(rutaArchivo, () => {});
+        if (err) console.error(err);
+      });
+
+    }else {
+      return res.render("templates/mensaje", {
+      pagina: "DEBITOS",
+      mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO DBF!",
+      ruta: "/main/enviodebitos"
+    })}
+  
   } catch (error) {
-    console.error("Error generando DBF:", error);
-
-    if (!res.headersSent) {
-      res.status(500).send("Error al generar el archivo DBF");
-    }
+    console.error("Error al generar DBF:", error);
+    return res.status(500).send("Error interno al generar el DBF");
   }
 }
 
-
-
-
 async function generartxt(req, res) {
   try {
-    
+    if (['48','34','37','11','25',].includes(GlobalenviosOrganismo)) {
     let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
     let {datos} = agruparCodigoDebito(Aux)
     let totalPesos=0
@@ -794,40 +914,12 @@ async function generartxt(req, res) {
     let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
     let ultimoDia =ultimoDiaDelMes(wfecha)
     const anio =String(wfecha.getFullYear())
-    const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
+    const mes = String(wfecha.getMonth() + 2).padStart(2, "0");
     const dia = String(wfecha.getDate()).padStart(2,"0")
     const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
 
     let filas = []
 
-    //////////////////////////////////////////////////
-    ////////////////////////////// TXT DIO
-    //////////////////////////////////////////////////
-let codigoAuxiliar 
-const periodo = (wfecha.getMonth() + 1) + '' + wfecha.getFullYear();
-
-
- if (['2'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '257'} 
- if (['8'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '4721'}
-    
-     if(["2"].includes(GlobalenviosOrganismo)){
-      console.log("TXT DIO")
-      filas.push(
-                  ...datos.map((obj, index) => {
-            const CODIGO = codigoAuxiliar;
-            const DOCUMENTO = obj.DNI_DESC;
-            const SEXO = "*";
-            const FECHA = periodo;
-            const IMPORTE = String(
-        Math.round(Number((obj.MTO_CUO ?? 0) + 25) * 100)
-      ).padStart(14, "0");
-            const NUMERO_CREDITO = obj.COD;
-            const linea = CODIGO+"-" + DOCUMENTO+"-" + SEXO + FECHA+"-" + IMPORTE +"-"+ NUMERO_CREDITO;
-
-      return linea + "\n";
-                  })
-                )
-    }
 
 
     //////////////////////////////////////////////////
@@ -836,12 +928,12 @@ const periodo = (wfecha.getMonth() + 1) + '' + wfecha.getFullYear();
     if(["25"].includes(GlobalenviosOrganismo)){
       filas.push(
                   ...datos.map((obj, index) => {
-                    NRO_AGENTE    = obj.NRO_AGENTE
-                    CODAUX        = 5257
-                    periodo       = `${dia}${mes}${anio}`
-                    codigo        = "10"
-                    monto         = String(Math.round(Number(obj.MTO_CUO+25 ?? 0) * 100)).padStart(14, "0");
-                    linea         = NRO_AGENTE +CODAUX+periodo+codigo+monto   
+                    const NRO_AGENTE    = obj.NRO_AGENTE
+                    const CODAUX        = 5257
+                    const periodo       = `${dia}${mes}${anio}`
+                    const codigo        = "10"
+                    const monto         = String(Math.round(Number(obj.MTO_CUO+25 ?? 0) * 100)).padStart(14, "0");
+                    const linea         = NRO_AGENTE +CODAUX+periodo+codigo+monto   
                     return linea + "\n";
                   })
                 )
@@ -1025,7 +1117,14 @@ const periodo = (wfecha.getMonth() + 1) + '' + wfecha.getFullYear();
         await writeFile(ruta, (filas?filas:datosaux), 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
         res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
-
+  }
+  else{
+     return res.render("templates/mensaje", {
+      pagina: "DEBITOS",
+      mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO DBF!",
+      ruta: "/main/enviodebitos"
+    })
+  }
   } catch (err) {
         console.error('Error al escribir el archivo:', err);
   }
