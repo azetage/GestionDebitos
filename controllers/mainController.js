@@ -849,12 +849,12 @@ async function generartxt(req, res) {
     if(["25"].includes(GlobalenviosOrganismo)){
       filas.push(
                   ...datos.map((obj, index) => {
-                    const NRO_AGENTE    = obj.NRO_AGENTE
+                    const NRO_AGENTE    = obj.NRO_AGENTE.padStart(11, "0")
                     const CODAUX        = 5257
-                    const periodo       = `${dia}${mes}${anio}`
-                    const codigo        = "10"
-                    const monto         = String(Math.round(Number(obj.MTO_CUO+25 ?? 0) * 100)).padStart(14, "0");
-                    const linea         = NRO_AGENTE +CODAUX+periodo+codigo+monto   
+                    const periodo       = `01${mes}${anio}`
+                    const codigo        = "10    "
+                    const monto         = String(Math.round(Number(obj.MTO_CUO ?? 0) * 100)).padStart(12, "0");
+                    const linea         = NRO_AGENTE +CODAUX+periodo+codigo+monto+"0000000"   
                     return linea + "\n";
                   })
                 )
