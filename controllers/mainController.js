@@ -42,7 +42,12 @@ function obtenerRutaDescargas(){
 }
 
 async function ConsultarOrganismos(){
-    let organismos = await Organismos.findAll({ where: { FORMA: 'AUTOMATICA' } })
+    let organismos = await Organismos.findAll({
+      where: { FORMA: 'AUTOMATICA' },
+      order: [['REGISTRA', 'ASC']]
+    })
+    
+    
     return organismos
 }
 
@@ -579,7 +584,7 @@ async function generarExcelFormateado (req,res){
         totalCell.alignment = { horizontal: 'right' };
 
         // 💰 FORMATO MONEDA ARGENTINO
-        totalCell.numFmt = '"$"#,##0.00';
+        totalCell.numFmt = '"$"#.##0,00';
 
         // (opcional) línea superior tipo reporte
         totalCell.border = {
