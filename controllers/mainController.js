@@ -568,7 +568,7 @@ async function generarExcelFormateado (req,res){
         worksheet.mergeCells(`A${ultimaFila}:C${ultimaFila}`);
 
         const labelCell = worksheet.getCell(`A${ultimaFila}`);
-        labelCell.value = 'TOTAL';
+        labelCell.value = `Cantidad de Registros ${datos.length}  Monto Total`;
         labelCell.font = { bold: true, size: 10 };
         labelCell.alignment = { horizontal: 'center' };
 
