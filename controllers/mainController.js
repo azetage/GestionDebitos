@@ -568,18 +568,18 @@ async function generarExcelFormateado (req,res){
         worksheet.mergeCells(`A${ultimaFila}:C${ultimaFila}`);
 
         const labelCell = worksheet.getCell(`A${ultimaFila}`);
-        labelCell.value = `Cantidad de Registros ${datos.length}  Monto Total`;
+        labelCell.value = `Cantidad de Registros: ${datos.length}  Monto Total:`;
         labelCell.font = { bold: true, size: 10 };
         labelCell.alignment = { horizontal: 'center' };
 
         // 🔹 VALOR NUMÉRICO (columna D)
         const totalCell = worksheet.getCell(`D${ultimaFila}`);
         totalCell.value = total;
-        totalCell.font = { bold: true };
+        totalCell.font = { bold: false };
         totalCell.alignment = { horizontal: 'right' };
 
         // 💰 FORMATO MONEDA ARGENTINO
-        totalCell.numFmt = '"$"#.##0,00';
+        totalCell.numFmt = '"$"#,##0.00';
 
         // (opcional) línea superior tipo reporte
         totalCell.border = {
