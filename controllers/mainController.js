@@ -511,7 +511,7 @@ async function generarExcelFormateado (req,res){
      if(['7','55'].includes(GlobalenviosOrganismo)){
        let label=""
        const fecha = new Date(datos[0].FECHA);
-        const periodo = (fecha.getMonth() + 1) + '' + fecha.getFullYear();
+        const periodo = (fecha.getMonth() + 2) + '/' + fecha.getFullYear();
       if(['7'].includes(GlobalenviosOrganismo)){
           label= "Mun. Capital"
       }else if (['55'].includes(GlobalenviosOrganismo)){
@@ -532,13 +532,13 @@ async function generarExcelFormateado (req,res){
         worksheet.insertRow(3, []);
         worksheet.insertRow(4, ['Instituto Provincial de la Vivienda - Catamarca']);
         worksheet.mergeCells('A4:D4');
-        worksheet.getCell('A4').font = { bold: false, size: 14 };
+        worksheet.getCell('A4').font = { bold: true, size: 14 };
         worksheet.getCell('A4').alignment = { horizontal: 'center' };
         worksheet.insertRow(5, []);
         worksheet.insertRow(6, []);
         worksheet.insertRow(7, [`DEBITOS ENVIADOS EN EL PERIODO: ${periodo}`]);
         worksheet.mergeCells('A7:D7');
-        worksheet.getCell('A7').font = { bold: true, size: 14 };
+        worksheet.getCell('A7').font = { bold: false, size: 14 };
         worksheet.getCell('A7').alignment = { horizontal: 'center' };
         worksheet.insertRow(8, []); // fila vacía
         worksheet.insertRow(9, []); // fila vacía
@@ -550,12 +550,47 @@ async function generarExcelFormateado (req,res){
 
         
         
-        
-        // agregar filas 
-        datos.forEach(item=>{ worksheet.addRow(item) })
-        
-    }
 
+        let total = 0;
+        // agregar filas
+        datos.forEach(item => { 
+          total += item.MTO_CUO;
+          worksheet.addRow(item);
+        });
+
+        // calcular última fila (dejando una fila en blanco antes del total)
+        const ultimaFila = worksheet.lastRow.number + 2;
+
+        // insertar fila vacía
+        worksheet.insertRow(ultimaFila, []);
+
+        // 🔹 TEXTO "TOTAL" (columnas A a C combinadas)
+        worksheet.mergeCells(`A${ultimaFila}:C${ultimaFila}`);
+
+        const labelCell = worksheet.getCell(`A${ultimaFila}`);
+        labelCell.value = 'TOTAL';
+        labelCell.font = { bold: true, size: 10 };
+        labelCell.alignment = { horizontal: 'center' };
+
+        // 🔹 VALOR NUMÉRICO (columna D)
+        const totalCell = worksheet.getCell(`D${ultimaFila}`);
+        totalCell.value = total;
+        totalCell.font = { bold: true };
+        totalCell.alignment = { horizontal: 'right' };
+
+        // 💰 FORMATO MONEDA ARGENTINO
+        totalCell.numFmt = '"$"#.##0,00';
+
+        // (opcional) línea superior tipo reporte
+        totalCell.border = {
+          top: { style: 'thin' }
+        };
+        labelCell.border = {
+          top: { style: 'thin' }
+        };
+
+        console.log(total);
+      }
     /////////////////////////////////////////////////////////////////////
     /////EXCEL FORMATO DIPUTADOS
     /////////////////////////////////////////////////////////////////////
@@ -1191,7 +1226,7 @@ async function grabardatos(req, res) {
     });
 
   } catch (error) {
-    // 🔴 ROLLBACK OBLIGATORIO
+    // ROLLBACK OBLIGATORIO
     await t.rollback();
 
     console.error("Error en grabardatos:", error);
@@ -1595,6 +1630,7 @@ async function ReporteOrganismo (req, res) {
     });
 }
   }
+
 const GenerarNotas = (req, res) => {
 
   if (['34','37'].includes(GlobalenviosOrganismo)) {
