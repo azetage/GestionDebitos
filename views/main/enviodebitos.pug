@@ -66,6 +66,7 @@ block contenido
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 SUCURSAL
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 NRO AGENTE
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 DNI
+                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CUIL
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 APELLIDO Y NOMBRE
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MONTO CUOTA 
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CANT DEB
@@ -83,6 +84,7 @@ block contenido
                                             td.italic.border.border-slate-300.px-4= item.SUCURSAL
                                             td.italic.border.border-slate-300.px-4= item.NRO_AGENTE
                                             td.italic.border.border-slate-300.px-4= item.DNI_DESC
+                                            td.italic.border.border-slate-300.px-4= item.CUIL
                                             td.italic.border.border-slate-300.px-4= item.APEYNOM
                                             - const valor = item.MTO_CUO.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
                                             td.italic.border.border-slate-300.px-4= valor                                                                                       

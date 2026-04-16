@@ -146,6 +146,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       SUCURSAL:   item.SUCURSAL, 
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   item.DNI_DESC,
+                      CUIL:       item.CUIL ? item.CUIL:"0",
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
                       cantidad:   0,
@@ -194,6 +195,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       SUCURSAL:   item.SUCURSAL,     
                       NRO_AGENTE: item.N_TARJETA,
                       DNI_DESC:   item.DNI_DESC,
+                      CUIL:       item.CUIL ? item.CUIL:"0",
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
                       cantidad:   0,  // ← contador de registros,
@@ -244,6 +246,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 SUCURSAL:   sucursal,
                 NRO_AGENTE: item.agente_debito,
                 DNI_DESC:   item.dni,
+                CUIL:       item.CUIL ? item.CUIL:"0",
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
                 cantidad:   1,  // ← contador de registros
@@ -256,6 +259,29 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     
     // agregar elemntos de la consulta de operatorias a array datos
     datos.push(...datos2) 
+
+   const agentes = datos.map(d => d.NRO_AGENTE);
+
+   const resultados = await db_debitos.query(
+  `SELECT nro_agente, cuil
+   FROM Debitos.dbo.DEBITOS_TOTAL
+   WHERE nro_agente IN (:agentes)
+   AND cod_deb = :codigoDebito`,
+  {
+    replacements: { agentes, codigoDebito:codigo_debito },
+    type: db_debitos.QueryTypes.SELECT
+  }
+);
+console.log(resultados)
+
+  const mapaCuil = {};
+  resultados.forEach(r => {
+  mapaCuil[r.nro_agente] = r.cuil;
+});
+datos = datos.map(item => ({
+  ...item,
+  CUIL: mapaCuil[item.NRO_AGENTE] || null
+}));
 
     const sinagrupar= datos    
     const MontoTotalSinAgrupar= totalFonavi+totalPlanes+totalOperatoria2
@@ -289,9 +315,14 @@ function agruparCodigoDebito(datos){
             //key = `${item.SUCURSAL}-${item.NRO_AGENTE}-${item.APEYNOM}`;
             key = `${item.NRO_AGENTE}`;
         } 
-        else if (["5","25"].includes(codigo_debito )) {
+        else if (["25"].includes(codigo_debito )) {
             key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
-        } 
+        }
+        // else if (["17"].includes(codigo_debito )) {
+        //     key = item.CUIL ? `${item.CUIL}`:`${item.NRO_AGENTE}`;
+        // }  
+
+        
         else {
             key = `${item.NRO_AGENTE}`;
         }
@@ -344,6 +375,7 @@ function agruparCodigoDebito(datos){
                                     SUCURSAL:   item.SUCURSAL,    
                                     NRO_AGENTE: item.DNI_DESC,
                                     DNI_DESC:   item.DNI_DESC,
+                                    CUIL:       item.CUIL,
                                     APEYNOM:    item.APEYNOM,                                
                                     MTO_CUO:    item.MTO_CUO,                            
                                     cantidad:   1,
@@ -382,7 +414,9 @@ const consultarDebitos = async (req,res)=>{
 
     globalDatosSinAgrup =   sinagrupar
     globalDatosAgrup    =   datos
-  
+
+    console.log("FUNCION CONSULTA DEBITOS")
+    console.log(datos[0])
    
     let grabados= await consultaGrabados()
 
