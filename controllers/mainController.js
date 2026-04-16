@@ -471,7 +471,38 @@ async function generarExcelFormateado (req,res){
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
     const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
-  
+    
+    /////////////////////////////////////////////////////////////////////
+    /////     EXCEL FORMATO UNCA
+    /////////////////////////////////////////////////////////////////////
+
+    if(['5'].includes(GlobalenviosOrganismo)){
+        //crear columnas de la hoja1
+        worksheet.columns = [
+            { header: 'numero legajo',    key: 'NRO_AGENTE',      width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: '',                 key: 'DNI_DESC',        width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'apellido y nombre',key: 'APEYNOM',         width: 45,  style: { alignment: { horizontal: 'left' } }  },
+            { header: 'importe',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
+            ];
+
+        // agregar filas con CODIGO fijo en 257
+      datos.forEach(item => {
+        const fecha = new Date(item.FECHA);
+        
+        const periodo = (fecha.getMonth() +2) + '' + fecha.getFullYear();
+
+        worksheet.addRow({
+            NRO_AGENTE: item.NRO_AGENTE,
+            DNI_DESC: "",
+            SEXO: " * ",
+            APEYNOM: item.APEYNOM,
+            MTO_CUO: item.MTO_CUO,
+        });
+    });
+    }
+
+
+
     
     /////////////////////////////////////////////////////////////////////
     /////     EXCEL FORMATO DIO / EDU
@@ -664,7 +695,7 @@ async function generarExcelFormateado (req,res){
  /////SI NO SON ESTOS CODIGOS DE DEBITO NO GENERA EL EXCEL
  /////////////////////////////////////////////////////////////////////
 
-    if(!['7','55','2','8','25'].includes(GlobalenviosOrganismo)){
+    if(!['7','55','2','8',"5",'25'].includes(GlobalenviosOrganismo)){
      return res.render("templates/mensaje", {
       pagina: "DEBITOS",
       mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO EXCEL!",
