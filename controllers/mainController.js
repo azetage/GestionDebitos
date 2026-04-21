@@ -272,7 +272,6 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     type: db_debitos.QueryTypes.SELECT
   }
 );
-console.log(resultados)
 
   const mapaCuil = {};
   resultados.forEach(r => {
@@ -1122,7 +1121,7 @@ async function generartxt(req, res) {
 
 async function grabardatos(req, res) {
   console.log("boton grabar");
-
+  
   const t = await db_debitos.transaction();
 
   try {
@@ -1192,7 +1191,21 @@ async function grabardatos(req, res) {
 
 
 
-
+function guardarCuil(req,res){
+  const id = req.body.id
+  const cuil = req.body.cuil
+  
+  
+  
+  
+  console.log(id +"-"+ cuil)
+  const indice = globalDatosSinAgrup.findIndex(item => item.NRO_AGENTE == id);
+  
+  console.log (globalDatosSinAgrup[indice])
+  globalDatosSinAgrup[indice].CUIL = cuil
+  console.log (globalDatosSinAgrup[indice])
+  
+}
 
 async function consultaGrabados(){
   return await DebitosTotalesAux.findAll({
@@ -1582,6 +1595,9 @@ async function ReporteOrganismo (req, res) {
 }
   }
 
+
+
+
 const GenerarNotas = (req, res) => {
 
   if (['34','37'].includes(GlobalenviosOrganismo)) {
@@ -1625,7 +1641,7 @@ export {
     ReporteOrganismo,
     ReporteBancoSantiago,
     ReporteBancoNacion,
-    
+    guardarCuil,
     GenerarNotas
 
 }

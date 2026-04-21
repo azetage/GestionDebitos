@@ -63,7 +63,6 @@ block contenido
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CODIGO
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 COD DEB
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 SIGLA
-                                        th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 SUCURSAL
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 NRO AGENTE
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 DNI
                                         th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CUIL
@@ -73,7 +72,7 @@ block contenido
 
                                 tbody
                                     
-                                    each item,i in datos? datos:''    
+                                    each item,i in datos? datos:''     
 
                                         tr.bg-white
                                             td.italic.border.border-slate-300.px-4 #{i+1}
@@ -81,10 +80,15 @@ block contenido
                                             td.italic.border.border-slate-300.px-4= item.COD
                                             td.italic.border.border-slate-300.px-4= item.COD_DEB
                                             td.italic.border.border-slate-300.px-4= item.SIGLA
-                                            td.italic.border.border-slate-300.px-4= item.SUCURSAL
                                             td.italic.border.border-slate-300.px-4= item.NRO_AGENTE
                                             td.italic.border.border-slate-300.px-4= item.DNI_DESC
-                                            td.italic.border.border-slate-300.px-4= item.CUIL
+                                            td.italic.border.border-slate-300.px-4
+                                                                        if item.CUIL 
+                                                                            span.cuil(data-id=item.NRO_AGENTE)= item.CUIL
+                                                                        else if item.COD_DEB == 17
+                                                                            button.btn-cuil(class= "shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700" data-id=item.NRO_AGENTE) Agregar CUIL
+                                                                                                                
+                                            
                                             td.italic.border.border-slate-300.px-4= item.APEYNOM
                                             - const valor = item.MTO_CUO.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
                                             td.italic.border.border-slate-300.px-4= valor                                                                                       
@@ -241,10 +245,46 @@ block contenido
             paging: false,
             searching: true,
             ordering: true,
+            responsive: true,
             language: {
                 url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
             }
             });
             // activar encabezados fijos
             new $.fn.dataTable.FixedHeader(table);
+        });
+
+        $(document).on('click', '.btn-cuil', function () {
+        const td = $(this).closest('td');
+        const id = $(this).data('id');
+
+        td.html(`<input type="text" class="input-cuil" data-id="${id}" placeholder="Ingrese CUIL">`);
+    
+        td.find('input').focus();
+        });
+
+        $(document).on('blur', '.input-cuil', function () {
+        const input = $(this);
+        const cuil = input.val();
+        const id = input.data('id');
+
+        const td = input.closest('td');
+
+        if (!cuil) {
+            td.html(`<button class="btn-cuil" data-id="${id}">Agregar CUIL</button>`);
+            return;
+        }
+
+        // mostrar valor
+        td.html(`<span class="cuil">${cuil}</span>`);
+
+        // guardar en backend
+        $.ajax({
+            url: '/main/index/guardar-cuil',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id, cuil }),
+            success: () => console.log('CUIL guardado'),
+            error: () => alert('Error al guardar')
+            });
         });
