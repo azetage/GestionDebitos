@@ -430,7 +430,7 @@ data = data.map(item => {
   return {
     ORGANISMO: Organismo,
     COD_DEB:   codigoDebito,
-    PERIODO: item.periodo || item.fecha,
+    PERIODO:    periodo,
     NRO_AGENTE: item.nro_agente,
     DNI_DESC: info.dni_desc || "",
     APEYNOM: info.apeynom || "",
