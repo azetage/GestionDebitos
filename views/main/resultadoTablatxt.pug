@@ -33,6 +33,17 @@ block contenido
                                 h4 Elementos : #{cantidad}
                             div
                                 h4 Monto Total : #{suma} 
+
+
+        div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+        
+        .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                    
+                                form.space-y-5(action=`/upload/grabardebitos` method="POST")   
+                                    fieldset.px-10.py-1 
+                                        div
+                                            input(  class= "shadow-lg shadow-red-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-red-500 hover:bg-red-700 focus:outline-2 focus:outline-offset-2 focus:outline-red-500 active:bg-red-700" 
+                                                    type= 'submit' value= 'Grabar Debito')
     script.
         $(document).ready(function () {
             $('#TablaDebitosTxT').DataTable({

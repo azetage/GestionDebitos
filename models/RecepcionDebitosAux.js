@@ -3,6 +3,7 @@ import { DataTypes } from 'sequelize';
 
 const RecepcionDebitosAux = db_debitos.define('RecepcionDebitosAux', {
     ORGANISMO:    { type: DataTypes.STRING, allowNull: true },
+    COD_DEB:      { type: DataTypes.INTEGER, allowNull: false },
     PERIODO:      { type: DataTypes.STRING, allowNull: true },
     NRO_AGENTE:   { type: DataTypes.STRING, allowNull: true },
     DNI_DESC:     { type: DataTypes.STRING, allowNull: true },

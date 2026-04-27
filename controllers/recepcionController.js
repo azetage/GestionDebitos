@@ -2,17 +2,42 @@ import XLSX from 'xlsx'
 import upload from '../middlewares/upload.js'
 import RecepcionDebitosAux from '../models/RecepcionDebitosAux.js'
 import { db_debitos,db_vistaDebitos } from '../config/db.js';
+import Organismos from '../models/Organismos.js';
+import { Op, Sequelize} from "sequelize";
+
 import fs from "fs";
 
 import path from 'path';
 import { ro } from 'date-fns/locale';
+import { consultarDebitos } from './mainController.js';
 
 
 global.globalData= ""
 
-const recepcioDebitosIndex= (req,res)=> {
-    return res.render('main/recepcioDebitos', {
+
+async function ConsultarOrganismosDebito() {
+  let organismos = await RecepcionDebitosAux.findAll({
+    attributes: [
+      [Sequelize.fn('DISTINCT', Sequelize.col('ORGANISMO')), 'ORGANISMO']
+    ],
+    order: [['ORGANISMO', 'ASC']]
+  });
+
+  console.log(organismos);
+
+  return organismos;
+}
+
+
+const recepcioDebitosIndex= async (req,res)=> {
+
+   let organismos = await ConsultarOrganismosDebito();
+   console.log(Organismos.ORGANISMO)
+   
+   return res.render('main/recepcioDebitos', {
          pagina : "RECEPCION DEBITOS",
+         Organismos : organismos,
+         tablaAux : await ConsultarDebitosRecibidos()
 
          })
 }
@@ -38,6 +63,9 @@ const TipoDocumento = [
 const subirDebitos = (req, res) => {
   const workbook = XLSX.readFile(req.file.path);
     try {
+      
+      const PeriodoRecepcion =req.body.recepcionPeriodo
+      
       const nombreOriginal = req.file.originalname;
       
       const workbook = XLSX.readFile(req.file.path);
@@ -100,6 +128,8 @@ const subirDebitos = (req, res) => {
                         ]
       let data //datos mapa formateados
       let Organismo= ""
+      let codigo_debito_envios = 0                    
+
       console.log(encabezados); // encabezados
       
       
@@ -111,10 +141,13 @@ const subirDebitos = (req, res) => {
           console.log(encabezados)
 
           Organismo= "UNCa"
+          codigo_debito_envios = 5
+          
           data =   datos.map(item   => { 
           return {    
                       ORGANISMO: Organismo,
-                      PERIODO:    nombreOriginal,
+                      COD_DEB:  codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion,
                       NRO_AGENTE: item.LEGAJO,
                       DNI_DESC:   String(item.DOCUMENTO),//.substring(2, 10),
                       APEYNOM:    `${item.APELLIDO} ${item.NOMBRE}`,                                
@@ -130,10 +163,12 @@ const subirDebitos = (req, res) => {
           console.log("DEBITOS CAPITAL")
           //Mapeo Datos MUN CAPITAL
           Organismo= "MUN CAPITAL "
+          codigo_debito_envios = 7 
           data = datos.slice(0, -1).map(item   => { 
           return {
-                      ORGANISMO: Organismo,
-                      PERIODO:    `${item.Año}-${item.Mes}`,
+                      ORGANISMO:  Organismo,
+                      COD_DEB:    codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion,
                       NRO_AGENTE: item.Legajo,
                       DNI_DESC:   item.Documento,
                       APEYNOM:    item['Apellido y nombres'],                                
@@ -150,10 +185,12 @@ const subirDebitos = (req, res) => {
           const periodo = datos[2]['__EMPTY_8']
           //Mapeo Datos DIO
           Organismo= "DIO "
+          codigo_debito_envios = 2
           data =   datos.slice(4,-2).map(item   => { 
           return {
                       ORGANISMO: Organismo,
-                      PERIODO:    periodo,
+                      COD_DEB:   codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion,
                       NRO_AGENTE: item.__EMPTY_5,
                       DNI_DESC:   item.__EMPTY,
                       APEYNOM:    item.__EMPTY_9,                                
@@ -169,11 +206,13 @@ const subirDebitos = (req, res) => {
           console.log("diputados")
           console.log(encabezados)
 
-          Organismo= "Diputados "
-          data =   datos.map(item   => { 
+          Organismo= "DIPUTADOS "
+          codigo_debito_envios = 25
+          data =   datos.slice(0,-1).map(item   => { 
           return {
                       ORGANISMO: Organismo,
-                      PERIODO:    nombreOriginal,
+                      COD_DEB:   codigo_debito_envios,
+                      PERIODO:   PeriodoRecepcion,
                       NRO_AGENTE: item['Nro. Legajo'],
                       DNI_DESC:   String(item['C.U.I.L.']).substring(2, 10),
                       APEYNOM:    `${item.Apellido} ${item.Nombre}`,                                
@@ -191,12 +230,14 @@ const subirDebitos = (req, res) => {
           console.log(datos[0],datos[1],datos[2],datos[3],datos[4])
 
           Organismo= "EDUCACION "
+          codigo_debito_envios = 8
           const periodo = datos[2]['__EMPTY_7']
 
           data =   datos.slice(4,-2).map(item   => { 
           return {
                       ORGANISMO: Organismo,
-                      PERIODO:    periodo,
+                      COD_DEB:   codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion,
                       NRO_AGENTE: item.__EMPTY,
                       DNI_DESC:   item.__EMPTY,
                       APEYNOM:    item.__EMPTY_2,                                
@@ -213,10 +254,12 @@ const subirDebitos = (req, res) => {
           console.log(encabezados)
 
           Organismo= "PODER JUDICIAL "
+          codigo_debito_envios = 17
           data =   datos.map(item   => { 
           return {
                       ORGANISMO: Organismo,
-                      PERIODO:    `${item.AÑO}-${item.MES}` ,
+                      COD_DEB:   codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion ,
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   String(item.CUIL).substring(2, 10),
                       CUIL:       item.CUIL,
@@ -237,11 +280,13 @@ const subirDebitos = (req, res) => {
 
 
 
-          Organismo= " Senadores "
-          data =   datos.slice(1).map(item   => { 
+          Organismo= "SENADORES"
+          codigo_debito_envios= 55
+          data =   datos.slice(1,-1).map(item   => { 
           return {
                       ORGANISMO: Organismo,
-                      PERIODO:    item.__EMPTY ,
+                      COD_DEB:   codigo_debito_envios,
+                      PERIODO:    PeriodoRecepcion ,
                       NRO_AGENTE: item.__EMPTY_1,
                       DNI_DESC:   item.__EMPTY_1,
                       APEYNOM:    `${item.__EMPTY_3} ${item.__EMPTY_4}`,                                
@@ -274,6 +319,7 @@ const subirDebitos = (req, res) => {
 
   const subirDebitosBanco = async (req, res) => {
   try {
+    const periodo = req.body.recepcionPeriodo
     let Organismo
     let codigoDebito
     if (!req.file) {
@@ -317,7 +363,7 @@ const subirDebitos = (req, res) => {
           cbu_1:l.slice(32,40),
           cbu_2:l.slice(40,54),
           nro_agente:l.slice(43,53),
-          periodo:l.slice(54,60),
+          periodo: periodo, //l.slice(54,60),
           importe: Number(l.slice(60, 74)) / 100,
           comprobante: l.slice(74, 81),
           fecha_cobro: l.slice(81, 89),
@@ -343,7 +389,7 @@ const subirDebitos = (req, res) => {
           cbu_1:l.slice(32,40),
           cbu_2:l.slice(40,54),
           nro_agente:l.slice(43,53),
-          periodo:l.slice(54,60),
+          periodo: periodo,//l.slice(54,60),
           importe: Number(l.slice(60, 74)) / 100,
           comprobante: l.slice(74, 81),
           fecha_cobro: l.slice(81, 89),
@@ -353,9 +399,9 @@ const subirDebitos = (req, res) => {
         }
       })
     }
-    console.log(Object.keys(data[0]))
+  console.log(Object.keys(data[0]))
 
-
+    
   const agentes = data
   .map(x => String(Number(x.nro_agente)))
   .filter(a => a && a !== "NaN");
@@ -380,8 +426,10 @@ const mapa = Object.fromEntries(
 data = data.map(item => {
   const info = mapa[String(Number(item.nro_agente))] || {};
 
+  
   return {
     ORGANISMO: Organismo,
+    COD_DEB:   codigoDebito,
     PERIODO: item.periodo || item.fecha,
     NRO_AGENTE: item.nro_agente,
     DNI_DESC: info.dni_desc || "",
@@ -396,6 +444,8 @@ data = data.map(item => {
       suma += item.MONTO,
       cantidad = cantidad +1
     });
+    
+    globalData= data 
 
   res.render('main/resultadoTablatxt', { data , archivo : Organismo, suma: suma.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}), cantidad: cantidad});
 
@@ -409,6 +459,7 @@ data = data.map(item => {
 async function grabarDebitos(req, res) {
   try {
     const debitos = globalData;
+    console.log(debitos)
 
     if (!Array.isArray(debitos) || debitos.length === 0) {
       throw new Error("No se encontraron registros en generarDebitos");
@@ -440,8 +491,48 @@ async function grabarDebitos(req, res) {
 
 async function compararDebitos(req,res) {
 
-  let DatosDebitosTotales = db_debitos
+ let DatosDebitosTotales = await db_debitos.query(`
+  SELECT 
+    fecha,
+    tipo,
+    cod,
+    cod_deb,
+    sigla,
+    sucursal,
+    nro_agente,
+    cuil,
+    dni_desc,
+    apeynom,
+    monto,
+    plazo,
+    pago,
+    NRO
+  FROM Debitos.dbo.DEBITOS_TOTAL
+  WHERE cod_deb = 17
+`, {
+  type: QueryTypes.SELECT
+});
+console.log(DatosDebitosTotales)
   
+}
+
+async function ConsultarDebitosRecibidos() {
+  const debitos = await RecepcionDebitosAux.findAll({
+    attributes: [
+      'PERIODO',
+      'ORGANISMO',
+      'COD_DEB',
+      [Sequelize.fn('COUNT', Sequelize.col('COD_DEB')), 'REGISTROS'],
+      [Sequelize.fn('SUM', Sequelize.col('MONTO')), 'MONTO_TOTAL']
+    ],
+    group: [ 'PERIODO','ORGANISMO', 'COD_DEB'],
+    order: [['ORGANISMO', 'ASC']],
+    raw: true
+  });
+
+  console.log(debitos);
+
+  return debitos;
 }
 export {
     recepcioDebitosIndex,

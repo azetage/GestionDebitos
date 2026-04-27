@@ -597,6 +597,12 @@ video {
 .h-3 {
   height: 0.75rem;
 }
+.h-\[42px\] {
+  height: 42px;
+}
+.h-full {
+  height: 100%;
+}
 .max-h-96 {
   max-height: 24rem;
 }
@@ -639,11 +645,23 @@ video {
 .flex-row {
   flex-direction: row;
 }
+.flex-col {
+  flex-direction: column;
+}
 .items-center {
   align-items: center;
 }
+.items-stretch {
+  align-items: stretch;
+}
+.justify-end {
+  justify-content: flex-end;
+}
 .justify-center {
   justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
 }
 .justify-items-end {
   justify-items: end;
