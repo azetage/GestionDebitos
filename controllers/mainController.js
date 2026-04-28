@@ -1642,6 +1642,7 @@ export {
     ReporteBancoSantiago,
     ReporteBancoNacion,
     guardarCuil,
-    GenerarNotas
+    GenerarNotas,
+    agruparCodigoDebito
 
 }

@@ -4,12 +4,13 @@ import RecepcionDebitosAux from '../models/RecepcionDebitosAux.js'
 import { db_debitos,db_vistaDebitos } from '../config/db.js';
 import Organismos from '../models/Organismos.js';
 import { Op, Sequelize} from "sequelize";
+import { QueryTypes } from 'sequelize';
 
 import fs from "fs";
 
 import path from 'path';
 import { ro } from 'date-fns/locale';
-import { consultarDebitos } from './mainController.js';
+import { consultarDebitos, agruparCodigoDebito } from './mainController.js';
 
 
 global.globalData= ""
@@ -23,7 +24,7 @@ async function ConsultarOrganismosDebito() {
     order: [['ORGANISMO', 'ASC']]
   });
 
-  console.log(organismos);
+ // console.log(organismos);
 
   return organismos;
 }
@@ -32,7 +33,8 @@ async function ConsultarOrganismosDebito() {
 const recepcioDebitosIndex= async (req,res)=> {
 
    let organismos = await ConsultarOrganismosDebito();
-   console.log(Organismos.ORGANISMO)
+  // console.log(Organismos.ORGANISMO)
+   compararDebitos()
    
    return res.render('main/recepcioDebitos', {
          pagina : "RECEPCION DEBITOS",
@@ -130,15 +132,15 @@ const subirDebitos = (req, res) => {
       let Organismo= ""
       let codigo_debito_envios = 0                    
 
-      console.log(encabezados); // encabezados
+      //console.log(encabezados); // encabezados
       
       
       
       
       if (JSON.stringify(encabezados) == JSON.stringify(Unca)) {
  
-          console.log("UNCa")
-          console.log(encabezados)
+          // console.log("UNCa")
+          // console.log(encabezados)
 
           Organismo= "UNCa"
           codigo_debito_envios = 5
@@ -160,7 +162,7 @@ const subirDebitos = (req, res) => {
 
       else if (JSON.stringify(encabezados) == JSON.stringify(MunCapital))
         {
-          console.log("DEBITOS CAPITAL")
+          // console.log("DEBITOS CAPITAL")
           //Mapeo Datos MUN CAPITAL
           Organismo= "MUN CAPITAL "
           codigo_debito_envios = 7 
@@ -203,8 +205,8 @@ const subirDebitos = (req, res) => {
 
       else if (JSON.stringify(encabezados) == JSON.stringify(Diputados)) {
  
-          console.log("diputados")
-          console.log(encabezados)
+          // console.log("diputados")
+          // console.log(encabezados)
 
           Organismo= "DIPUTADOS "
           codigo_debito_envios = 25
@@ -225,9 +227,9 @@ const subirDebitos = (req, res) => {
       
       else if (JSON.stringify(encabezados) == JSON.stringify(Educacion)) {
  
-          console.log("Educacion")
-          console.log(encabezados)
-          console.log(datos[0],datos[1],datos[2],datos[3],datos[4])
+          // console.log("Educacion")
+          // console.log(encabezados)
+          // console.log(datos[0],datos[1],datos[2],datos[3],datos[4])
 
           Organismo= "EDUCACION "
           codigo_debito_envios = 8
@@ -250,8 +252,8 @@ const subirDebitos = (req, res) => {
 
       else if (JSON.stringify(encabezados) == JSON.stringify(PoderJudicial)) {
  
-          console.log("PoderJudicial")
-          console.log(encabezados)
+          // console.log("PoderJudicial")
+          // console.log(encabezados)
 
           Organismo= "PODER JUDICIAL "
           codigo_debito_envios = 17
@@ -273,8 +275,8 @@ const subirDebitos = (req, res) => {
 
       else if (JSON.stringify(encabezados) == JSON.stringify(Senadores)) {
  
-          console.log("Senadores")
-          console.log(encabezados)
+          // console.log("Senadores")
+          // console.log(encabezados)
    
 
 
@@ -459,7 +461,7 @@ data = data.map(item => {
 async function grabarDebitos(req, res) {
   try {
     const debitos = globalData;
-    console.log(debitos)
+    // console.log(debitos)
 
     if (!Array.isArray(debitos) || debitos.length === 0) {
       throw new Error("No se encontraron registros en generarDebitos");
@@ -488,34 +490,120 @@ async function grabarDebitos(req, res) {
     });
   }
 }
+function agruparPorNroAgente(data) {
+  let agrupados = {};
 
-async function compararDebitos(req,res) {
+  data.forEach(item => {
+    let nro = item.nro_agente;
 
- let DatosDebitosTotales = await db_debitos.query(`
-  SELECT 
-    fecha,
-    tipo,
-    cod,
-    cod_deb,
-    sigla,
-    sucursal,
-    nro_agente,
-    cuil,
-    dni_desc,
-    apeynom,
-    monto,
-    plazo,
-    pago,
-    NRO
-  FROM Debitos.dbo.DEBITOS_TOTAL
-  WHERE cod_deb = 17
-`, {
-  type: QueryTypes.SELECT
-});
-console.log(DatosDebitosTotales)
-  
+    if (!agrupados[nro]) {
+      agrupados[nro] = {
+        nro_agente: nro,
+        apeynom: item.apeynom,
+        cuil: item.cuil,
+        cantidad_registros: 0,
+        monto_envio: 0
+      };
+    }
+
+    agrupados[nro].cantidad_registros += 1;
+    agrupados[nro].monto_envio += Number(item.monto || 0);
+  });
+
+  let datos = Object.values(agrupados);
+
+  return {
+    datos
+  };
 }
 
+async function compararDebitos(req, res) {
+  let DatosEnvios = await db_debitos.query(`
+    SELECT 
+      fecha, 
+      tipo, 
+      cod,
+      cod_deb,
+      sigla,
+      sucursal,
+      nro_agente,
+      cuil,
+      dni_desc,
+      apeynom,
+      monto,
+      plazo,
+      pago
+    FROM Debitos.dbo.DEBITOS_TOTAL
+    WHERE cod_deb = 17
+  `, {
+    type: QueryTypes.SELECT
+  });
+
+  // Agrupar por nro_agente
+  let { datos: DatosEnviosAgrup } = agruparPorNroAgente(DatosEnvios);
+
+  console.log(
+    "Original: " +
+    DatosEnvios.length +
+    " | Agrupados: " +
+    DatosEnviosAgrup.length
+  );
+
+  let DatosRecepcion = await RecepcionDebitosAux.findAll({
+    where: {
+      COD_DEB: 17
+    }
+  });
+ console.log(
+    "Recepcion: " +
+    DatosRecepcion.length
+  );
+
+  let coincidencias = [];
+
+  DatosEnviosAgrup.forEach(envio => {
+    let recepcion = DatosRecepcion.find(item =>
+      item.NRO_AGENTE == envio.nro_agente
+    );
+
+    if (recepcion) {
+      coincidencias.push({
+        nro_agente: envio.nro_agente,
+        apeynom: envio.apeynom,
+        cuil: envio.cuil,
+        cantidad_registros: envio.cantidad_registros,
+        monto_envio: envio.monto_envio,
+        monto_recepcion: recepcion.MONTO,
+        mismo_monto:
+          Number(envio.monto_envio) === Number(recepcion.MONTO)
+      });
+    }
+  });
+
+  console.log("totalCoincidencias: " + coincidencias.length);
+  console.table(coincidencias);
+  actualizarPagados(coincidencias)
+}
+async function actualizarPagados(data){
+
+const agentes = data
+  .filter(x => x.mismo_monto === true)
+  .map(x => String(Number(x.nro_agente)))
+  .filter(a => a && a !== "NaN");
+
+  console.table(agentes)
+
+  const filas = await db_debitos.query(
+  `
+  UPDATE Debitos.dbo.DEBITOS_TOTAL
+  SET pago = 'SI'
+  WHERE nro_agente IN (:agentes)
+  `,
+  {
+    replacements: { agentes },
+    type: QueryTypes.UPDATE
+  }
+);}
 async function ConsultarDebitosRecibidos() {
   const debitos = await RecepcionDebitosAux.findAll({
     attributes: [
@@ -530,7 +618,6 @@ async function ConsultarDebitosRecibidos() {
     raw: true
   });
 
-  console.log(debitos);
 
   return debitos;
 }
