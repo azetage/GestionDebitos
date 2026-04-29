@@ -34,7 +34,7 @@ const recepcioDebitosIndex= async (req,res)=> {
 
    let organismos = await ConsultarOrganismosDebito();
   // console.log(Organismos.ORGANISMO)
-   compararDebitos()
+  //compararDebitos()
    
    return res.render('main/recepcioDebitos', {
          pagina : "RECEPCION DEBITOS",
@@ -490,6 +490,7 @@ async function grabarDebitos(req, res) {
     });
   }
 }
+
 function agruparPorNroAgente(data) {
   let agrupados = {};
 
@@ -518,6 +519,10 @@ function agruparPorNroAgente(data) {
 }
 
 async function compararDebitos(req, res) {
+
+  const codigodebito = req.body.cod_deb
+
+  
   let DatosEnvios = await db_debitos.query(`
     SELECT 
       fecha, 
@@ -534,8 +539,9 @@ async function compararDebitos(req, res) {
       plazo,
       pago
     FROM Debitos.dbo.DEBITOS_TOTAL
-    WHERE cod_deb = 17
+    WHERE cod_deb = :codigodebito
   `, {
+    replacements: { codigodebito },
     type: QueryTypes.SELECT
   });
 
@@ -549,11 +555,12 @@ async function compararDebitos(req, res) {
     DatosEnviosAgrup.length
   );
 
-  let DatosRecepcion = await RecepcionDebitosAux.findAll({
-    where: {
-      COD_DEB: 17
-    }
-  });
+let DatosRecepcion = await RecepcionDebitosAux.findAll({
+  where: {
+    COD_DEB: codigodebito
+  },
+  raw: true
+});
  console.log(
     "Recepcion: " +
     DatosRecepcion.length
@@ -581,9 +588,17 @@ async function compararDebitos(req, res) {
   });
 
   console.log("totalCoincidencias: " + coincidencias.length);
+//  console.table(DatosEnviosAgrup)
+  //console.table(DatosRecepcion)
   console.table(coincidencias);
-  actualizarPagados(coincidencias)
+
+return res.json(coincidencias);
+ 
+  // actualizarPagados(coincidencias)
 }
+
+
+
 async function actualizarPagados(data){
 
 const agentes = data
@@ -621,12 +636,16 @@ async function ConsultarDebitosRecibidos() {
 
   return debitos;
 }
+
+
 export {
     recepcioDebitosIndex,
     subirDebitos,
     subirDebitosBanco,
     grabarDebitos,
-    TipoDocumento
+    TipoDocumento,
+    compararDebitos,
+    actualizarPagados
     
 
 

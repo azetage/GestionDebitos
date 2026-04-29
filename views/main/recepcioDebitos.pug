@@ -74,6 +74,7 @@ block contenido
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 COD_DEB
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CANTIDAD DE REGISTROS
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MONTO
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 ACCION
                                 
                                 tbody
                                     each item, i in (tablaAux || [])
@@ -86,8 +87,66 @@ block contenido
                                             td.italic.border.border-slate-300.px-4 #{item.COD_DEB || ''}
                                             td.italic.border.border-slate-300.px-4 #{item.REGISTROS || 0}
                                             td.italic.border.border-slate-300.px-4 #{valor}
-                                            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
-                      
+
+                                            td.italic.border.border-slate-300.px-4
+                                                button.btn-accion(
+                                                    class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
+                                                    data-id= item.COD_DEB
+                                                ) Ejecutar
+                                                        
+
+    div(name= 'CONSULTA GRABADOS')            
+        div.mt-8.mx-auto.max-w-full.px-6.items-center
+            .bg-white.py-8.px-10(class="shadow-lg shadow-gray-500/50")
+                div(class="overflow-y-auto max-h-96")  
+                table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
+                    thead.bg-gray-200.text-gray-500.py-3
+                        tr
+                            th.border.border-slate-300.px-4.py-2 Nro Agente
+                            th.border.border-slate-300.px-4.py-2 Apellido y Nombre
+                            th.border.border-slate-300.px-4.py-2 CUIL
+                            th.border.border-slate-300.px-4.py-2 Registros
+                            th.border.border-slate-300.px-4.py-2 Monto Envío
+                            th.border.border-slate-300.px-4.py-2 Monto Recepción
+                            th.border.border-slate-300.px-4.py-2 Coincide
+
+                    tbody#tablaResultado
 
 
+    script.
+        $(document).on('click', '.btn-accion', function () {
+            const cod_deb = $(this).data('id');
 
+            $.ajax({
+                url: '/main/index/compararDebitos',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ cod_deb }),
+
+                success: function (coincidencias) {
+                    console.log(coincidencias[0]);
+
+                    $('#tablaResultado').html('');
+
+                    coincidencias.forEach(function (item) {
+                        $('#tablaResultado').append(`
+                            <tr>
+                                <td class="border border-slate-300 px-4 py-2">${item.nro_agente}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.apeynom}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.cuil}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.cantidad_registros}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.monto_envio}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion}</td>
+                                <td class="border border-slate-300 px-4 py-2">
+                                    ${item.mismo_monto ? 'SI' : 'NO'}
+                                </td>
+                            </tr>
+                        `);
+                    });
+                },
+
+                error: function () {
+                    alert('Error al ejecutar');
+                }
+            });
+        });
