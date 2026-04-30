@@ -92,6 +92,8 @@ block contenido
                                                 button.btn-accion(
                                                     class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
                                                     data-id= item.COD_DEB
+                                                    data-periodo= item.PERIODO
+
                                                 ) Ejecutar
                                                         
 
@@ -104,6 +106,8 @@ block contenido
                 table.text-sm.border-collapse.border.border-slate-900.table-fixed(class="min-w-full table-auto border border-gray-300")
                     thead.bg-gray-200.text-gray-500.py-3
                         tr
+                            th.border.border-slate-300.px-4.py-2 #
+                            th.border.border-slate-300.px-4.py-2 Periodo 
                             th.border.border-slate-300.px-4.py-2 Nro Agente
                             th.border.border-slate-300.px-4.py-2 Apellido y Nombre
                             th.border.border-slate-300.px-4.py-2 CUIL
@@ -118,21 +122,24 @@ block contenido
     script.
         $(document).on('click', '.btn-accion', function () {
             const cod_deb = $(this).data('id');
+            const periodo = $(this).data('periodo');
 
             $.ajax({
                 url: '/main/index/compararDebitos',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ cod_deb }),
+                data: JSON.stringify({ cod_deb, periodo  }),
 
                 success: function (coincidencias) {
                     console.log(coincidencias[0]);
 
                     $('#tablaResultado').html('');
 
-                    coincidencias.forEach(function (item) {
+                    coincidencias.forEach(function (item, i) {
                         $('#tablaResultado').append(`
                             <tr>
+                                <td class="border border-slate-300 px-4 py-2">${i+1}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.periodo}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.nro_agente}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.apeynom}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.cuil}</td>
@@ -140,7 +147,7 @@ block contenido
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_envio}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion}</td>
                                 <td class="border border-slate-300 px-4 py-2">
-                                    ${item.mismo_monto ? 'SI' : 'NO'}
+                                    ${item.coincide ? 'SI' : 'NO'}
                                 </td>
                             </tr>
                         `);

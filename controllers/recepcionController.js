@@ -319,7 +319,7 @@ const subirDebitos = (req, res) => {
     }
   }
 
-  const subirDebitosBanco = async (req, res) => {
+const subirDebitosBanco = async (req, res) => {
   try {
     const periodo = req.body.recepcionPeriodo
     let Organismo
@@ -521,77 +521,74 @@ function agruparPorNroAgente(data) {
 async function compararDebitos(req, res) {
 
   const codigodebito = req.body.cod_deb
+  const periodo = req.body.periodo
 
+  console.log('PERIODO CONSULTADO '+ periodo)
   
   let DatosEnvios = await db_debitos.query(`
-    SELECT 
-      fecha, 
-      tipo, 
-      cod,
-      cod_deb,
-      sigla,
-      sucursal,
-      nro_agente,
-      cuil,
-      dni_desc,
-      apeynom,
-      monto,
-      plazo,
-      pago
-    FROM Debitos.dbo.DEBITOS_TOTAL
-    WHERE cod_deb = :codigodebito
-  `, {
-    replacements: { codigodebito },
-    type: QueryTypes.SELECT
-  });
+  SELECT 
+    fecha, 
+    tipo, 
+    cod,
+    cod_deb,
+    sigla,
+    sucursal,
+    nro_agente,
+    cuil,
+    dni_desc,
+    apeynom,
+    monto,
+    plazo,
+    pago
+  FROM Debitos.dbo.DEBITOS_TOTAL
+  WHERE cod_deb = :codigodebito
+    AND fecha >= CAST(:periodo + '-01' AS DATE)
+    AND fecha <  DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
+`, {
+  replacements: { codigodebito, periodo },
+  type: QueryTypes.SELECT
+});
 
   // Agrupar por nro_agente
   let { datos: DatosEnviosAgrup } = agruparPorNroAgente(DatosEnvios);
 
-  console.log(
-    "Original: " +
-    DatosEnvios.length +
-    " | Agrupados: " +
-    DatosEnviosAgrup.length
-  );
 
 let DatosRecepcion = await RecepcionDebitosAux.findAll({
   where: {
-    COD_DEB: codigodebito
+    COD_DEB: codigodebito,
+    PERIODO: periodo
   },
   raw: true
 });
- console.log(
-    "Recepcion: " +
-    DatosRecepcion.length
-  );
+ console.log( "Recepcion: " +  DatosRecepcion.length );
 
-  let coincidencias = [];
 
-  DatosEnviosAgrup.forEach(envio => {
-    let recepcion = DatosRecepcion.find(item =>
-      item.NRO_AGENTE == envio.nro_agente
-    );
+ const mapaRecepcion = {};
 
-    if (recepcion) {
-      coincidencias.push({
-        nro_agente: envio.nro_agente,
-        apeynom: envio.apeynom,
-        cuil: envio.cuil,
-        cantidad_registros: envio.cantidad_registros,
-        monto_envio: envio.monto_envio,
-        monto_recepcion: recepcion.MONTO,
-        mismo_monto:
-          Number(envio.monto_envio) === Number(recepcion.MONTO)
-      });
-    }
+  DatosRecepcion.forEach(rec => {
+    mapaRecepcion[rec.NRO_AGENTE] = rec;
   });
 
-  console.log("totalCoincidencias: " + coincidencias.length);
-//  console.table(DatosEnviosAgrup)
-  //console.table(DatosRecepcion)
-  console.table(coincidencias);
+  let coincidencias = DatosEnviosAgrup.map(envio => {
+  const recepcion = mapaRecepcion[envio.nro_agente];
 
+  return {
+    periodo: periodo,
+    nro_agente: envio.nro_agente,
+    apeynom: envio.apeynom,
+    cuil: envio.cuil,
+    cantidad_registros: envio.cantidad_registros,
+    monto_envio: envio.monto_envio,
+
+    monto_recepcion: recepcion ? recepcion.MONTO : 0,
+
+   coincide: recepcion 
+  ? Number(envio.monto_envio) <= Number(recepcion.MONTO)
+  : false,
+
+    existe_en_recepcion: !!recepcion
+  };
+});
 return res.json(coincidencias);
  
   // actualizarPagados(coincidencias)
