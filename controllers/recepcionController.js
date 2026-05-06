@@ -10,7 +10,7 @@ import fs from "fs";
 
 import path from 'path';
 import { ro } from 'date-fns/locale';
-import { consultarDebitos, agruparCodigoDebito } from './mainController.js';
+import { consultarDebitos, agruparPorNroAgente } from './mainController.js';
 
 
 global.globalData= ""
@@ -491,7 +491,7 @@ async function grabarDebitos(req, res) {
   }
 }
 
-function agruparPorNroAgente(data) {
+function agruparPorNroAgenteRecepcion(data) {
   let agrupados = {};
 
   data.forEach(item => {
@@ -524,7 +524,7 @@ async function compararDebitos(req, res) {
   const periodo = req.body.periodo
 
   console.log('PERIODO CONSULTADO '+ periodo)
-  
+   console.log('#########################')
   let DatosEnvios = await db_debitos.query(`
   SELECT 
     fecha, 
@@ -550,8 +550,8 @@ async function compararDebitos(req, res) {
 });
 
   // Agrupar por nro_agente
-  let { datos: DatosEnviosAgrup } = agruparPorNroAgente(DatosEnvios);
-
+  let { datos: DatosEnviosAgrup } = agruparPorNroAgenteRecepcion(DatosEnvios);
+  console.log("REGISTROS en ENVIOS:  "+ DatosEnvios.length + "   REGISTROS AGRUP en ENVIOS:   "+ DatosEnviosAgrup.length)
 
 let DatosRecepcion = await RecepcionDebitosAux.findAll({
   where: {
@@ -589,33 +589,38 @@ let DatosRecepcion = await RecepcionDebitosAux.findAll({
     existe_en_recepcion: !!recepcion
   };
 });
+actualizarPagados(coincidencias)
 return res.json(coincidencias);
+
  
-  // actualizarPagados(coincidencias)
 }
 
 
 
 async function actualizarPagados(data){
 
-const agentes = data
-  .filter(x => x.mismo_monto === true)
-  .map(x => String(Number(x.nro_agente)))
-  .filter(a => a && a !== "NaN");
+console.log(data.length)
+  const agentes = data
+  .filter(x => x.coincide ===  true)
+  // .map(x => Number(x.nro_agente))
+  // .filter(a => a && a !== "NaN");
 
-  console.table(agentes)
+console.log(agentes.length)
 
-  const filas = await db_debitos.query(
-  `
-  UPDATE Debitos.dbo.DEBITOS_TOTAL
-  SET pago = 'SI'
-  WHERE nro_agente IN (:agentes)
-  `,
-  {
-    replacements: { agentes },
-    type: QueryTypes.UPDATE
-  }
-);}
+//   const filas = await db_debitos.query(
+//   `
+//   UPDATE Debitos.dbo.DEBITOS_TOTAL
+//   SET pago = 'SI'
+//   WHERE nro_agente IN (:agentes)
+//   `,
+//   {
+//     replacements: { agentes },
+//     type: QueryTypes.UPDATE
+//   }
+// );
+}
+
+
 async function ConsultarDebitosRecibidos() {
   const debitos = await RecepcionDebitosAux.findAll({
     attributes: [

@@ -7,7 +7,7 @@ import Organismos from '../models/Organismos.js';
 import DebitosTotalesAux from '../models/DebitosTotalesAux.js';
 import { DBFFile } from 'dbffile';
 import { writeFile } from 'fs/promises';
-import { Op, Sequelize} from "sequelize";
+import { BIGINT, INTEGER, NUMBER, Op, Sequelize} from "sequelize";
 import PdfPrinter from 'pdfmake';
 import axios from "axios";
 import { PDFDocument } from "pdf-lib";
@@ -231,11 +231,17 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 // Mapeo de datos de Operatorias 2
     const datos2 = datosOperatorias2.map(item=>{
         totalOperatoria2 += item.imp_cuota
+        let nro_agente
+        let sucursal = 0
 
-        const sucursal = item.agente_debito? item.agente_debito.slice(0, 4): 0
-        const nroAgente = codigo_debito === "11"
-            ? item.agente_debito.slice(4)
-            : item.agente_debito;
+        if(item.COD_DEB==11){
+          sucursal = NUMBER(item.agente_debito? item.agente_debito.slice(0, 4): 0)
+          nro_agente = NUMBER(item.agente_debito.slice(4))
+        }
+        else{
+          nro_agente =  item.agente_debito
+          sucursal =    item.sucursal
+        }
         return{
                               
                 FECHA:      wfecha.toISOString().split('T')[0],
@@ -244,13 +250,14 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 COD_DEB:    codigo_debito,
                 SIGLA:      sigla,
                 SUCURSAL:   sucursal,
-                NRO_AGENTE: item.agente_debito,
+                NRO_AGENTE: nro_agente,
                 DNI_DESC:   item.dni,
                 CUIL:       item.CUIL ? item.CUIL:"0",
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
                 cantidad:   1,  // ← contador de registros
                 FECHA_VTO:  item.fecha
+
                         }
 
         })
@@ -260,23 +267,35 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     // agregar elemntos de la consulta de operatorias a array datos
     datos.push(...datos2) 
 
-   const agentes = datos.map(d => d.NRO_AGENTE);
+   datos.forEach(item => {
+    item.NRO_AGENTE = Number(item.NRO_AGENTE);
+    item.COD        = Number(item.COD);
+    item.COD_DEB    = Number(item.COD_DEB);
 
-   const resultados = await db_debitos.query(
+    item.CUIL       = item.CUIL ? Number(item.CUIL) : null;
+    item.DNI_DESC   = item.DNI_DESC ? Number(item.DNI_DESC) : null;
+
+    const monto = parseFloat(item.MTO_CUO);
+    item.MTO_CUO = isNaN(monto) ? 0 : Number(monto.toFixed(2));
+});
+
+const agentes = datos.map(d => d.NRO_AGENTE);
+
+const resultados = await db_debitos.query(
   `SELECT nro_agente, cuil
    FROM Debitos.dbo.DEBITOS_TOTAL
-   WHERE nro_agente IN (:agentes)
+   WHERE CAST(nro_agente AS BIGINT) IN (:agentes)
    AND cod_deb = :codigoDebito`,
   {
-    replacements: { agentes, codigoDebito:codigo_debito },
+    replacements: { agentes, codigoDebito: codigo_debito },
     type: db_debitos.QueryTypes.SELECT
   }
 );
 
-  const mapaCuil = {};
-  resultados.forEach(r => {
-  mapaCuil[r.nro_agente] = r.cuil;
-});
+   const mapaCuil = {};
+   resultados.forEach(r => {
+   mapaCuil[r.nro_agente] = r.cuil;
+ });
 datos = datos.map(item => ({
   ...item,
   CUIL: mapaCuil[item.NRO_AGENTE] || null
@@ -296,7 +315,7 @@ return {MontoTotalSinAgrupar,sinagrupar}
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function agruparCodigoDebito(datos){
+function agruparPorNroAgente(datos){
    
     console.log("\n datos sin agrupar: "+ JSON.stringify(datos?datos[0]:"vacio")+"\n" )
     const codigo_debito = datos[0]? datos[0].COD_DEB:""
@@ -304,15 +323,11 @@ function agruparCodigoDebito(datos){
     if (['25','7','11','48','55','5','17'].includes(codigo_debito)) {
 
     const agrupados = datos.reduce((acc, item) => {
-        
-        // KEY TERNANIO SI CODIGO DEBITO ES 11 UTILIZA EL STRING COMPUESTO - SINO NRO AGENTE
-        // const key = codigo_debito === '11' ? `${item.SUCURSAL}-${item.NRO_AGENTE}`:`${item.NRO_AGENTE}`;
-
+                
         let key;
 
         if (codigo_debito === '11') {
-            //key = `${item.SUCURSAL}-${item.NRO_AGENTE}-${item.APEYNOM}`;
-            key = `${item.NRO_AGENTE}`;
+           key = `${item.NRO_AGENTE}`;
         } 
         else if (["25"].includes(codigo_debito )) {
             key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
@@ -409,7 +424,7 @@ const consultarDebitos = async (req,res)=>{
     let periodo =       req.query.enviosPeriodo
     
     let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
-    let {datos,MontoTotalAgrupados}=  agruparCodigoDebito(sinagrupar)
+    let {datos,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
 
     globalDatosSinAgrup =   sinagrupar
     globalDatosAgrup    =   datos
@@ -456,8 +471,22 @@ async function generarExcel (req,res){
     console.log(GlobalenviosOrganismo+Globalperiodo)
 
     //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
-   let datos = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
-   
+   let datos = await DebitosTotalesAux.findAll({
+    where: { COD_DEB: GlobalenviosOrganismo }
+});
+
+datos.forEach(item => {
+    item.NRO_AGENTE = Number(item.NRO_AGENTE);
+    item.COD        = Number(item.COD);
+    item.COD_DEB    = Number(item.COD_DEB);
+
+    item.CUIL       = item.CUIL ? Number(item.CUIL) : null;
+    item.DNI_DESC   = item.DNI_DESC ? Number(item.DNI_DESC) : null;
+
+    const monto = parseFloat(item.MTO_CUO);
+    item.MTO_CUO = isNaN(monto) ? 0 : Number(monto.toFixed(2));
+});
+
 
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
@@ -466,12 +495,12 @@ async function generarExcel (req,res){
     worksheet.columns = [
     { header: 'FECHA',      key: 'FECHA',width: 15, style: { numFmt: 'dd/mm/yyyy', alignment: { horizontal: 'center' } } },
     { header: 'OPERATORIA', key: 'OPERATORIA',width: 15, style: { alignment: { horizontal: 'center' } } },
-    { header: 'CODIGO',     key: 'COD',width: 10, style: { alignment: { horizontal: 'center' } }},
-    { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: { alignment: { horizontal: 'center' } }  },
+    { header: 'CODIGO',     key: 'COD',width: 10, style: { numFmt: '0',alignment: { horizontal: 'center' } }},
+    { header: 'CODIGO DEBITO', key: 'COD_DEB',width: 10,style: {numFmt: '0', alignment: { horizontal: 'center' } }  },
     { header: 'SIGLA',      key: 'SIGLA',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'SUCURSAL',   key: 'SUCURSAL',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: { alignment: { horizontal: 'center' } }  },
-    { header: 'DNI',        key: 'DNI_DESC',width: 15, style: { alignment: { horizontal: 'center' } }  },
+    { header: 'SUCURSAL',   key: 'SUCURSAL',width: 10,style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
+    { header: 'NRO AGENTE', key: 'NRO_AGENTE',width: 10,style: {numFmt: '0', alignment: { horizontal: 'center' } }  },
+    { header: 'DNI',        key: 'DNI_DESC',width: 15, style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
     { header: 'APELLIDO Y NOMBRE', key: 'APEYNOM',width: 40 },
     { header: 'MONTO CUOTA', key: 'MTO_CUO',width: 15 ,style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
     { header: 'CANT',       key: 'cantidad', style: { numFmt: '0', alignment: { horizontal: 'center' } } }
@@ -498,7 +527,7 @@ async function generarExcel (req,res){
 async function generarExcelFormateado (req,res){
     
    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
-   let {datos} = agruparCodigoDebito(Aux)
+   let {datos} = agruparPorNroAgente(Aux)
    console.log(datos[0])
    
     //crear archivo excel
@@ -728,7 +757,7 @@ async function generarExcelFormateado (req,res){
  /////SI NO SON ESTOS CODIGOS DE DEBITO NO GENERA EL EXCEL
  /////////////////////////////////////////////////////////////////////
 
-    if(!['7','55','2','8',"5",'25'].includes(GlobalenviosOrganismo)){
+    if(!['11','7','55','2','8',"5",'25'].includes(GlobalenviosOrganismo)){
      return res.render("templates/mensaje", {
       pagina: "DEBITOS",
       mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO EXCEL!",
@@ -825,7 +854,7 @@ async function generarDbf(req, res) {
         raw: true
       });
 
-      const { datos } = agruparCodigoDebito(aux);
+      const { datos } = agruparPorNroAgente(aux);
 
       if (!datos || datos.length === 0) {
         return res.status(404).send("No hay datos para generar el DBF");
@@ -886,7 +915,7 @@ async function generartxt(req, res) {
   try {
     if (['48','34','37','11','25',].includes(GlobalenviosOrganismo)) {
     let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
-    let {datos} = agruparCodigoDebito(Aux)
+    let {datos} = agruparPorNroAgente(Aux)
     let totalPesos=0
 
     datos.map(item   => {
@@ -1289,7 +1318,7 @@ async function reportePDFBasico(req, res) {
       return res.status(404).send("No se encontraron datos");
     }
 
-    const { datos } = agruparCodigoDebito(Aux);
+    const { datos } = agruparPorNroAgente(Aux);
 
     let totalPesos=0
 
@@ -1643,6 +1672,6 @@ export {
     ReporteBancoNacion,
     guardarCuil,
     GenerarNotas,
-    agruparCodigoDebito
+    agruparPorNroAgente
 
 }
