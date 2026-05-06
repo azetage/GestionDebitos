@@ -235,8 +235,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         let sucursal = 0
 
         if(codigo_debito==11){
-          sucursal = NUMBER(item.agente_debito? item.agente_debito.slice(0, 4): 0)
-          nro_agente = NUMBER(item.agente_debito.slice(4))
+          sucursal = Number(item.agente_debito? item.agente_debito.slice(0, 4): 0)
+          nro_agente = Number(item.agente_debito.slice(4))
         }
         else{
           nro_agente =  item.agente_debito
@@ -392,10 +392,7 @@ function agruparPorNroAgente(datos){
                                     CUIL:       item.CUIL,
                                     APEYNOM:    item.APEYNOM,                                
                                     MTO_CUO:    item.MTO_CUO,                            
-                                 `SELECT nro_agente, cuil
-   FROM Debitos.dbo.DEBITOS_TOTAL
-   WHERE CAST(nro_agente AS BIGINT) IN (:agentes)
-   AND cod_deb = :codigoDebito`   cantidad:   1,
+                                    cantidad:   1,
                                     FECHA_VTO:  item.FECHA_VTO
                             }
                     }

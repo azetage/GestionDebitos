@@ -146,8 +146,8 @@ block contenido
                                 <td class="border border-slate-300 px-4 py-2">${item.cantidad_registros}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_envio}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion}</td>
-                                <td class="border border-slate-300 px-4 py-2">
-                                    ${item.coincide ? 'SI' : 'NO'}
+                                <td class="border px-4 py-2 ${item.coincide ? 'bg-green-100' : 'bg-red-600 font-bold'}">
+                                   ${item.coincide ? 'SI' : 'NO'}
                                 </td>
                             </tr>
                         `);
