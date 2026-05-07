@@ -88,7 +88,7 @@ const subirDebitos = (req, res) => {
         let codigo_debito_envios = 0;
 
         // UNCa
-        const Unca = ['LEGAJO', 'APELLIDO', 'NOMBRE', 'DOCUMENTO', 'IMPORTE', 'CODIGO'];
+        const Unca = [ 'APELLIDO', 'NOMBRE', 'DOCUMENTO', 'IMPORTE', 'LEGAJO', 'CODIGO' ];
         
         // MunCapital
         const MunCapital = ['Legajo', 'Apellido y nombres', 'Documento', 'Mes', 'Año', 'Importe'];
