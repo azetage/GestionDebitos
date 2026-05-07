@@ -131,7 +131,7 @@ block contenido
                 data: JSON.stringify({ cod_deb, periodo  }),
 
                 success: function (coincidencias) {
-                    console.log(coincidencias[0]);
+                    console.table(coincidencias);
 
                     $('#tablaResultado').html('');
 
