@@ -501,26 +501,66 @@ async function compararDebitos(req, res) {
   }
 }
 
+// async function actualizarPagados(data) {
+//   const agentes = data
+//     .filter(x => x.coincide)
+//     .map(x => String(x.nro_agente).trim())
+//     .filter(Boolean);
+
+//   if (!agentes.length) return;
+
+//   await db_debitos.query(`
+//     UPDATE Debitos.dbo.DEBITOS_TOTAL
+//     SET pago = 'SI'
+//     WHERE nro_agente IN (:agentes)
+//   `, {
+//     replacements: { agentes },
+//     type: QueryTypes.UPDATE
+//   });
+
+//   console.log("Débitos pagados");
+// }
 async function actualizarPagados(data) {
-  const agentes = data
-    .filter(x => x.coincide)
-    .map(x => String(x.nro_agente).trim())
-    .filter(Boolean);
 
-  if (!agentes.length) return;
+  const agentesSi = [...new Set(
+    data
+      .filter(x => x.coincide)
+      .map(x => String(x.nro_agente).trim())
+      .filter(Boolean)
+  )];
 
-  await db_debitos.query(`
-    UPDATE Debitos.dbo.DEBITOS_TOTAL
-    SET pago = 'SI'
-    WHERE nro_agente IN (:agentes)
-  `, {
-    replacements: { agentes },
-    type: QueryTypes.UPDATE
-  });
+  const agentesNo = [...new Set(
+    data
+      .filter(x => !x.coincide)
+      .map(x => String(x.nro_agente).trim())
+      .filter(Boolean)
+  )];
 
-  console.log("Débitos pagados");
+  if (agentesSi.length) {
+    await db_debitos.query(`
+      UPDATE Debitos.dbo.DEBITOS_TOTAL
+      SET pago = 'SI'
+      WHERE nro_agente IN (:agentesSi)
+    `, {
+      replacements: { agentesSi },
+      type: QueryTypes.UPDATE
+    });
+  }
+
+  if (agentesNo.length) {
+    await db_debitos.query(`
+      UPDATE Debitos.dbo.DEBITOS_TOTAL
+      SET pago = 'NO'
+      WHERE nro_agente IN (:agentesNo)
+    `, {
+      replacements: { agentesNo },
+      type: QueryTypes.UPDATE
+    });
+  }
+
+  console.log("Débitos actualizados");
+  console.log("no debitados: "+agentesNo.length)
 }
-
 
 async function ConsultarDebitosRecibidos() {
     const debitos = await RecepcionDebitosAux.findAll({
