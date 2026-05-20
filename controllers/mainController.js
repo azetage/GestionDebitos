@@ -314,118 +314,111 @@ return {MontoTotalSinAgrupar,sinagrupar}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////AGRUPA POR CODIGO DEBITO
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+function agruparPorNroAgente(datosSinAgrupar) {
 
-function agruparPorNroAgente(datos){
-   
-    console.log("\n datos sin agrupar: "+ JSON.stringify(datos?datos[0]:"vacio")+"\n" )
-    const codigo_debito = datos[0]? datos[0].COD_DEB:""
-    console.log(codigo_debito)
-    if (['25','7','11','48','55','5','17'].includes(codigo_debito)) {
-
-    const agrupados = datos.reduce((acc, item) => {
-                
-        let key;
-
-        if (codigo_debito === '11') {
-           key = `${item.NRO_AGENTE}`;
-        } 
-        else if (["25"].includes(codigo_debito )) {
-            key = `${item.DNI_DESC}-${item.NRO_AGENTE}-${item.APEYNOM}`;
-        }
-        // else if (["17"].includes(codigo_debito )) {
-        //     key = item.CUIL ? `${item.CUIL}`:`${item.NRO_AGENTE}`;
-        // }  
-
-        
-        else {
-            key = `${item.NRO_AGENTE}`;
-        }
-
-        if (!acc[key]) {
-            acc[key] = {
-                FECHA:      item.FECHA,
-                OPERATORIA: item.OPERATORIA,
-                COD:        item.COD,
-                COD_DEB:    item.COD_DEB,
-                SIGLA:      item.SIGLA,
-                SUCURSAL:   item.SUCURSAL,
-                NRO_AGENTE: item.NRO_AGENTE,
-                DNI_DESC:   item.DNI_DESC,
-                CUIL:       item.CUIL,
-                APEYNOM:    item.APEYNOM,
-                MTO_CUO:    0,
-                cantidad:   0,
-                FECHA_VTO:  item.FECHA_VTO
-            };
-        }
-
-        acc[key].MTO_CUO += Number(item.MTO_CUO) || 0;
-        acc[key].cantidad += 1;
-
-        return acc;
-    }, {});
-    
-    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $200 
-    if (codigo_debito === '11') { Object.values(agrupados).forEach(item => item.MTO_CUO += 200); }
-    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $500 
-    if (codigo_debito === '48') { Object.values(agrupados).forEach(item => item.MTO_CUO += 500); }
-    
-    datos = Object.values(agrupados);
+    if (!datosSinAgrupar || datosSinAgrupar.length === 0) {
+        return { datosAgrupados: [], MontoTotalAgrupados: 0 };
     }
+
+    console.log("datos sin agrupar:", JSON.stringify(datosSinAgrupar[0]));
+
+    const codigo_debito = String(datosSinAgrupar[0].COD_DEB);
+    const codigosAgrupar = ['25','7','11','48','55','5','17'];
+
+    let agrupados = {};
+
+    if (codigosAgrupar.includes(codigo_debito)) {
+
+        agrupados = datosSinAgrupar.reduce((acc, item) => {
+
+            const key = item.NRO_AGENTE;
+
+            if (!acc[key]) {
+                acc[key] = {
+                    FECHA: item.FECHA,
+                    OPERATORIA: item.OPERATORIA,
+                    COD: item.COD,
+                    COD_DEB: item.COD_DEB,
+                    SIGLA: item.SIGLA,
+                    SUCURSAL: item.SUCURSAL,
+                    NRO_AGENTE: item.NRO_AGENTE,
+                    DNI_DESC: item.DNI_DESC,
+                    CUIL: item.CUIL,
+                    APEYNOM: item.APEYNOM,
+                    MTO_CUO: 0,
+                    cantidad: 0,
+                    FECHA_VTO: item.FECHA_VTO
+                };
+            }
+
+            acc[key].MTO_CUO += Number(item.MTO_CUO) || 0;
+            acc[key].cantidad++;
+
+            return acc;
+
+        }, {});
+    } else {
+        // si no agrupa, transforma array en objeto temporal
+        agrupados = Object.fromEntries(
+            datosSinAgrupar.map((x, i) => [i, x])
+        );
+    }
+
+    // gastos administrativos
+    if (codigo_debito === '11') {
+        Object.values(agrupados).forEach(x => x.MTO_CUO += 200);
+    }
+
+    if (['34','37'].includes(codigo_debito)) {
+        Object.values(agrupados).forEach(x => x.MTO_CUO += 1);
+    }
+
+    if (codigo_debito === '48') {
+        Object.values(agrupados).forEach(x => x.MTO_CUO += 500);
+    }
+
+    const datosAgrupados = Object.values(agrupados);
+
+    const MontoTotalAgrupados =
+        datosAgrupados.reduce((acc, x) => acc + x.MTO_CUO, 0);
+
+    return { datosAgrupados, MontoTotalAgrupados };
+}    
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// CAMBIO DE MAPEO DE DATOS SEGUN ORGANISMO
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
- 
+ function MapearSegunOrganismo(datos) {
+
     if (['2', '8'].includes(datos[0]?.COD_DEB)) {
-                datos = datos.map(item   => { 
-                    return {
-                                    FECHA:      item.FECHA,
-                                    OPERATORIA: item.OPERATORIA,
-                                    COD:        item.COD,
-                                    COD_DEB:    item.COD_DEB,
-                                    SIGLA:      item.SIGLA,
-                                    SUCURSAL:   item.SUCURSAL,    
-                                    NRO_AGENTE: item.DNI_DESC,
-                                    DNI_DESC:   item.DNI_DESC,
-                                    CUIL:       item.CUIL,
-                                    APEYNOM:    item.APEYNOM,                                
-                                    MTO_CUO:    item.MTO_CUO,                            
-                                    cantidad:   1,
-                                    FECHA_VTO:  item.FECHA_VTO
-                            }
-                    }
-                )
+        datos = datos.map(item => ({
+            FECHA: item.FECHA,
+            OPERATORIA: item.OPERATORIA,
+            COD: item.COD,
+            COD_DEB: item.COD_DEB,
+            SIGLA: item.SIGLA,
+            SUCURSAL: item.SUCURSAL,
+            NRO_AGENTE: item.DNI_DESC,
+            DNI_DESC: item.DNI_DESC,
+            CUIL: item.CUIL,
+            APEYNOM: item.APEYNOM,
+            MTO_CUO: item.MTO_CUO,
+            cantidad: 1,
+            FECHA_VTO: item.FECHA_VTO
+        }));
     }
-    // AGREGA IMPORTE POR GASTO ADMINISTRATIVO $1 
-    if (['34','37'].includes(datos[0]?.COD_DEB)) {
 
-         Object.values(datos).forEach(item => {
-            item.MTO_CUO += 1;
-            });
-    }
-    console.log("=".repeat(68))
-    console.log(" CANTIDAD DE REGISTROS AGRUPADOS    [ "+Object.keys(datos).length+"]" )
-
-    let MontoTotalAgrupados=0
-    Object.values(datos).forEach(item => {
-            MontoTotalAgrupados+=item.MTO_CUO ;
-            });
-    console.log(MontoTotalAgrupados)        
-    return {datos,MontoTotalAgrupados}
- 
+    return datos;
 }
-
-
 
 const consultarDebitos = async (req,res)=>{
     let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
     let periodo =       req.query.enviosPeriodo
     
     let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
-    let {datos,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
-
+    let {datosAgrupados,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
+    const datos = MapearSegunOrganismo(datosAgrupados)
     globalDatosSinAgrup =   sinagrupar
     globalDatosAgrup    =   datos
 

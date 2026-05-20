@@ -437,97 +437,88 @@ async function grabarDebitos(req, res) {
 }
 
 async function compararDebitos(req, res) {
-    try {
-        const codigodebito = req.body.cod_deb;
-        const periodo = req.body.periodo;
+  try {
+    const codigodebito = req.body.cod_deb;
+    const periodo = req.body.periodo;
 
-        console.log('PERIODO CONSULTADO ' + periodo);
-        console.log('CODIGO DEBITO ' + codigodebito);
+    let DatosEnvios = await db_debitos.query(`
+      SELECT 
+        nro_agente,
+        MAX(apeynom) as apeynom,
+        MAX(cuil) as cuil,
+        SUM(monto) as monto_envio,
+        COUNT(*) as cantidad_registros
+      FROM Debitos.dbo.DEBITOS_TOTAL
+      WHERE cod_deb = :codigodebito
+        AND fecha >= CAST(:periodo + '-01' AS DATE)
+        AND fecha < DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
+      GROUP BY nro_agente
+    `, {
+      replacements: { codigodebito, periodo },
+      type: QueryTypes.SELECT
+    });
 
-        let DatosEnvios = await db_debitos.query(`
-            SELECT 
-                nro_agente,
-                MAX(apeynom) as apeynom,
-                MAX(cuil) as cuil,
-                SUM(monto) as monto_envio,
-                COUNT(*) as cantidad_registros
-            FROM Debitos.dbo.DEBITOS_TOTAL
-            WHERE cod_deb = :codigodebito
-                AND fecha >= CAST(:periodo + '-01' AS DATE)
-                AND fecha < DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
-            GROUP BY nro_agente
-        `, {
-            replacements: { codigodebito, periodo },
-            type: QueryTypes.SELECT
-        });
+    let DatosRecepcion = await RecepcionDebitosAux.findAll({
+      where: {
+        COD_DEB: codigodebito,
+        PERIODO: periodo
+      },
+      raw: true
+    });
 
-        console.log("REGISTROS en ENVIOS: " + DatosEnvios.length);
+    const mapaRecepcion = new Map();
 
-        let DatosRecepcion = await RecepcionDebitosAux.findAll({
-            where: {
-                COD_DEB: codigodebito,
-                PERIODO: periodo
-            },
-            raw: true
-        });
+    DatosRecepcion.forEach(rec => {
+      mapaRecepcion.set(String(rec.NRO_AGENTE), rec);
+    });
 
-        console.log("Recepcion: " + DatosRecepcion.length);
+    const coincidencias = DatosEnvios.map(envio => {
+      const recepcion = mapaRecepcion.get(String(envio.nro_agente));
 
-        const mapaRecepcion = new Map();
-        DatosRecepcion.forEach(rec => {
-            const key = String(rec.NRO_AGENTE);
-            mapaRecepcion.set(key, rec);
-        });
+      const montoEnvio = Number(envio.monto_envio) || 0;
+      const montoRecepcion = recepcion ? Number(recepcion.MONTO) || 0 : 0;
 
-        const coincidencias = DatosEnvios.map(envio => {
-            const key = String(envio.nro_agente);
-            const recepcion = mapaRecepcion.get(key);
+      return {
+        periodo,
+        nro_agente: envio.nro_agente,
+        apeynom: envio.apeynom,
+        cuil: envio.cuil,
+        cantidad_registros: envio.cantidad_registros,
+        monto_envio: montoEnvio,
+        monto_recepcion: montoRecepcion,
+        coincide: recepcion ? montoEnvio <= montoRecepcion : false,
+        existe_en_recepcion: Boolean(recepcion)
+      };
+    });
 
-            const montoEnvio = Number(envio.monto_envio) || 0;
-            const montoRecepcion = recepcion ? Number(recepcion.MONTO) || 0 : 0;
+    await actualizarPagados(coincidencias);
 
-            return {
-                periodo,
-                nro_agente: envio.nro_agente,
-                apeynom: envio.apeynom,
-                cuil: envio.cuil,
-                cantidad_registros: envio.cantidad_registros,
-                monto_envio: montoEnvio,
-                monto_recepcion: montoRecepcion,
-                coincide: recepcion ? montoEnvio <= montoRecepcion : false,
-                existe_en_recepcion: Boolean(recepcion)
-            };
-        });
-        actualizarPagados(coincidencias)
-        return res.json(coincidencias);
+    return res.json(coincidencias);
 
-    } catch (error) {
-        console.error('Error en compararDebitos:', error);
-        return res.status(500).json({ error: error.message });
-    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
 }
 
-async function actualizarPagados(data){
-
-console.log(data.length)
-const agentes = data
-    .filter(x => x.coincide === true)
+async function actualizarPagados(data) {
+  const agentes = data
+    .filter(x => x.coincide)
     .map(x => String(x.nro_agente).trim())
-    .filter(a => a);
+    .filter(Boolean);
 
-console.log(agentes.length)
+  if (!agentes.length) return;
 
-  const filas = await db_debitos.query(
-  `
-  UPDATE Debitos.dbo.DEBITOS_TOTAL
-  SET pago = 'SI'
-  WHERE nro_agente IN (:agentes)
-  `,
-  {
+  await db_debitos.query(`
+    UPDATE Debitos.dbo.DEBITOS_TOTAL
+    SET pago = 'SI'
+    WHERE nro_agente IN (:agentes)
+  `, {
     replacements: { agentes },
     type: QueryTypes.UPDATE
-  }
-);
+  });
+
+  console.log("Débitos pagados");
 }
 
 
