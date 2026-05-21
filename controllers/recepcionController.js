@@ -441,7 +441,7 @@ async function compararDebitos(req, res) {
     const codigodebito = req.body.cod_deb;
     const periodo = req.body.periodo;
 
-    let DatosEnvios = await db_debitos.query(`
+    const DatosEnvios = await db_debitos.query(`
       SELECT 
         nro_agente,
         MAX(apeynom) as apeynom,
@@ -454,11 +454,14 @@ async function compararDebitos(req, res) {
         AND fecha < DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
       GROUP BY nro_agente
     `, {
-      replacements: { codigodebito, periodo },
+      replacements: {
+        codigodebito,
+        periodo
+      },
       type: QueryTypes.SELECT
     });
 
-    let DatosRecepcion = await RecepcionDebitosAux.findAll({
+    const DatosRecepcion = await RecepcionDebitosAux.findAll({
       where: {
         COD_DEB: codigodebito,
         PERIODO: periodo
@@ -469,59 +472,63 @@ async function compararDebitos(req, res) {
     const mapaRecepcion = new Map();
 
     DatosRecepcion.forEach(rec => {
-      mapaRecepcion.set(String(rec.NRO_AGENTE), rec);
+      mapaRecepcion.set(
+        String(rec.NRO_AGENTE).trim(),
+        rec
+      );
     });
 
     const coincidencias = DatosEnvios.map(envio => {
-      const recepcion = mapaRecepcion.get(String(envio.nro_agente));
+      const recepcion = mapaRecepcion.get(
+        String(envio.nro_agente).trim()
+      );
 
       const montoEnvio = Number(envio.monto_envio) || 0;
-      const montoRecepcion = recepcion ? Number(recepcion.MONTO) || 0 : 0;
+      const montoRecepcion = Number(recepcion?.MONTO) || 0;
 
       return {
         periodo,
+        cod_deb: codigodebito,
         nro_agente: envio.nro_agente,
         apeynom: envio.apeynom,
         cuil: envio.cuil,
         cantidad_registros: envio.cantidad_registros,
         monto_envio: montoEnvio,
         monto_recepcion: montoRecepcion,
-        coincide: recepcion ? montoEnvio <= montoRecepcion : false,
-        existe_en_recepcion: Boolean(recepcion)
+        coincide: recepcion
+          ? montoEnvio <= montoRecepcion
+          : false,
+        existe_en_recepcion: !!recepcion
       };
     });
 
-    await actualizarPagados(coincidencias);
-
-    return res.json(coincidencias);
+    const resultado = await actualizarPagados(
+      coincidencias,
+      codigodebito,
+      periodo
+    );
+    console.log("llamado return ")
+    return res.json({
+      data: coincidencias,
+      mensaje: "¡Operación realizada satisfactoriamente!",
+      pagados: resultado.pagados,
+      noPagados: resultado.noPagados
+    });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      error: error.message
+    });
   }
 }
 
-// async function actualizarPagados(data) {
-//   const agentes = data
-//     .filter(x => x.coincide)
-//     .map(x => String(x.nro_agente).trim())
-//     .filter(Boolean);
 
-//   if (!agentes.length) return;
-
-//   await db_debitos.query(`
-//     UPDATE Debitos.dbo.DEBITOS_TOTAL
-//     SET pago = 'SI'
-//     WHERE nro_agente IN (:agentes)
-//   `, {
-//     replacements: { agentes },
-//     type: QueryTypes.UPDATE
-//   });
-
-//   console.log("Débitos pagados");
-// }
-async function actualizarPagados(data) {
-
+async function actualizarPagados(
+  data,
+  codigodebito,
+  periodo
+) {
   const agentesSi = [...new Set(
     data
       .filter(x => x.coincide)
@@ -540,9 +547,16 @@ async function actualizarPagados(data) {
     await db_debitos.query(`
       UPDATE Debitos.dbo.DEBITOS_TOTAL
       SET pago = 'SI'
-      WHERE nro_agente IN (:agentesSi)
+      WHERE cod_deb = :codigodebito
+        AND nro_agente IN (:agentesSi)
+        AND fecha >= CAST(:periodo + '-01' AS DATE)
+        AND fecha < DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
     `, {
-      replacements: { agentesSi },
+      replacements: {
+        agentesSi,
+        codigodebito,
+        periodo
+      },
       type: QueryTypes.UPDATE
     });
   }
@@ -551,15 +565,28 @@ async function actualizarPagados(data) {
     await db_debitos.query(`
       UPDATE Debitos.dbo.DEBITOS_TOTAL
       SET pago = 'NO'
-      WHERE nro_agente IN (:agentesNo)
+      WHERE cod_deb = :codigodebito
+        AND nro_agente IN (:agentesNo)
+        AND fecha >= CAST(:periodo + '-01' AS DATE)
+        AND fecha < DATEADD(MONTH, 1, CAST(:periodo + '-01' AS DATE))
     `, {
-      replacements: { agentesNo },
+      replacements: {
+        agentesNo,
+        codigodebito,
+        periodo
+      },
       type: QueryTypes.UPDATE
     });
   }
 
   console.log("Débitos actualizados");
-  console.log("no debitados: "+agentesNo.length)
+  console.log("Pagados:", agentesSi.length);
+  console.log("No pagados:", agentesNo.length);
+
+  return {
+    pagados: agentesSi.length,
+    noPagados: agentesNo.length
+  };
 }
 
 async function ConsultarDebitosRecibidos() {

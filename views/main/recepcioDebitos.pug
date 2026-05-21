@@ -120,7 +120,7 @@ block contenido
 
 
     script.
-        $(document).on('click', '.btn-accion', function () {
+            $(document).on('click', '.btn-accion', function () {
             const cod_deb = $(this).data('id');
             const periodo = $(this).data('periodo');
 
@@ -128,17 +128,29 @@ block contenido
                 url: '/main/index/compararDebitos',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ cod_deb, periodo  }),
+                data: JSON.stringify({
+                    cod_deb,
+                    periodo
+                }),
 
-                success: function (coincidencias) {
-                    console.table(coincidencias);
+                success: function (response) {
+
+                    console.log(response);
+
+                    const coincidencias = response.data;
+
+                    alert(
+                        `${response.mensaje}\n` +
+                        `DEBITADOS: ${response.pagados}\n` +
+                        `NO DEBITADOS: ${response.noPagados}`
+                    );
 
                     $('#tablaResultado').html('');
 
                     coincidencias.forEach(function (item, i) {
                         $('#tablaResultado').append(`
                             <tr>
-                                <td class="border border-slate-300 px-4 py-2">${i+1}</td>
+                                <td class="border border-slate-300 px-4 py-2">${i + 1}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.periodo}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.nro_agente}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.apeynom}</td>
@@ -146,15 +158,20 @@ block contenido
                                 <td class="border border-slate-300 px-4 py-2">${item.cantidad_registros}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_envio}</td>
                                 <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion}</td>
-                                <td class="border px-4 py-2 ${item.coincide ? 'bg-green-100' : 'bg-red-600 font-bold'}">
-                                   ${item.coincide ? 'SI' : 'NO'}
+                                <td class="border px-4 py-2 ${
+                                    item.coincide
+                                        ? 'bg-green-100'
+                                        : 'bg-red-600 text-white font-bold'
+                                }">
+                                    ${item.coincide ? 'SI' : 'NO'}
                                 </td>
                             </tr>
                         `);
                     });
                 },
 
-                error: function () {
+                error: function (err) {
+                    console.error(err);
                     alert('Error al ejecutar');
                 }
             });

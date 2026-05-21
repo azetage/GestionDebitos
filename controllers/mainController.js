@@ -146,7 +146,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       SUCURSAL:   item.SUCURSAL, 
                       NRO_AGENTE: item.NRO_AGENTE,
                       DNI_DESC:   item.DNI_DESC,
-                      CUIL:       item.CUIL ? item.CUIL:"0",
+                      CUIL:       item.CUIL ? item.CUIL: null,
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
                       cantidad:   0,
@@ -195,7 +195,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       SUCURSAL:   item.SUCURSAL,     
                       NRO_AGENTE: item.N_TARJETA,
                       DNI_DESC:   item.DNI_DESC,
-                      CUIL:       item.CUIL ? item.CUIL:"0",
+                      CUIL:       item.CUIL ? item.CUIL:null,
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
                       cantidad:   0,  // ← contador de registros,
@@ -252,7 +252,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                 SUCURSAL:   sucursal,
                 NRO_AGENTE: nro_agente,
                 DNI_DESC:   item.dni,
-                CUIL:       item.CUIL ? item.CUIL:"0",
+                CUIL:       item.CUIL ? item.CUIL:null,
                 APEYNOM:    item.nombre,                                
                 MTO_CUO:    item.imp_cuota,                            
                 cantidad:   1,  // ← contador de registros
@@ -401,7 +401,7 @@ function agruparPorNroAgente(datosSinAgrupar) {
             SUCURSAL: item.SUCURSAL,
             NRO_AGENTE: item.DNI_DESC,
             DNI_DESC: item.DNI_DESC,
-            CUIL: item.CUIL,
+            CUIL: item.CUIL? item.CUIL : null,
             APEYNOM: item.APEYNOM,
             MTO_CUO: item.MTO_CUO,
             cantidad: 1,
@@ -1216,9 +1216,6 @@ async function grabardatos(req, res) {
 function guardarCuil(req,res){
   const id = req.body.id
   const cuil = req.body.cuil
-  
-  
-  
   
   console.log(id +"-"+ cuil)
   const indice = globalDatosSinAgrup.findIndex(item => item.NRO_AGENTE == id);
