@@ -89,6 +89,8 @@ const subirDebitos = (req, res) => {
 
         // UNCa
         const Unca = [ 'APELLIDO', 'NOMBRE', 'DOCUMENTO', 'IMPORTE', 'LEGAJO', 'CODIGO' ];
+        const Unca2 = ['LEGAJO', 'APELLIDOS Y NOMBRES', 'D.N.I.', 'MES', 'AÑO', 'IMPORTE' ]
+        const Unca3= [ 'LEGAJO', 'APELLIDOS', 'NOMBRES', 'DOCUMENTO', 'IMPORTE', 'CODIGO' ]
         
         // MunCapital
         const MunCapital = ['Legajo', 'Apellido y nombres', 'Documento', 'Mes', 'Año', 'Importe'];
@@ -113,8 +115,11 @@ const subirDebitos = (req, res) => {
         const PoderJudicial = ['CUIL', 'NRO_AGENTE', 'NOMBRE', 'DESCUENTO', 'DESCONTADO', 'DISPONIBLE', 'CODIGO', 'AÑO', 'MES'];
 
         // Comparaciones exactas
-        if (JSON.stringify(encabezados) === JSON.stringify(Unca)) {
-            console.log("UNCa");
+        if (JSON.stringify(encabezados) === JSON.stringify(Unca) ||
+                                            JSON.stringify(encabezados) === JSON.stringify(Unca2) ||
+                                            JSON.stringify(encabezados) === JSON.stringify(Unca3)
+        ){
+                                            console.log("UNCa");
             Organismo = "UNCa";
             codigo_debito_envios = 5;
             
