@@ -9,7 +9,7 @@ const DebitosTotalesAux = db_debitos.define('DebitosTotalesAux', {
     SIGLA:        { type: DataTypes.STRING, allowNull: false },
     SUCURSAL:     { type: DataTypes.STRING, allowNull: false },
     NRO_AGENTE:   { type: DataTypes.BIGINT, allowNull: false },
-    DNI_DESC:     { type: DataTypes.BIGINT, allowNull: false },
+    DNI_DESC:     { type: DataTypes.BIGINT, allowNull: true },
     CUIL:         { type: DataTypes.BIGINT, allowNull: true },
     APEYNOM:      { type: DataTypes.STRING, allowNull: false },
     MTO_CUO:      { type: DataTypes.DECIMAL(10,2), allowNull: false },

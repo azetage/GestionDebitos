@@ -1180,12 +1180,12 @@ async function grabardatos(req, res) {
       validate: true
     });
 
-    await db_debitos.query( `EXEC dbo.CargarCuil`,
-      {
-        transaction: t,
-        type: db_debitos.QueryTypes.SELECT
-      }
-    );
+    // await db_debitos.query( `EXEC dbo.CargarCuil`,
+    //   {
+    //     transaction: t,
+    //     type: db_debitos.QueryTypes.SELECT
+    //   }
+    // );
 
 
     // COMMIT
