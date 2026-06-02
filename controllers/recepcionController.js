@@ -6,6 +6,7 @@ import { Sequelize } from "sequelize";
 import { QueryTypes } from 'sequelize';
 import fs from "fs";
 import path from 'path';
+import { agruparPorNroAgente } from './mainController.js';
 
 global.globalData = ""
 
@@ -466,7 +467,7 @@ async function compararDebitos(req, res) {
       type: QueryTypes.SELECT
     });
 
-    const DatosRecepcion = await RecepcionDebitosAux.findAll({
+    const aux = await RecepcionDebitosAux.findAll({
       where: {
         COD_DEB: codigodebito,
         PERIODO: periodo
@@ -474,6 +475,8 @@ async function compararDebitos(req, res) {
       raw: true
     });
 
+    // AGRUPAR POR NUMERO DE AGENTE
+    let { resultado: DatosRecepcion } = agruparPorNroAgenteRecepcion(aux);
     const mapaRecepcion = new Map();
 
     DatosRecepcion.forEach(rec => {
@@ -610,6 +613,42 @@ async function ConsultarDebitosRecibidos() {
 
     return debitos;
 }
+
+function agruparPorNroAgenteRecepcion(datosSinAgrupar) {
+
+    if (!datosSinAgrupar || datosSinAgrupar.length === 0) {
+        return { resultado: []};
+    }
+
+           let agrupados = {};
+           agrupados = datosSinAgrupar.reduce((acc, item) => {
+
+            const key = item.NRO_AGENTE;
+
+            if (!acc[key]) {
+                acc[key] = {
+                    id: item.id,
+                    ORGANISMO: item.ORGANISMO,
+                    COD_DEB: item.COD_DEB,
+                    PERIODO: item.PERIODO,
+                    NRO_AGENTE: item.NRO_AGENTE,
+                    DNI_DESC: item.DNI_DESC,
+                    CUIL: item.CUIL,
+                    APEYNOM: item.APEYNOM,
+                    MONTO: 0
+                };
+            }
+
+            acc[key].MONTO += Number(item.MONTO) || 0;
+
+            return acc;
+
+        }, {});
+    
+    const resultado = Object.values(agrupados);
+    console.table(resultado)
+    return { resultado };
+}    
 
 export {
     recepcioDebitosIndex,
