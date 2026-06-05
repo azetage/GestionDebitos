@@ -7,6 +7,7 @@ import { QueryTypes } from 'sequelize';
 import fs from "fs";
 import path from 'path';
 import { agruparPorNroAgente } from './mainController.js';
+import axios from "axios";
 
 global.globalData = ""
 
@@ -104,7 +105,7 @@ const subirDebitos = (req, res) => {
             '__EMPTY_24', '__EMPTY_25', '__EMPTY_26', '__EMPTY_27', '__EMPTY_28', '__EMPTY_29'];
 
         // Diputados
-        const Diputados = ['Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', 'INSTITUTO PROV. DE LA VIVIENDA'];
+        const Diputados = ['Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', ' monto '];
 
         // Educacion
         const Educacion = ['__EMPTY', '__EMPTY_1', '__EMPTY_2', '__EMPTY_3', '__EMPTY_4', '__EMPTY_5',
@@ -173,7 +174,7 @@ const subirDebitos = (req, res) => {
                 NRO_AGENTE: Number(item['Nro. Legajo']),
                 DNI_DESC: String(item['C.U.I.L.']).substring(2, 10),
                 APEYNOM: `${item.Apellido} ${item.Nombre}`,
-                MONTO: Number(item['INSTITUTO PROV. DE LA VIVIENDA'] * -1)
+                MONTO: Number(item[' monto '] * -1)
             }));
         }
         else if (JSON.stringify(encabezados) === JSON.stringify(Educacion)) {
@@ -590,7 +591,7 @@ async function actualizarPagados(
   console.log("Débitos actualizados");
   console.log("Pagados:", agentesSi.length);
   console.log("No pagados:", agentesNo.length);
-
+  
   return {
     pagados: agentesSi.length,
     noPagados: agentesNo.length
@@ -607,7 +608,11 @@ async function ConsultarDebitosRecibidos() {
             [Sequelize.fn('SUM', Sequelize.col('MONTO')), 'MONTO_TOTAL']
         ],
         group: ['PERIODO', 'ORGANISMO', 'COD_DEB'],
-        order: [['ORGANISMO', 'ASC']],
+        order: [
+    ['PERIODO', 'DESC'],
+    ['ORGANISMO', 'ASC']
+],
+        
         raw: true
     });
 
@@ -650,6 +655,91 @@ function agruparPorNroAgenteRecepcion(datosSinAgrupar) {
     return { resultado };
 }    
 
+async function ReporteDebitos(req, res) {
+
+    try {
+
+        console.log('==============================');
+        console.log('ENTRO A ReporteDebitos');
+
+        const { cod_deb, periodo } = req.body;
+        const fecha = periodo+"-01"
+        console.log('cod_deb:', cod_deb);
+        console.log('periodo recibido:', periodo);
+        console.log('fecha enviada a Jasper:', fecha);
+
+        const response = await axios.get(
+            'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Recepcion/NotaDebitosEfectivos.pdf',
+            {
+                auth: {
+                    username: 'jasperadmin',
+                    password: 'WNIVpb1Cgcx='
+                },
+                responseType: 'arraybuffer',
+                params: {
+                    codigodebito: cod_deb,
+                    periodo: fecha
+                }
+            }
+        );
+
+        console.log('PDF generado correctamente');
+        console.log('Content-Type:', response.headers['content-type']);
+        console.log('Tamaño:', response.data.length);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            'inline; filename=NotaDebitosEfectivos.pdf'
+        );
+        res.setHeader(
+            'Content-Length',
+            response.data.length
+        );
+
+        return res.send(response.data);
+
+    } catch (error) {
+
+        console.error('==============================');
+        console.error('ERROR EN ReporteDebitos');
+
+        if (error.response) {
+
+            console.error('STATUS:', error.response.status);
+
+            if (error.response.data) {
+
+                try {
+
+                    const mensaje = Buffer
+                        .from(error.response.data)
+                        .toString('utf8');
+
+                    console.error('ERROR JASPER:');
+                    console.error(mensaje);
+
+                    return res.status(500).json({
+                        error: mensaje
+                    });
+
+                } catch (e) {
+
+                    console.error('No se pudo convertir la respuesta');
+                }
+            }
+
+        } else {
+
+            console.error('MENSAJE:', error.message);
+        }
+
+        return res.status(500).json({
+            error: error.message
+        });
+    }
+}
+
 export {
     recepcioDebitosIndex,
     subirDebitos,
@@ -657,5 +747,6 @@ export {
     grabarDebitos,
     TipoDocumento,
     compararDebitos,
-    actualizarPagados
+    actualizarPagados,
+    ReporteDebitos
 }

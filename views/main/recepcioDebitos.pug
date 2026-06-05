@@ -121,6 +121,7 @@ block contenido
 
     script.
             $(document).on('click', '.btn-accion', function () {
+
             const cod_deb = $(this).data('id');
             const periodo = $(this).data('periodo');
 
@@ -137,7 +138,7 @@ block contenido
 
                     console.log(response);
 
-                    const coincidencias = response.data;
+                    const coincidencias = response.data || [];
 
                     alert(
                         `${response.mensaje}\n` +
@@ -148,16 +149,17 @@ block contenido
                     $('#tablaResultado').html('');
 
                     coincidencias.forEach(function (item, i) {
+
                         $('#tablaResultado').append(`
                             <tr>
                                 <td class="border border-slate-300 px-4 py-2">${i + 1}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.periodo}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.nro_agente}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.apeynom}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.cuil}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.cantidad_registros}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.monto_envio}</td>
-                                <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.periodo || ''}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.nro_agente || ''}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.apeynom || ''}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.cuil || ''}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.cantidad_registros || 0}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.monto_envio || 0}</td>
+                                <td class="border border-slate-300 px-4 py-2">${item.monto_recepcion || 0}</td>
                                 <td class="border px-4 py-2 ${
                                     item.coincide
                                         ? 'bg-green-100'
@@ -167,12 +169,46 @@ block contenido
                                 </td>
                             </tr>
                         `);
+
                     });
+
+                    // Ejecutar ReporteDebitos una vez finalizada la comparación
+            $.ajax({
+                url: '/main/index/ReporteDebitos',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cod_deb,
+                    periodo
+                }),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+
+                success: function (data) {
+
+                    const blob = new Blob(
+                        [data],
+                        { type: 'application/pdf' }
+                    );
+
+                    const pdfUrl = URL.createObjectURL(blob);
+
+                    window.open(pdfUrl, '_blank');
                 },
 
                 error: function (err) {
-                    console.error(err);
-                    alert('Error al ejecutar');
+                    console.error('Error al generar reporte', err);
                 }
             });
+
+            },
+
+            error: function (err) {
+                console.error(err);
+                alert('Error al ejecutar la comparación de débitos');
+            }
+
+        });
+
         });

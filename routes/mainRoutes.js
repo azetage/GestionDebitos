@@ -4,7 +4,7 @@ import express from 'express';
 import {paginainicio, generarExcel,reportePDFBasico ,    GenerarNotas, guardarCuil
 ,generarExcelFormateado,debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
 } from '../controllers/mainController.js';
-import {recepcioDebitosIndex,compararDebitos} from '../controllers/recepcionController.js'
+import {recepcioDebitosIndex,compararDebitos,ReporteDebitos} from '../controllers/recepcionController.js'
 
 //crear app
 
@@ -27,6 +27,7 @@ router.get('/recepcionDebitos',recepcioDebitosIndex)
 router.get('/index/Notaspdf', GenerarNotas);
 router.post('/index/guardar-cuil', guardarCuil )
 router.post('/index/compararDebitos', compararDebitos )
+router.post('/index/ReporteDebitos',ReporteDebitos)
 
 
 
