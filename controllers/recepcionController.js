@@ -677,7 +677,7 @@ async function ReporteDebitos(req, res) {
                 },
                 responseType: 'arraybuffer',
                 params: {
-                    codigodebito: cod_deb,
+                    CodDeb: cod_deb,
                     periodo: fecha
                 }
             }
