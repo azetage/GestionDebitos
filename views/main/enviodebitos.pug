@@ -131,21 +131,59 @@ block contenido
                                 tr
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 #
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 FECHA
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 COD DEB
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 SIGLA
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 CANTIDAD DE REGISTROS
                                     th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 MONTO
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 GENERAR
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 GENERAR
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 REPORTE
+                                    th.border.border-slate-300.px-4.sticky.top-0.z-10.bg-gray-200 REPORTE
+
                                 
                                 tbody
                                     each item, i in tablaAux || []
                                         tr.bg-white
                                         td.italic.border.border-slate-300.px-4 #{i + 1}
                                         td.italic.border.border-slate-300.px-4= item.FECHA || ''
+                                        td.italic.border.border-slate-300.px-4= item.COD_DEB || ''
                                         td.italic.border.border-slate-300.px-4= item.SIGLA || ''
                                         td.italic.border.border-slate-300.px-4= item.REGISTOS || 0
                                         - var valor = (item.MONTO ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
                                         td.italic.border.border-slate-300.px-4= valor
 
-                                            div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                                        td.italic.border.border-slate-300.px-4
+                                            button.btn-envio(
+                                                class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
+                                                data-cod_deb= item.COD_DEB
+                                                data-fecha= item.FECHA
+
+                                            ) DOC ENVIOS
+
+                                        td.italic.border.border-slate-300.px-4
+                                            button.btn-notas(
+                                                class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
+                                                data-cod_deb= item.COD_DEB
+                                                data-fecha= item.FECHA
+
+                                            ) NOTA ENVIOS
+                                        
+                                        td.italic.border.border-slate-300.px-4
+                                            button.btn-reporteExcel(
+                                                class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
+                                                data-cod_deb= item.COD_DEB
+                                                data-fecha= item.FECHA
+
+                                            )  EXCEL
+
+                                        td.italic.border.border-slate-300.px-4    
+                                            button.btn-reportePDF(
+                                                class="shadow-lg shadow-sky-500/50 w-full text-white font-semibold py-3 shadow-md cursor-pointer rounded-sm bg-sky-500 hover:bg-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-500 active:bg-sky-700"
+                                                data-cod_deb= item.COD_DEB
+                                                data-fecha= item.FECHA
+                                            )  PDF
+
+                                div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
                       
 
 
@@ -226,7 +264,7 @@ block contenido
                 
                 
 
-                    div.mt-8.mx-auto.max-w-full.px-6.text-sm.items-center
+                    div.mt-8.mx-idauto.max-w-full.px-6.text-sm.items-center
                         .bg-gray-100.py-8.px-10(class="shadow-lg shadow-gray-500/50")
                 
                             form.space-y-5(action=`/main/index/cierreejercicio` method="GET")   
@@ -240,45 +278,28 @@ block contenido
 
 
     script.
-        $(document).ready(function () {
-            $('#TablaDebitos').DataTable({
-            paging: false,
-            searching: true,
-            ordering: true,
-            responsive: true,
-            language: {
-                url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
-            }
-            });
-            // activar encabezados fijos
-            new $.fn.dataTable.FixedHeader(table);
-        });
-
         $(document).on('click', '.btn-cuil', function () {
-        const td = $(this).closest('td');
-        const id = $(this).data('id');
+            const td = $(this).closest('td');
+            const id = $(this).data('id');
 
-        td.html(`<input type="text" class="input-cuil" data-id="${id}" placeholder="Ingrese CUIL">`);
-    
-        td.find('input').focus();
-        });
+            td.html(`<input type="text" class="input-cuil" data-id="${id}" placeholder="Ingrese CUIL">`);
+            td.find('input').focus();
+            });
 
         $(document).on('blur', '.input-cuil', function () {
-        const input = $(this);
-        const cuil = input.val();
-        const id = input.data('id');
+            const input = $(this);
+            const cuil = input.val();
+            const id = input.data('id');
 
-        const td = input.closest('td');
+            const td = input.closest('td');
 
-        if (!cuil) {
-            td.html(`<button class="btn-cuil" data-id="${id}">Agregar CUIL</button>`);
-            return;
-        }
+            if (!cuil) {
+                td.html(`<button class="btn-cuil" data-id="${id}">Agregar CUIL</button>`);
+                return;
+            }
 
-        // mostrar valor
         td.html(`<span class="cuil">${cuil}</span>`);
 
-        // guardar en backend
         $.ajax({
             url: '/main/index/guardar-cuil',
             method: 'POST',
@@ -287,4 +308,42 @@ block contenido
             success: () => console.log('CUIL guardado'),
             error: () => alert('Error al guardar')
             });
+        });
+
+        // ESTE EVENTO VA FUERA DEL BLUR
+       $(document).on('click', '.btn-reporteExcel', function () {
+
+            const cod_deb = $(this).data('cod_deb');
+            const fecha = $(this).data('fecha');
+
+            window.open(
+                `/main/index/generarExcel?cod_deb=${cod_deb}&fecha=${fecha}`,
+                '_blank'
+            );
+        });
+
+        $(document).on('click', '.btn-reportePDF', function () {
+
+            const cod_deb = $(this).data('cod_deb');
+            const fecha = $(this).data('fecha');
+            console.log(cod_deb);
+            console.log(fecha);
+
+            window.open(
+                `/main/index/reporte-pdf?cod_deb=${cod_deb}&fecha=${fecha}`,
+                '_blank'
+            );
+        });
+
+        $(document).on('click', '.btn-notas', function () {
+
+            const cod_deb = $(this).data('cod_deb');
+            const fecha = $(this).data('fecha');
+            console.log(cod_deb);
+            console.log(fecha);
+
+            window.open(
+                `/main/index/Notaspdf?cod_deb=${cod_deb}&fecha=${fecha}`,
+                '_blank'
+            );
         });

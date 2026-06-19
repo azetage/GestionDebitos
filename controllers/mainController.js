@@ -459,15 +459,17 @@ const seleccionarGrabados = async (req, res) => {
 
 
 
-async function generarExcel (req,res){
+const generarExcel = async (req, res) => {
 
-    console.log(GlobalenviosOrganismo+Globalperiodo)
+    const cod_deb = req.query.cod_deb;
+    const fecha = req.query.fecha;
 
-    //let {datos} = await generarDebitos(GlobalenviosOrganismo,Globalperiodo,Globalsigla)
+    console.log(cod_deb, fecha);
+
    let datos = await DebitosTotalesAux.findAll({
-    where: { COD_DEB: GlobalenviosOrganismo }
+    where: { COD_DEB: cod_deb, FECHA: fecha }
 });
-
+  
 datos.forEach(item => {
     item.NRO_AGENTE = Number(item.NRO_AGENTE);
     item.COD        = Number(item.COD);
@@ -1226,24 +1228,23 @@ function guardarCuil(req,res){
   
 }
 
-async function consultaGrabados(){
+async function consultaGrabados() {
   return await DebitosTotalesAux.findAll({
-      attributes: [
-        'FECHA',
-        'SIGLA',
-        [Sequelize.fn('COUNT', Sequelize.col('SIGLA')), 'REGISTOS'],
-        [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
-      ],
-      group: ['SIGLA','FECHA'],
-      order: [
-          ['FECHA', 'ASC'],   // primero por fecha ascendente
-          ['SIGLA', 'ASC']    // luego por sigla ascendente
-          ],
-      raw: true
-    }
-  );
+    attributes: [
+      'COD_DEB',
+      'FECHA',
+      'SIGLA',
+      [Sequelize.fn('COUNT', Sequelize.col('COD_DEB')), 'REGISTROS'],
+      [Sequelize.fn('SUM', Sequelize.col('MTO_CUO')), 'MONTO']
+    ],
+    group: ['COD_DEB', 'SIGLA', 'FECHA'],
+    order: [
+      ['FECHA', 'ASC'],
+      ['SIGLA', 'ASC']
+    ],
+    raw: true
+  });
 }
- 
 
 
 
@@ -1287,7 +1288,14 @@ async function cierreEjercicio(req,res) {
 
 
 async function reportePDFBasico(req, res) {
-  const fonts = {
+
+console.log('URL:', req.originalUrl);
+console.log('QUERY:', req.query);
+console.log('BODY:', req.body);
+    const cod_deb = req.query.cod_deb;
+    const fecha = req.query.fecha;
+
+    const fonts = {
     Helvetica: {
       normal: 'Helvetica',
       bold: 'Helvetica-Bold',
@@ -1300,18 +1308,20 @@ async function reportePDFBasico(req, res) {
   
   try {
     // Obtener datos
-    const Aux = await DebitosTotalesAux.findAll({ 
-      where: { COD_DEB: GlobalenviosOrganismo } 
+    const Aux = await DebitosTotalesAux.findAll({
+      where: { COD_DEB: cod_deb, FECHA: fecha }
     });
     
     if (!Aux || Aux.length === 0) {
       return res.status(404).send("No se encontraron datos");
     }
-
-    const { datos } = agruparPorNroAgente(Aux);
+const {
+    datosAgrupados,
+    MontoTotalAgrupados
+} = agruparPorNroAgente(Aux);
 
     let totalPesos=0
-
+    let datos= datosAgrupados
     datos.map(item   => {
                   totalPesos += item.MTO_CUO}
                 )
@@ -1496,8 +1506,11 @@ const ReporteBancoSantiago = async (req, res) => {
 };
 
 
-const ReporteBancoNacion = async (req, res) => {
-       console.log("reporteBNA");
+const ReporteBancoNacion = async (req, res,cod_deb, fecha) => {
+        console.log("reporteBNA");
+         
+        console.log("cod_deb:", cod_deb);
+        console.log("fecha:", fecha);
 
        try {
         // 🔹 Traer ambos PDFs en paralelo
@@ -1510,7 +1523,10 @@ const ReporteBancoNacion = async (req, res) => {
                         password: 'WNIVpb1Cgcx=',
                     },
                     responseType: 'arraybuffer',
-                    params: { codigoenvio: 11 }
+                    params: { 
+                              codigodebito: cod_deb,
+                              fecha: fecha
+                    }
                 }
             ),
             axios.get(
@@ -1520,8 +1536,12 @@ const ReporteBancoNacion = async (req, res) => {
                         username: 'jasperadmin',
                         password: 'WNIVpb1Cgcx=',
                     },
-                    responseType: 'arraybuffer'
+                    responseType: 'arraybuffer',
+                    params: { 
+                              fecha: fecha  
+                    }
                 }
+                
             )
         ]);
 
@@ -1574,10 +1594,11 @@ const ReporteBancoNacion = async (req, res) => {
 };
 
 
-async function ReporteOrganismo (req, res) {
+async function ReporteOrganismo (req, res,cod_deb, fecha) {
   
   console.log("reporte ORGANISMOS");
-
+  console.log("cod_deb:", cod_deb);
+  console.log("fecha:", fecha);
     try {
         const response = await axios.get(
           'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/ORGANISMOS/NotaEnvioOrganismos.pdf',
@@ -1588,7 +1609,8 @@ async function ReporteOrganismo (req, res) {
               },
               responseType: 'arraybuffer',
               params: {
-                  codigodebito: GlobalenviosOrganismo
+                  codigodebito: cod_deb,
+                  fecha: fecha  
               }
           }
       );
@@ -1618,20 +1640,24 @@ async function ReporteOrganismo (req, res) {
 
 
 const GenerarNotas = (req, res) => {
+  const cod_deb = req.query.cod_deb;
+  const fecha = req.query.fecha;
+  console.log("GenerarNotas - cod_deb:", cod_deb);
+  console.log("GenerarNotas - fecha:", fecha);
 
-  if (['34','37'].includes(GlobalenviosOrganismo)) {
+  if (['34','37'].includes(cod_deb)) {
 
     console.log("notas banco santiago");
-    return ReporteBancoSantiago(req, res);
+    //return ReporteBancoSantiago(req, res);
 
-  } else if (['11'].includes(GlobalenviosOrganismo)) {
+  } else if (['11'].includes(cod_deb)) {
 
     console.log("nota banco nacion");
-    return ReporteBancoNacion(req, res);
+    return ReporteBancoNacion(req, res,cod_deb, fecha );
 
   }else{
     console.log("notas organismos");
-    return ReporteOrganismo(req, res);
+    return ReporteOrganismo(req, res,cod_deb, fecha);
   }
   
 
@@ -1653,7 +1679,13 @@ export {
     cierreEjercicio,
     seleccionarGrabados,
 
+  
+  
+  
     generarExcel,
+
+
+  
     generarExcelFormateado,
     
     reportePDFBasico,
