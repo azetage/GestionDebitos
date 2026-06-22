@@ -1,8 +1,8 @@
 import express from 'express';
 
     
-import {paginainicio, generarExcel,reportePDFBasico ,    GenerarNotas, guardarCuil
-,generarExcelFormateado,debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
+import {paginainicio, generarExcel,reportePDFBasico ,    GenerarNotas, guardarCuil,GenerarEnvios,
+generarExcelFormateado,debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
 } from '../controllers/mainController.js';
 import {recepcioDebitosIndex,compararDebitos,ReporteDebitos} from '../controllers/recepcionController.js'
 
@@ -25,6 +25,7 @@ router.get('/index/cierreejercicio',cierreEjercicio)
 router.get('/index/reporte-pdf', reportePDFBasico);
 router.get('/recepcionDebitos',recepcioDebitosIndex)
 router.get('/index/Notaspdf', GenerarNotas);
+router.get('/index/envios', GenerarEnvios)
 router.post('/index/guardar-cuil', guardarCuil )
 router.post('/index/compararDebitos', compararDebitos )
 router.post('/index/ReporteDebitos',ReporteDebitos)

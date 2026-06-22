@@ -519,21 +519,21 @@ datos.forEach(item => {
 }
 
 
-async function generarExcelFormateado (req,res){
+async function generarExcelFormateado (req,res,cod_deb,fecha){
     
-   let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
-   let {datos} = agruparPorNroAgente(Aux)
+   let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha }})
+   let {datosAgrupados: datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
    console.log(datos[0])
    
     //crear archivo excel
     const workbook= new ExcelJS.Workbook();
-    const worksheet= workbook.addWorksheet("Debitos - "+Globalsigla);
+    const worksheet= workbook.addWorksheet("Envios_CodigoDeb"+cod_deb+"_" +fecha );
     
     /////////////////////////////////////////////////////////////////////
     /////     EXCEL FORMATO UNCA
     /////////////////////////////////////////////////////////////////////
 
-    if(['5'].includes(GlobalenviosOrganismo)){
+    if(['5'].includes(cod_deb)){
         //crear columnas de la hoja1
         worksheet.columns = [
             { header: 'numero legajo',    key: 'NRO_AGENTE',      width: 15,  style: { alignment: { horizontal: 'center' } }  },
@@ -566,10 +566,10 @@ async function generarExcelFormateado (req,res){
     /////////////////////////////////////////////////////////////////////
     let codigoAuxiliar 
 
-    if (['2'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '257'} 
-    if (['8'].includes(GlobalenviosOrganismo)){ codigoAuxiliar = '4721'}
+    if (['2'].includes(cod_deb)){ codigoAuxiliar = '257'} 
+    if (['8'].includes(cod_deb)){ codigoAuxiliar = '4721'}
     
-    if(['2','8'].includes(GlobalenviosOrganismo)){
+    if(['2','8'].includes(cod_deb)){
         //crear columnas de la hoja1
         worksheet.columns = [
             { header: 'CODIGO',         key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
@@ -601,13 +601,13 @@ async function generarExcelFormateado (req,res){
     /////EXCEL FORMATO CAP / SEN
     /////////////////////////////////////////////////////////////////////
 
-     if(['7','55'].includes(GlobalenviosOrganismo)){
+     if(['7','55'].includes(cod_deb)){
        let label=""
        const fecha = new Date(datos[0].FECHA);
         const periodo = (fecha.getMonth() + 2) + '/' + fecha.getFullYear();
-      if(['7'].includes(GlobalenviosOrganismo)){
+      if(['7'].includes(cod_deb)){
           label= "Mun. Capital"
-      }else if (['55'].includes(GlobalenviosOrganismo)){
+      }else if (['55'].includes(cod_deb)){
           label= "Camara Senadores"
       }
 
@@ -688,7 +688,7 @@ async function generarExcelFormateado (req,res){
     /////EXCEL FORMATO DIPUTADOS
     /////////////////////////////////////////////////////////////////////
 
-     if(['25'].includes(GlobalenviosOrganismo)){
+     if(['25'].includes(cod_deb)){
       datos.forEach(item => {
         item.MTO_CUO = Math.round(item.MTO_CUO * 100);
       });
@@ -752,7 +752,7 @@ async function generarExcelFormateado (req,res){
  /////SI NO SON ESTOS CODIGOS DE DEBITO NO GENERA EL EXCEL
  /////////////////////////////////////////////////////////////////////
 
-    if(!['11','7','55','2','8',"5",'25'].includes(GlobalenviosOrganismo)){
+    if(!['11','7','55','2','8',"5",'25'].includes(cod_deb)){
      return res.render("templates/mensaje", {
       pagina: "DEBITOS",
       mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO EXCEL!",
@@ -765,7 +765,7 @@ async function generarExcelFormateado (req,res){
     console.log(`excel generado: ${ruta}`)
     
     //generar archivo descargable en el Navegador web
-    res.download(ruta, `Debitos ${Globalsigla} - ${Globalperiodo} .xls`,
+    res.download(ruta, `Envios_CodigoDebito ${cod_deb}_${fecha} .xls`,
         (err) => {
                 if (err) {
                     console.error('Error al descargar el archivo:', err);
@@ -906,11 +906,11 @@ async function generarDbf(req, res) {
   }
 }
 
-async function generartxt(req, res) {
+async function generartxt(req, res,cod_deb,fecha) {
   try {
-    if (['48','34','37','11','25',].includes(GlobalenviosOrganismo)) {
-    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: GlobalenviosOrganismo }})
-    let {datos} = agruparPorNroAgente(Aux)
+    if (['48','34','37','11','25',].includes(cod_deb)) {
+    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha },raw:true})
+    let {datosAgrupados :datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
     let totalPesos=0
 
     datos.map(item   => {
@@ -934,7 +934,7 @@ async function generartxt(req, res) {
     //////////////////////////////////////////////////
     ////////////////////////////// TXT CAMARA DIPUTADOS
     //////////////////////////////////////////////////
-    if(["25"].includes(GlobalenviosOrganismo)){
+    if(["25"].includes(cod_deb)){
       filas.push(
                   ...datos.map((obj, index) => {
                     const NRO_AGENTE    = obj.NRO_AGENTE.padStart(11, "0")
@@ -953,7 +953,7 @@ async function generartxt(req, res) {
     ////////////////////////////// TXT BANCO NACION
     //////////////////////////////////////////////////
 
-    if(["11"].includes(GlobalenviosOrganismo)){
+    if(["11"].includes(cod_deb)){
         // Encabezado
         const encabezado = `1315504660048000PE${mes}01${wfecha.getFullYear()}${mes}${diaFin}REE`;
 
@@ -997,7 +997,7 @@ async function generartxt(req, res) {
     ////////////////////////////// TXT BANCO SANTIAGO
     //////////////////////////////////////////////////
 
-    if(["34","37"].includes(GlobalenviosOrganismo)){
+    if(["34","37"].includes(cod_deb)){
         // Encabezado
         const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
         const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
@@ -1010,7 +1010,7 @@ async function generartxt(req, res) {
         const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
         let tipoCuenta
         let encabezado 
-        if(["34"].includes(GlobalenviosOrganismo)){
+        if(["34"].includes(cod_deb)){
             encabezado= `0848001${cantidad}${monto}`+" ".repeat(157);
             tipoCuenta= "50001"
         }
@@ -1055,7 +1055,7 @@ async function generartxt(req, res) {
     ////////////////////////////// TXT BANCO GALICIA
     //////////////////////////////////////////////////
 
-    if(["48"].includes(GlobalenviosOrganismo)){
+    if(["48"].includes(cod_deb)){
         const montoRaw = totalPesos ?? 0;               // Si viene null/undefined → 0
         const totalPesosEntero = Math.round(Number(montoRaw) * 100); 
         
@@ -1239,8 +1239,9 @@ async function consultaGrabados() {
     ],
     group: ['COD_DEB', 'SIGLA', 'FECHA'],
     order: [
-      ['FECHA', 'ASC'],
-      ['SIGLA', 'ASC']
+      ['FECHA', 'DESC'],
+      ['SIGLA', 'ASC'],
+      ['COD_DEB','ASC']
     ],
     raw: true
   });
@@ -1465,8 +1466,10 @@ const debitosindex = async (req,res)=>{
 }
 
 
-const ReporteBancoSantiago = async (req, res) => {
+const ReporteBancoSantiago = async (rreq, res,cod_deb, fecha) => {
     console.log("reporteBSE_SUELDO");
+    console.log("cod_deb:", cod_deb);
+    console.log("fecha:", fecha);
     
 
     try {
@@ -1479,7 +1482,8 @@ const ReporteBancoSantiago = async (req, res) => {
               },
               responseType: 'arraybuffer',
               params: {
-                  codigoenvio: GlobalenviosOrganismo
+                  codigoenvio: cod_deb,
+                  fecha: fecha
               }
           }
       );
@@ -1648,7 +1652,7 @@ const GenerarNotas = (req, res) => {
   if (['34','37'].includes(cod_deb)) {
 
     console.log("notas banco santiago");
-    //return ReporteBancoSantiago(req, res);
+    return ReporteBancoSantiago(req, res,cod_deb, fecha );
 
   } else if (['11'].includes(cod_deb)) {
 
@@ -1663,6 +1667,41 @@ const GenerarNotas = (req, res) => {
 
   
 }
+
+
+const GenerarEnvios = (req, res ) => {
+  const cod_deb = req.query.cod_deb;
+  const fecha = req.query.fecha;
+  console.log("GenerarNotas - cod_deb:", cod_deb);
+  console.log("GenerarNotas - fecha:", fecha);
+
+  if (['34','37'].includes(cod_deb)) {
+
+    console.log("TXT BSE");
+    return generartxt(req, res,cod_deb, fecha );
+
+  } else if (['11'].includes(cod_deb)) {
+
+    console.log("TXT BANCO NACION");
+    //return ReporteBancoNacion(req, res,cod_deb, fecha );
+
+  }else if (['17'].includes(cod_deb)) {
+
+    console.log("DBF PODER JUDICIAL");
+    //return ReporteBancoNacion(req, res,cod_deb, fecha );
+
+  }
+  else{
+    console.log("EXCEL ORGANISMOS");
+    //return ReporteOrganismo(req, res,cod_deb, fecha);
+    return generarExcelFormateado(req,res,cod_deb,fecha);
+
+  }
+  
+
+  
+}
+
 
 export {
     paginainicio,
@@ -1692,8 +1731,10 @@ export {
     ReporteOrganismo,
     ReporteBancoSantiago,
     ReporteBancoNacion,
+
     guardarCuil,
     GenerarNotas,
+    GenerarEnvios,
     agruparPorNroAgente
 
 }
