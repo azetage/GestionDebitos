@@ -516,6 +516,7 @@ datos.forEach(item => {
                     res.status(500).send('Hubo un problema al descargar el archivo');
                 }
             })
+            
 }
 
 
@@ -805,9 +806,9 @@ async function  cargarArchivo() {
 
 }
  
-async function generarDbf(req, res) {
+async function generarDbf(req, res,cod_deb,fecha) {
   try {
-    if (['17'].includes(GlobalenviosOrganismo)) {
+    if (['17'].includes(cod_deb)) {
       console.log("generarDBF");
 
       const campos = [
@@ -827,7 +828,7 @@ async function generarDbf(req, res) {
       ];
 
       // Nombre único
-      const nombreArchivo = `Debitos-${Globalsigla}-${Globalperiodo}-${Date.now()}.dbf`;
+      const nombreArchivo = `Debitos-${cod_deb}-${fecha}-${Date.now()}.dbf`;
 
       const rutaArchivo = path.join(
         obtenerRutaDescargas(),
@@ -845,11 +846,11 @@ async function generarDbf(req, res) {
 
       // Obtener datos
       const aux = await DebitosTotalesAux.findAll({
-        where: { COD_DEB: GlobalenviosOrganismo },
+        where: { COD_DEB: cod_deb,FECHA: fecha },
         raw: true
       });
 
-      const { datos } = agruparPorNroAgente(aux);
+      const { datosAgrupados :datos, MontoTotalAgrupados: monto } = agruparPorNroAgente(aux);
 
       if (!datos || datos.length === 0) {
         return res.status(404).send("No hay datos para generar el DBF");
@@ -1125,7 +1126,7 @@ async function generartxt(req, res,cod_deb,fecha) {
         //await writeFile(ruta,'Hola','utf8');
         await writeFile(ruta, (filas?filas:datosaux), 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
-        res.download(ruta,`Debitos ${Globalsigla} - ${Globalperiodo}.txt`)
+        res.download(ruta,`Envios_CodigoDebito ${cod_deb}_${fecha}.txt`)
   }
   else{
      return res.render("templates/mensaje", {
@@ -1683,19 +1684,22 @@ const GenerarEnvios = (req, res ) => {
   } else if (['11'].includes(cod_deb)) {
 
     console.log("TXT BANCO NACION");
-    //return ReporteBancoNacion(req, res,cod_deb, fecha );
+    return generartxt(req, res,cod_deb, fecha );
 
   }else if (['17'].includes(cod_deb)) {
 
     console.log("DBF PODER JUDICIAL");
-    //return ReporteBancoNacion(req, res,cod_deb, fecha );
+    return generarDbf(req, res,cod_deb, fecha );
 
   }
   else{
     console.log("EXCEL ORGANISMOS");
     //return ReporteOrganismo(req, res,cod_deb, fecha);
-    return generarExcelFormateado(req,res,cod_deb,fecha);
-
+    
+    if(cod_deb=='25'){
+                generartxt(req, res,cod_deb, fecha );
+            }
+    return generarExcelFormateado(req,res,cod_deb,fecha);        
   }
   
 
@@ -1704,27 +1708,21 @@ const GenerarEnvios = (req, res ) => {
 
 
 export {
-    paginainicio,
-       
+    paginainicio,    
     debitosindex,
     
-    generarDebitos,
-    generartxt,
-    generarDbf,
-    
+      
     consultarDebitos,
-    
     grabardatos,
     cierreEjercicio,
     seleccionarGrabados,
 
-  
-  
-  
+    generarDebitos,
+    generartxt,
+    generarDbf,
+    GenerarNotas,
+    GenerarEnvios,
     generarExcel,
-
-
-  
     generarExcelFormateado,
     
     reportePDFBasico,
@@ -1733,8 +1731,6 @@ export {
     ReporteBancoNacion,
 
     guardarCuil,
-    GenerarNotas,
-    GenerarEnvios,
     agruparPorNroAgente
 
 }
