@@ -112,12 +112,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 //////////////////////////////////////////////////
 ////////////////////////////// DEBITOS FONAVI
 // //////////////////////////////////////////////////
-// `SELECT * FROM VISTA_ENVIODEBITOS 
-//             WHERE COD_DEB = :codigoDebito
-//             AND LEN(NRO_AGENTE) > 1
-//             AND FEC_ENVIO <= :ultimodiaSQL 
-//             ORDER BY NRO_AGENTE ASC`
-    // consulta Vista EnvioDebitos
+
       const datosfonavi = await db_debitos.query(
       `SELECT * FROM VISTA_ENVIODEBITOS 
              WHERE COD_DEB = :codigoDebito
@@ -364,18 +359,7 @@ function agruparPorNroAgente(datosSinAgrupar) {
         );
     }
 
-    // gastos administrativos
-    if (codigo_debito === '11') {
-        Object.values(agrupados).forEach(x => x.MTO_CUO += 200);
-    }
-
-    if (['34','37'].includes(codigo_debito)) {
-        Object.values(agrupados).forEach(x => x.MTO_CUO += 1);
-    }
-
-    if (codigo_debito === '48') {
-        Object.values(agrupados).forEach(x => x.MTO_CUO += 500);
-    }
+   
 
     const datosAgrupados = Object.values(agrupados);
 
@@ -524,6 +508,8 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
     
    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha }})
    let {datosAgrupados: datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
+   let datosconGastos = gastoAdministrativo(datos)
+
    console.log(datos[0])
    
     //crear archivo excel
@@ -540,9 +526,9 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
             { header: 'numero legajo',    key: 'NRO_AGENTE',      width: 15,  style: { alignment: { horizontal: 'center' } }  },
             { header: '',                 key: 'DNI_DESC',        width: 10,  style: { alignment: { horizontal: 'center' } }  },
             { header: 'apellido y nombre',key: 'APEYNOM',         width: 45,  style: { alignment: { horizontal: 'left' } }  },
-            { header: 'importe',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
+            { header: 'importe',          key: 'MTO_CUO',         width: 15,  style: { alignment: { horizontal: 'right' } } },  
             ];
-
+            //numFmt: '#,##0.00',
         // agregar filas con CODIGO fijo en 257
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
@@ -617,7 +603,8 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
             { header: 'Nº Agente',          key: 'NRO_AGENTE',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
             { header: 'Nombre y Apellido',  key: 'APEYNOM',width: 40 },
             { header: 'Nº Doc',             key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'Monto Cuota',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '"$"#,##0.00', alignment: { horizontal: 'right' } } },
+            //{ header: 'Monto Cuota',        key: 'MTO_CUO',     width: 15,  style: {  alignment: { horizontal: 'right' } } },
+            { header: 'Monto Cuota',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },
             
         ];
 
@@ -912,6 +899,7 @@ async function generartxt(req, res,cod_deb,fecha) {
     if (['48','34','37','11','25',].includes(cod_deb)) {
     let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha },raw:true})
     let {datosAgrupados :datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
+    datos= gastoAdministrativo(datos)
     let totalPesos=0
 
     datos.map(item   => {
@@ -1707,11 +1695,41 @@ const GenerarEnvios = (req, res ) => {
 }
 
 
+  const gastoAdministrativo = (datos) => {
+    console.log("COD_DEB:", datos[0].COD_DEB);
+    console.log("Tipo:", typeof datos[0].COD_DEB);
+
+    if (!datos.length) return [];
+    const codDeb = Number(datos[0].COD_DEB)
+
+    let adicional = 0;
+
+    if (codDeb === 11) adicional = 200;
+    else if ([34, 37].includes(codDeb)) adicional = 1;
+    else if (codDeb === 48) adicional = 500;
+
+    const datosConGastos = datos.map(x => ({
+        ...x,
+        MTO_CUO: x.MTO_CUO + adicional
+    }));
+
+    const montoConGastos = datosConGastos.reduce(
+        (acc, x) => acc + x.MTO_CUO,
+        0
+    );
+
+    console.log("COD_DEB:", codDeb);
+    console.log("MontoTotal con gastos administrativos:", montoConGastos);
+
+    return datosConGastos;
+};
+
+
 export {
     paginainicio,    
     debitosindex,
     
-      
+    gastoAdministrativo,
     consultarDebitos,
     grabardatos,
     cierreEjercicio,
