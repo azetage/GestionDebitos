@@ -81,30 +81,31 @@ function a188Caracteres(str) {
 
 const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 
-    GlobalenviosOrganismo= codigo_debito
-    Globalperiodo=periodo
-    Globalsigla= sigla
+    
    
-    console.log("DATOS DE ENTRADA : codigo debito "+ codigo_debito+" periodo :" +periodo )
+    console.log("DATOS DE ENTRADA : codigo debito "+ codigo_debito+" periodo :" +periodo + typeof periodo)
 
-    const [year, month, day] = periodo.split('-').map(Number)
-    wfecha = new Date(year, month-1, day)
-    
-    
-    ultimoDia = ultimoDiaDelMes(wfecha);
-    console.log("ULTIMO DIA DEL MES ",ultimoDia.toLocaleDateString('es-AR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }))
+    const [anio, mes] = periodo.split("-").map(Number);
+
+    // Primer día del mes
+    const primerDia = new Date(anio, mes - 1, 1);
+
+  // Último día del mes
+    const ultimoDia = new Date(anio, mes, 0);
+
+    // GlobalenviosOrganismo= codigo_debito
+    // Globalsigla= sigla
+    Globalperiodo=periodo;
+
+    console.log("primerDia", primerDia); // 2026-07-01T...
+    console.log("ultimoDia", ultimoDia);
+    console.log(primerDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
     console.log(ultimoDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
-   
 
-
-   // Array con Objeto de consulta Debitos
-    let datos
+    // Array con Objeto de consulta Debitos
+    let datos 
     // Acumuladores de Monto Total Generado por Operatoria
-    
+
     let totalFonavi= 0
     let totalPlanes = 0
     let totalOperatoria2=0
@@ -118,11 +119,13 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
              WHERE COD_DEB = :codigoDebito
              AND LEN(NRO_AGENTE) > 1
              AND FEC_ENVIO <= :ultimodiaSQL 
+             AND FEC_VTO >= :primerdiaSQL
              ORDER BY NRO_AGENTE ASC`,
         {
           replacements: {
             codigoDebito: codigo_debito,
-            ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
+            ultimodiaSQL: ultimoDia.toISOString().split('T')[0], // 'YYYY-MM-DD'
+            primerdiaSQL: primerDia.toISOString().split('T')[0]
           },
           type: db_debitos.QueryTypes.SELECT
         }
@@ -133,7 +136,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
           const suma = item.MTO_CUO+item.MTO_ADIC+item.MTO_DEUDA
           totalFonavi += suma
           return {
-                      FECHA:      wfecha.toISOString().split('T')[0],
+                      FECHA:      primerDia.toISOString().split('T')[0],
                       OPERATORIA: 'ADJUD',
                       COD:        item.COD,
                       COD_DEB:    codigo_debito,
@@ -152,9 +155,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
   // respuesta de consulta.
     console.log(" CONSULTA FONAVI          [" + datosfonavi.length + "]     MONTO: " + totalFonavi.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}))
 
-//////////////////////////////////////////////////
-//////////////////////////////DEBITOS PLANES
-//////////////////////////////////////////////////
+// //////////////////////////////////////////////////
+// //////////////////////////////DEBITOS PLANES
+// //////////////////////////////////////////////////
 
 
 // consulta Envio Planes
@@ -163,12 +166,12 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         WHERE COD_DEB = :codigoDebito
         AND TIPO_PLAN = 'C'
         --AND CONF_PLAN <= :ultimodiaSQL
-        --AND VTO_PLAN >=  :fechaSQL
+        --AND VTO_PLAN >=  :primerdiaSQL
        -- ORDER BY N_TARJETA ASC`,
         {
           replacements: {
             codigoDebito: codigo_debito,
-            fechaSQL: wfecha.toISOString().split('T')[0],           // 'YYYY-MM-DD'
+            primerdiaSQL:     primerDia.toISOString().split('T')[0],           // 'YYYY-MM-DD'
             ultimodiaSQL: ultimoDia.toISOString().split('T')[0] // 'YYYY-MM-DD'
           },
           type: db_debitos.QueryTypes.SELECT
@@ -182,7 +185,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         return {
 
           
-                      FECHA:      wfecha.toISOString().split('T')[0],
+                      FECHA:      primerDia.toISOString().split('T')[0],
                       OPERATORIA: 'ADJUD',
                       COD:        item.COD,
                       COD_DEB:    codigo_debito,
@@ -206,9 +209,9 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     datos.push(...datos1)
 
 
-//////////////////////////////////////////////////
-////////////////////////////// DEBITOS OPERATORIAS2
-//////////////////////////////////////////////////
+// //////////////////////////////////////////////////
+// ////////////////////////////// DEBITOS OPERATORIAS2
+// //////////////////////////////////////////////////
 
 // consulta Operatorias2
    let datosOperatorias2 = await db_vistaDebitos.query(
@@ -216,8 +219,8 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
     {
         replacements: {
             codigoDebito: codigo_debito,
-            anio: wfecha.getFullYear(),           // año (2025)
-            mes:  wfecha.getMonth() + 1           // mes (1-12)
+            anio: anio,           // año (2025)
+            mes:  mes           // mes (1-12)
         },
         type: db_vistaDebitos.QueryTypes.SELECT
     }
@@ -239,7 +242,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
         }
         return{
                               
-                FECHA:      wfecha.toISOString().split('T')[0],
+                FECHA:      primerDia.toISOString().split('T')[0],
                 OPERATORIA: item.operatoria,
                 COD:        item.codigo,
                 COD_DEB:    codigo_debito,
@@ -397,24 +400,26 @@ function agruparPorNroAgente(datosSinAgrupar) {
 }
 
 const consultarDebitos = async (req,res)=>{
-    let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-    let periodo =       req.query.enviosPeriodo
-    
-    let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
-    let {datosAgrupados,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
-    const datos = MapearSegunOrganismo(datosAgrupados)
-    globalDatosSinAgrup =   sinagrupar
-    globalDatosAgrup    =   datos
-
-    console.log("FUNCION CONSULTA DEBITOS")
-    console.log(datos[0])
+  console.log("FUNCION CONSULTA DEBITOS")
+     
+  let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+  let periodo =       req.query.enviosPeriodo
+  console.log("CODIGO DEBITO: "+codigo_debito+" SIGLA: "+sigla+" PERIODO: "+periodo)  
+  
+  let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
+  let {datosAgrupados,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
+  const datos = MapearSegunOrganismo(datosAgrupados)
+  globalDatosSinAgrup =   sinagrupar
+  globalDatosAgrup    =   datos
+      
+  console.log(datos[0])
    
     let grabados= await consultaGrabados()
 
 
         return res.render('main/enviodebitos', {
             pagina :    "ENVIO DEBITOS",
-            datos:      datos,
+            datos:      datos? datos:null,
             Organismos: await ConsultarOrganismos(),
             Reg_SinAgrup: sinagrupar.length,
             total_SinAgrup: MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
@@ -1134,6 +1139,15 @@ async function generartxt(req, res,cod_deb,fecha) {
 
 async function grabardatos(req, res) {
   console.log("boton grabar");
+
+  const [anio, mes] = Globalperiodo.split("-").map(Number);
+
+    // Primer día del mes
+    const primerDia = new Date(anio, mes - 1, 1);
+
+  // Último día del mes
+    const ultimoDia = new Date(anio, mes, 0);
+
   
   const t = await db_debitos.transaction();
 
@@ -1144,8 +1158,8 @@ async function grabardatos(req, res) {
       throw new Error("No se encontraron registros en generarDebitos");
       }
 
-    const inicio = primerDiaDelMes(wfecha).toISOString().split('T')[0];
-    const final  = ultimoDiaDelMes(wfecha).toISOString().split('T')[0];
+    const inicio = primerDia.toISOString().split('T')[0];
+    const final  = ultimoDia.toISOString().split('T')[0];
 
     // DELETE
     await DebitosTotalesAux.destroy({
@@ -1158,7 +1172,7 @@ async function grabardatos(req, res) {
     });
 
     // Fecha a grabar
-    const hoy = wfecha.toISOString().split("T")[0];
+    const hoy = primerDia.toISOString().split("T")[0];
 
     sinagrupar = sinagrupar.map(item => ({
         ...item,

@@ -37,8 +37,9 @@ block contenido
                                     label.py-2.px-2.block.h-3.uppercase.text-gray-500.mb-2.font-bold(for="enviosPeriodo") PERIODO
                                     div(class= "inline-flex flex flex-row")   
                                     - const fechaHoy = new Date().toISOString().split('T')[0] 
-                                        input#enviosPeriodo.w-full.italic.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(class="placeholder:italic placeholder:text-sm" placeholder="ingrese FECHA" type="date" name="enviosPeriodo" value = fechaHoy )
-                                
+                                        input#enviosPeriodo.w-full.italic.px-3.py-2.border.border-gray-300.rounded-md.placeholder-gray-400(class="placeholder:italic placeholder:text-sm" placeholder="ingrese FECHA" type="month" name="enviosPeriodo" value=fechaHoy.slice(0, 7) )
+                                                    
+
                     
                                                         
                                 div(class= "inline-flex flex flex-row")
