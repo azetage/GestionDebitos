@@ -1,8 +1,20 @@
 import express from 'express';
 
     
-import {paginainicio, generarExcel,reportePDFBasico ,    GenerarNotas, guardarCuil,GenerarEnvios,
-generarExcelFormateado,debitosindex, consultarDebitos, generartxt,generarDbf,grabardatos,cierreEjercicio,seleccionarGrabados
+import {    paginainicio, 
+            generarExcel,
+            reportePDFBasico,   
+            GenerarNotas, 
+            guardarCuil,
+            GenerarEnvios,
+            generarExcelFormateado,
+            debitosindex,
+            consultarDebitos,
+            generartxt,
+            generarDbf,
+            grabardatos,
+            cierreEjercicio,
+            //seleccionarGrabados
 } from '../controllers/mainController.js';
 import {recepcioDebitosIndex,compararDebitos,ReporteDebitos} from '../controllers/recepcionController.js'
 
@@ -15,7 +27,7 @@ const router = express.Router();
 router.get('/index',paginainicio)
 router.get('/enviodebitos',debitosindex)
 router.get('/enviodebitos/consultasDebito', consultarDebitos)
-router.get('/enviodebitos/seleccionarGrabados', seleccionarGrabados)
+//router.get('/enviodebitos/seleccionarGrabados', seleccionarGrabados)
 router.get('/index/generarExcel',generarExcel)
 router.get('/index/generarExcelFormateado',generarExcelFormateado)
 router.get('/index/generarTxt', generartxt)

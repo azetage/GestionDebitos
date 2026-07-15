@@ -398,7 +398,9 @@ function agruparPorNroAgente(datosSinAgrupar) {
 
     return datos;
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////CONSULTAR DEBITOS
+////////////////////////////////////////////////////////////////////////////////////////////////////
 const consultarDebitos = async (req,res)=>{
   console.log("FUNCION CONSULTA DEBITOS")
      
@@ -413,10 +415,8 @@ const consultarDebitos = async (req,res)=>{
   globalDatosAgrup    =   datos
       
   console.log(datos[0])
-   
-    let grabados= await consultaGrabados()
-
-
+  
+  let grabados= await consultaGrabados()
         return res.render('main/enviodebitos', {
             pagina :    "ENVIO DEBITOS",
             datos:      datos? datos:null,
@@ -431,25 +431,42 @@ const consultarDebitos = async (req,res)=>{
 
 }
 
-const seleccionarGrabados = async (req, res) => {
-  let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
-  GlobalenviosOrganismo = codigo_debito;
-  Globalsigla = sigla;
-  const Organismos = await ConsultarOrganismos();
-  const tablaAux = await consultaGrabados();
+// const seleccionarGrabados = async (req, res) => {
+//   let [codigo_debito, sigla] = req.query.enviosOrganismo.split('|');
+//   GlobalenviosOrganismo = codigo_debito;
+//   Globalsigla = sigla;
+//   const Organismos = await ConsultarOrganismos();
+//   const tablaAux = await consultaGrabados();
 
-  return res.render('main/enviodebitos', {
-    pagina: "ENVIO DEBITOS",
-    Organismos,
-    tablaAux,
-    selecion: `COD DEB: ${GlobalenviosOrganismo} - SIGLA: ${Globalsigla}`
-  });
-};
+//   return res.render('main/enviodebitos', {
+//     pagina: "ENVIO DEBITOS",
+//     Organismos,
+//     tablaAux,
+//     selecion: `COD DEB: ${GlobalenviosOrganismo} - SIGLA: ${Globalsigla}`
+//   });
+// };
 
 
 
 const generarExcel = async (req, res) => {
+    console.log("DATOS DE ENTRADA : codigo debito "+ codigo_debito+" periodo :" +periodo + typeof periodo)
 
+    const [anio, mes] = periodo.split("-").map(Number);
+
+    // Primer día del mes
+    const primerDia = new Date(anio, mes - 1, 1);
+
+  // Último día del mes
+    const ultimoDia = new Date(anio, mes, 0);
+
+    // GlobalenviosOrganismo= codigo_debito
+    // Globalsigla= sigla
+    Globalperiodo=periodo;
+
+    console.log("primerDia", primerDia); // 2026-07-01T...
+    console.log("ultimoDia", ultimoDia);
+    console.log(primerDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
+    console.log(ultimoDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
     const cod_deb = req.query.cod_deb;
     const fecha = req.query.fecha;
 
@@ -510,6 +527,7 @@ datos.forEach(item => {
 
 
 async function generarExcelFormateado (req,res,cod_deb,fecha){
+    
     
    let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha }})
    let {datosAgrupados: datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
@@ -1747,7 +1765,7 @@ export {
     consultarDebitos,
     grabardatos,
     cierreEjercicio,
-    seleccionarGrabados,
+   // seleccionarGrabados,
 
     generarDebitos,
     generartxt,
