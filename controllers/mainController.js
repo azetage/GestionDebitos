@@ -929,17 +929,36 @@ async function generartxt(req, res,cod_deb,fecha) {
                   totalPesos += item.MTO_CUO}
                 )
 
-    console.log(totalPesos)
+    console.log("GENERAR TXT\n")
+    console.log("========================================")
+    console.log(`CODIGO DEBITO: ${cod_deb}  FECHA: ${fecha}  CANTIDAD REGISTROS: ${datos.length}  MONTO TOTAL: ${totalPesos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2})}`  )
     
-    // Fechas
-    let wfecha = datos.length > 0 ? new Date(datos[0].FECHA) : null;
-    let ultimoDia =ultimoDiaDelMes(wfecha)
-    const anio =String(wfecha.getFullYear())
-    const mes = String(wfecha.getMonth() + 2).padStart(2, "0");
-    const dia = String(wfecha.getDate()).padStart(2,"0")
-    const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
+    // Fechas 2026-08-01
+    
+    const [year, month, day] = fecha.split("-").map(Number);
 
-    let filas = []
+    // Primer día del mes
+    const FechaPrimerDia = new Date(year, month-1 , 1);
+
+  // Último día del mes
+    const FechaUltimoDia = new Date(year, month, 0);
+
+    Globalperiodo=fecha;
+
+    console.log("primerDia", FechaPrimerDia); // 2026-07-01T...
+    console.log("ultimoDia", FechaUltimoDia);
+    console.log(FechaPrimerDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
+    console.log(FechaUltimoDia.toISOString().split('T')[0]) // 'YYYY-MM-DD'))
+
+
+     const anio = String(year)
+     const mes = String(month).padStart(2, "0");
+     const dia = String(FechaPrimerDia.getDate()).padStart(2,"0");
+     const diaFin = String(FechaUltimoDia.getDate()).padStart(2, "0");
+                
+     console.log (dia,diaFin,mes,anio)
+  
+     let filas = []
 
 
 
@@ -967,7 +986,7 @@ async function generartxt(req, res,cod_deb,fecha) {
 
     if(["11"].includes(cod_deb)){
         // Encabezado
-        const encabezado = `1315504660048000PE${mes}01${wfecha.getFullYear()}${mes}${diaFin}REE`;
+        const encabezado = `1315504660048000PE${mes}01${anio}${mes}${diaFin}REE`;
 
         filas= [a128Caracteres(encabezado) + "\n"];
 
@@ -1146,9 +1165,9 @@ async function generartxt(req, res,cod_deb,fecha) {
       ruta: "/main/enviodebitos"
     })
   }
-  } catch (err) {
-        console.error('Error al escribir el archivo:', err);
-  }
+   } catch (err) {
+         console.error('Error al escribir el archivo:', err);
+   }
 }
  
 
@@ -1693,8 +1712,8 @@ const GenerarNotas = (req, res) => {
 const GenerarEnvios = (req, res ) => {
   const cod_deb = req.query.cod_deb;
   const fecha = req.query.fecha;
-  console.log("GenerarNotas - cod_deb:", cod_deb);
-  console.log("GenerarNotas - fecha:", fecha);
+  console.log("GenerarEnvios - cod_deb:", cod_deb);
+  console.log("GenerarEnvios - fecha:", fecha);
 
   if (['34','37'].includes(cod_deb)) {
 
