@@ -540,16 +540,17 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
     const worksheet= workbook.addWorksheet("Envios_CodigoDeb"+cod_deb+"_" +fecha );
     
     /////////////////////////////////////////////////////////////////////
-    /////     EXCEL FORMATO UNCA
+    /////     EXCEL FORMATO UNCA : CORREGIDO
     /////////////////////////////////////////////////////////////////////
 
     if(['5'].includes(cod_deb)){
         //crear columnas de la hoja1
         worksheet.columns = [
-            { header: 'numero legajo',    key: 'NRO_AGENTE',      width: 15,  style: { alignment: { horizontal: 'center' } }  },
-            { header: '',                 key: 'DNI_DESC',        width: 10,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'numero legajo',    key: 'NRO_AGENTE',      width: 15,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { header: '',                 key: 'DNI_DESC',        width: 10,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
             { header: 'apellido y nombre',key: 'APEYNOM',         width: 45,  style: { alignment: { horizontal: 'left' } }  },
-            { header: 'importe',          key: 'MTO_CUO',         width: 15,  style: { alignment: { horizontal: 'right' } } },  
+            { header: '',                 key: 'DNI_DESC',        width: 10,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { header: 'importe',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
             ];
             //numFmt: '#,##0.00',
         // agregar filas con CODIGO fijo en 257
@@ -561,8 +562,8 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
         worksheet.addRow({
             NRO_AGENTE: item.NRO_AGENTE,
             DNI_DESC: "",
-            SEXO: " * ",
             APEYNOM: item.APEYNOM,
+            DNI_DESC: "",
             MTO_CUO: item.MTO_CUO,
         });
     });
@@ -572,7 +573,7 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
 
     
     /////////////////////////////////////////////////////////////////////
-    /////     EXCEL FORMATO DIO / EDU
+    /////     EXCEL FORMATO DIO / EDU= CORREGIDO
     /////////////////////////////////////////////////////////////////////
     let codigoAuxiliar 
 
@@ -582,15 +583,16 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
     if(['2','8'].includes(cod_deb)){
         //crear columnas de la hoja1
         worksheet.columns = [
-            { header: 'CODIGO',         key: 'CODAUX',      width: 10,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'DOCUMENTO',      key: 'DNI_DESC',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'SEXO',           key: 'SEXO',       width: 10,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'FECHA',          key: 'FECHA',       width: 15,  style: { numFmt: 'mm/yyyy', alignment: { horizontal: 'center' } } },
-            { header: 'IMPORTE',        key: 'MTO_CUO',     width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
-            { header: 'NUMERO CREDITO', key: 'CODIGO',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
-            { header: 'NUMERO CUOTA',   key: 'CUOTA',    width: 15,  style: { alignment: { horizontal: 'center' } }  },
+            { header: 'CODIGO',         key: 'CODAUX',   width: 10,  style: {   numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { header: 'DOCUMENTO',      key: 'DNI_DESC', width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center',} }  },
+            { header: 'SEXO',           key: 'SEXO',     width: 10,  style: {   alignment: { horizontal: 'center' } }  },
+            { header: 'FECHA',          key: 'FECHA',    width: 15,  style: {   numFmt: 'mm/yyyy', alignment: { horizontal: 'center' } } },
+            { header: 'IMPORTE',        key: 'MTO_CUO',  width: 15,  style: {   numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
+            { header: 'NUMERO CREDITO', key: 'CODIGO',   width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { header: 'NUMERO CUOTA',   key: 'CUOTA',    width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center' } }  },
         ];
         // agregar filas con CODIGO fijo en 257
+      datos.sort((a, b) => Number(a.DNI_DESC) - Number(b.DNI_DESC));  
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
         
@@ -598,7 +600,7 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
 
         worksheet.addRow({
             CODAUX: codigoAuxiliar,
-            DNI_DESC: item.DNI_DESC,
+            DNI_DESC: Number(item.DNI_DESC),
             SEXO: " * ",
             FECHA: periodo,
             MTO_CUO: item.MTO_CUO,
@@ -1035,10 +1037,14 @@ async function generartxt(req, res,cod_deb,fecha) {
         const monto=  String(totalPesosEntero).padStart(15, "0")
         const cantidad = String(datos.length).padStart(8, "0");
         // Fechas
-        const anio= String(wfecha.getFullYear())
-        const mes = String(wfecha.getMonth() + 1).padStart(2, "0");
+
+    //  const anio = String(year)
+    //  const mes = String(month).padStart(2, "0");
+    //  const dia = String(FechaPrimerDia.getDate()).padStart(2,"0");
+    //  const diaFin = String(FechaUltimoDia.getDate()).padStart(2, "0");
+        
         const diaInicio= "01"
-        const diaFin = String(ultimoDia.getDate()).padStart(2, "0");
+        
         let tipoCuenta
         let encabezado 
         if(["34"].includes(cod_deb)){
@@ -1156,7 +1162,9 @@ async function generartxt(req, res,cod_deb,fecha) {
         //await writeFile(ruta,'Hola','utf8');
         await writeFile(ruta, (filas?filas:datosaux), 'utf8');
         console.log(`Archivo creado exitosamente: ${ruta}`);
-        res.download(ruta,`Envios_CodigoDebito ${cod_deb}_${fecha}.txt`)
+        const nombreArchivo =  cod_deb == 11? 'vvda1e.txt': `Envios_CodigoDebito ${cod_deb}_${fecha}.txt`
+
+        res.download(ruta,nombreArchivo)
   }
   else{
      return res.render("templates/mensaje", {

@@ -20,7 +20,7 @@ const DebitosTotalesAux = db_debitos.define('DebitosTotalesAux', {
   indexes: [
     {
       unique: true,
-      fields: ['COD', 'NRO_AGENTE', 'FECHA']
+      fields: ['COD','COD_DEB', 'NRO_AGENTE', 'FECHA']
     }
   ],
 
