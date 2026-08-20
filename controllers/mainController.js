@@ -1522,7 +1522,7 @@ const ReporteBancoSantiago = async (rreq, res,cod_deb, fecha) => {
 
     try {
         const response = await axios.get(
-          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BSE/BSENotaEnvio.pdf',
+          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/BSE/BSENotaEnvio.pdf',
           {
               auth: {
                   username: 'jasperadmin',
@@ -1568,7 +1568,7 @@ const ReporteBancoNacion = async (req, res,cod_deb, fecha) => {
         // 🔹 Traer ambos PDFs en paralelo
         const [notaRes, debitosRes] = await Promise.all([
             axios.get(
-                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BNA/BNANotaEnvios.pdf',
+                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/NACION/BNANotaEnvios.pdf',
                 {
                     auth: {
                         username: 'jasperadmin',
@@ -1582,7 +1582,7 @@ const ReporteBancoNacion = async (req, res,cod_deb, fecha) => {
                 }
             ),
             axios.get(
-                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/BNA/BNAReporteDebitos.pdf',
+                'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/NACION/BNAReporteDebitos.pdf',
                 {
                     auth: {
                         username: 'jasperadmin',
@@ -1653,7 +1653,7 @@ async function ReporteOrganismo (req, res,cod_deb, fecha) {
   console.log("fecha:", fecha);
     try {
         const response = await axios.get(
-          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/ORGANISMOS/NotaEnvioOrganismos.pdf',
+          'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/ORGANISMOS/NotaEnvioOrganismos.pdf',
           {
               auth: {
                   username: 'jasperadmin',
@@ -1718,6 +1718,7 @@ const GenerarNotas = (req, res) => {
 
 
 const GenerarEnvios = (req, res ) => {
+  
   const cod_deb = req.query.cod_deb;
   const fecha = req.query.fecha;
   console.log("GenerarEnvios - cod_deb:", cod_deb);
