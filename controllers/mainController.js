@@ -1558,93 +1558,220 @@ const ReporteBancoSantiago = async (rreq, res,cod_deb, fecha) => {
 };
 
 
-const ReporteBancoNacion = async (req, res,cod_deb, fecha) => {
-        console.log("reporteBNA");
-         
-        console.log("cod_deb:", cod_deb);
-        console.log("fecha:", fecha);
+const ReporteBancoNacion = async (req, res, cod_deb, fecha) => {
 
-       try {
-        // 🔹 Traer ambos PDFs en paralelo
+    console.log("reporteBNA");
+    console.log("cod_deb:", cod_deb);
+    console.log("fecha:", fecha);
+
+    try {
+
+        // =====================================================
+        // AUTENTICACIÓN BASIC PARA JASPERSERVER
+        // =====================================================
+
+        const credentials = Buffer
+            .from('jasperadmin:WNIVpb1Cgcx=')
+            .toString('base64');
+
+        const headers = {
+            Authorization: `Basic ${credentials}`
+        };
+
+        console.log("Authorization:", `Basic ${credentials}`);
+
+        // =====================================================
+        // GENERAR LOS DOS REPORTES EN PARALELO
+        // =====================================================
+
         const [notaRes, debitosRes] = await Promise.all([
+
+            // -------------------------------------------------
+            // NOTA BANCO NACIÓN
+            // -------------------------------------------------
+
             axios.get(
                 'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/NACION/BNANotaEnvios.pdf',
                 {
-                    auth: {
-                        username: 'jasperadmin',
-                        password: 'WNIVpb1Cgcx=',
-                    },
+                    headers: headers,
                     responseType: 'arraybuffer',
-                    params: { 
-                              codigodebito: cod_deb,
-                              fecha: fecha
+                    params: {
+                        codigodebito: Number(cod_deb),
+                        fecha: fecha
                     }
                 }
             ),
+
+            // -------------------------------------------------
+            // REPORTE DE DÉBITOS
+            // -------------------------------------------------
+
             axios.get(
                 'http://54.94.40.190/jasperserver/rest_v2/reports/Reports/Debitos/Envios/NACION/BNAReporteDebitos.pdf',
                 {
-                    auth: {
-                        username: 'jasperadmin',
-                        password: 'WNIVpb1Cgcx=',
-                    },
+                    headers: headers,
                     responseType: 'arraybuffer',
-                    params: { 
-                              fecha: fecha  
+                    params: {
+                        fecha: fecha
                     }
                 }
-                
             )
+
         ]);
 
-        // 🔹 Crear PDF final
+        console.log("STATUS NOTA:", notaRes.status);
+        console.log("CONTENT TYPE NOTA:", notaRes.headers['content-type']);
+
+        console.log("STATUS DEBITOS:", debitosRes.status);
+        console.log("CONTENT TYPE DEBITOS:", debitosRes.headers['content-type']);
+
+        // =====================================================
+        // CREAR PDF FINAL
+        // =====================================================
+
         const pdfFinal = await PDFDocument.create();
 
-        // 🔹 Cargar PDFs
-        const pdfNota = await PDFDocument.load(notaRes.data);
-        const pdfDebitos = await PDFDocument.load(debitosRes.data);
+        // =====================================================
+        // CARGAR PDF DE LA NOTA
+        // =====================================================
 
-        // 🔹 Copiar páginas del primero
+        const pdfNota = await PDFDocument.load(
+            notaRes.data
+        );
+
+        // =====================================================
+        // CARGAR PDF DE DÉBITOS
+        // =====================================================
+
+        const pdfDebitos = await PDFDocument.load(
+            debitosRes.data
+        );
+
+        // =====================================================
+        // AGREGAR PÁGINAS DE LA NOTA
+        // =====================================================
+
         const pagesNota = await pdfFinal.copyPages(
             pdfNota,
             pdfNota.getPageIndices()
         );
-        pagesNota.forEach(page => pdfFinal.addPage(page));
 
-        // 🔹 Copiar páginas del segundo
+        pagesNota.forEach(page => {
+            pdfFinal.addPage(page);
+        });
+
+        // =====================================================
+        // AGREGAR PÁGINAS DEL REPORTE DE DÉBITOS
+        // =====================================================
+
         const pagesDebitos = await pdfFinal.copyPages(
             pdfDebitos,
             pdfDebitos.getPageIndices()
         );
-        pagesDebitos.forEach(page => pdfFinal.addPage(page));
 
-        // 🔹 Generar PDF final
+        pagesDebitos.forEach(page => {
+            pdfFinal.addPage(page);
+        });
+
+        // =====================================================
+        // GENERAR PDF FINAL
+        // =====================================================
+
         const pdfBytes = await pdfFinal.save();
 
-        // 🔹 Enviar al cliente
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", "inline; filename=BNA_Completo.pdf");
+        // =====================================================
+        // ENVIAR PDF AL CLIENTE
+        // =====================================================
 
-        return res.send(Buffer.from(pdfBytes));
+        res.setHeader(
+            "Content-Type",
+            "application/pdf"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            "inline; filename=BNA_Completo.pdf"
+        );
+
+        return res.send(
+            Buffer.from(pdfBytes)
+        );
 
     } catch (error) {
-        const data = error.response?.data;
 
-        if (data) {
-            const mensaje = Buffer.from(data).toString("utf-8");
-            console.error("ERROR JASPER:", mensaje);
+        console.error(
+            "========================================"
+        );
+
+        console.error(
+            "ERROR GENERANDO REPORTE BANCO NACION"
+        );
+
+        console.error(
+            "========================================"
+        );
+
+        console.error(
+            "STATUS JASPER:",
+            error.response?.status
+        );
+
+        console.error(
+            "STATUS TEXT:",
+            error.response?.statusText
+        );
+
+        console.error(
+            "URL:",
+            error.config?.url
+        );
+
+        console.error(
+            "PARAMETROS:",
+            error.config?.params
+        );
+
+        if (error.response?.data) {
+
+            try {
+
+                const mensaje = Buffer
+                    .from(error.response.data)
+                    .toString("utf-8");
+
+                console.error(
+                    "RESPUESTA JASPER:"
+                );
+
+                console.error(mensaje);
+
+            } catch (e) {
+
+                console.error(
+                    "No se pudo interpretar la respuesta de Jasper"
+                );
+
+            }
+
         } else {
-            console.error("ERROR:", error.message);
+
+            console.error(
+                "ERROR:",
+                error.message
+            );
+
         }
 
+        console.error(
+            "========================================"
+        );
+
         return res.status(500).json({
-            error: "No se pudieron generar los reportes"
+            error: "No se pudieron generar los reportes",
+            detalle: error.response?.status || error.message
         });
     }
-
- 
 };
-
 
 async function ReporteOrganismo (req, res,cod_deb, fecha) {
   
