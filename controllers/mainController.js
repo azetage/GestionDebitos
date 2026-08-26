@@ -1891,7 +1891,7 @@ const GenerarEnvios = (req, res ) => {
 
     let adicional = 0;
 
-    if (codDeb === 11) adicional = 200;
+    if (codDeb === 11) adicional = 500;
     else if ([34, 37].includes(codDeb)) adicional = 1;
     else if (codDeb === 48) adicional = 500;
 
