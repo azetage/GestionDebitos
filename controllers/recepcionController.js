@@ -105,8 +105,7 @@ const subirDebitos = (req, res) => {
             '__EMPTY_24', '__EMPTY_25', '__EMPTY_26', '__EMPTY_27', '__EMPTY_28', '__EMPTY_29'];
 
         // Diputados
-        const Diputados = ['Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', ' monto '];
-
+        const Diputados =  [ 'Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', 'monto' ]
         // Educacion
         const Educacion = ['__EMPTY', '__EMPTY_1', '__EMPTY_2', '__EMPTY_3', '__EMPTY_4', '__EMPTY_5',
             '__EMPTY_6', '__EMPTY_7', '__EMPTY_8', '__EMPTY_9', '__EMPTY_10', '__EMPTY_11',
@@ -174,7 +173,7 @@ const subirDebitos = (req, res) => {
                 NRO_AGENTE: Number(item['Nro. Legajo']),
                 DNI_DESC: String(item['C.U.I.L.']).substring(2, 10),
                 APEYNOM: `${item.Apellido} ${item.Nombre}`,
-                MONTO: Number(item[' monto '] * -1)
+                MONTO: Number(item['monto'] * -1)
             }));
         }
         else if (JSON.stringify(encabezados) === JSON.stringify(Educacion)) {
