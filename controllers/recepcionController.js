@@ -84,6 +84,8 @@ const subirDebitos = (req, res) => {
         const encabezados = Object.keys(datos[0]);
         console.log('Encabezados encontrados:', encabezados);
         console.log('Primera fila de datos:', datos[0]);
+        console.log('fila 6 de datos:', datos[6]);
+
 
         let data = [];
         let Organismo = "";
@@ -98,11 +100,18 @@ const subirDebitos = (req, res) => {
         const MunCapital = ['Legajo', 'Apellido y nombres', 'Documento', 'Mes', 'Año', 'Importe'];
         
         // DIO
-        const Dio = ['__EMPTY', '__EMPTY_1', '__EMPTY_2', '__EMPTY_3', '__EMPTY_4', '__EMPTY_5',
-            '__EMPTY_6', '__EMPTY_7', '__EMPTY_8', '__EMPTY_9', '__EMPTY_10', '__EMPTY_11',
-            '__EMPTY_12', '__EMPTY_13', '__EMPTY_14', '__EMPTY_15', '__EMPTY_16', '__EMPTY_17',
-            '__EMPTY_18', '__EMPTY_19', '__EMPTY_20', '__EMPTY_21', '__EMPTY_22', '__EMPTY_23',
-            '__EMPTY_24', '__EMPTY_25', '__EMPTY_26', '__EMPTY_27', '__EMPTY_28', '__EMPTY_29'];
+        const Dio = [
+            '__EMPTY',    '__EMPTY_1',  '__EMPTY_2',
+            '__EMPTY_3',  '__EMPTY_4',  '__EMPTY_5',
+            '__EMPTY_6',  '__EMPTY_7',  '__EMPTY_8',
+            '__EMPTY_9',  '__EMPTY_10', '__EMPTY_11',
+            '__EMPTY_12', '__EMPTY_13', '__EMPTY_14',
+            '__EMPTY_15', '__EMPTY_16', '__EMPTY_17',
+            '__EMPTY_18', '__EMPTY_19', '__EMPTY_20',
+            '__EMPTY_21', '__EMPTY_22', '__EMPTY_23',
+            '__EMPTY_24', '__EMPTY_25', '__EMPTY_26',
+            '__EMPTY_27', '__EMPTY_28'
+            ];
 
         // Diputados
         const Diputados =  [ 'Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', 'monto' ]
@@ -152,14 +161,15 @@ const subirDebitos = (req, res) => {
             console.log("DEBITOS DIO");
             Organismo = "DIO";
             codigo_debito_envios = 2;
-            data = datos.slice(4, -2).map(item => ({
+            data = datos.slice(3, -2).map(item => ({
                 ORGANISMO: Organismo,
                 COD_DEB: codigo_debito_envios,
                 PERIODO: PeriodoRecepcion,
-                NRO_AGENTE: Number(item.__EMPTY_5),
+                NRO_AGENTE: Number(item.__EMPTY),
                 DNI_DESC: Number(item.__EMPTY),
-                APEYNOM: item.__EMPTY_9,
-                MONTO: Number(item.__EMPTY_28)
+
+                APEYNOM: Number(item.__EMPTY_3),
+                MONTO: Number(item.__EMPTY_27)
             }));
         }
         else if (JSON.stringify(encabezados) === JSON.stringify(Diputados)) {
@@ -532,7 +542,7 @@ async function compararDebitos(req, res) {
 }
 
 
-async function actualizarPagados(
+async function  actualizarPagados(
   data,
   codigodebito,
   periodo
@@ -643,7 +653,7 @@ function agruparPorNroAgenteRecepcion(datosSinAgrupar) {
                 };
             }
 
-            acc[key].MONTO += Number(item.MONTO) || 0;
+            acc[key].MONTO += Number(item.MONTO) || 5;
 
             return acc;
 
