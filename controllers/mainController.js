@@ -11,6 +11,7 @@ import { BIGINT, INTEGER, NUMBER, Op, Sequelize} from "sequelize";
 import PdfPrinter from 'pdfmake';
 import axios from "axios";
 import { PDFDocument } from "pdf-lib";
+import { differenceInCalendarISOWeekYearsWithOptions } from 'date-fns/fp';
 
 
 
@@ -411,9 +412,12 @@ const consultarDebitos = async (req,res)=>{
   let {sinagrupar,MontoTotalSinAgrupar} = await generarDebitos(codigo_debito,periodo,sigla)
   let {datosAgrupados,MontoTotalAgrupados}=  agruparPorNroAgente(sinagrupar)
   const datos = MapearSegunOrganismo(datosAgrupados)
+ 
   globalDatosSinAgrup =   sinagrupar
   globalDatosAgrup    =   datos
-      
+
+  const { datosConGastos, montoConGastos } = gastoAdministrativo(datos);
+  
   console.log(datos[0])
   
   let grabados= await consultaGrabados()
@@ -423,7 +427,7 @@ const consultarDebitos = async (req,res)=>{
             Organismos: await ConsultarOrganismos(),
             Reg_SinAgrup: sinagrupar.length,
             total_SinAgrup: MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
-            Total_Agrup: MontoTotalAgrupados.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
+            Total_Agrup: ('11','34','37').includes(datos[0].COD_DEB)?montoConGastos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}): MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
             Reg_Agrup:   datos.length,
             tablaAux :  grabados
             
@@ -1907,7 +1911,7 @@ else if ([34, 37].includes(codDeb)) adicional = 1;
     console.log("COD_DEB:", codDeb);
     console.log("MontoTotal con gastos administrativos:", montoConGastos);
 
-    return datosConGastos;
+    return {datosConGastos,montoConGastos};
 };
 
 
