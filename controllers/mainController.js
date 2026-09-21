@@ -418,8 +418,8 @@ const consultarDebitos = async (req,res)=>{
 
   const { datosConGastos, montoConGastos } = gastoAdministrativo(datos);
   
-  console.log(datos[0])
-  
+  const codigo = Number(datos[0].COD_DEB)
+
   let grabados= await consultaGrabados()
         return res.render('main/enviodebitos', {
             pagina :    "ENVIO DEBITOS",
@@ -427,7 +427,7 @@ const consultarDebitos = async (req,res)=>{
             Organismos: await ConsultarOrganismos(),
             Reg_SinAgrup: sinagrupar.length,
             total_SinAgrup: MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
-            Total_Agrup: ('11','34','37').includes(datos[0].COD_DEB)?montoConGastos.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}): MontoTotalSinAgrupar.toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
+            Total_Agrup: ([11,34,37].includes(codigo)? montoConGastos: MontoTotalSinAgrupar).toLocaleString('es-AR', {style: 'currency',currency: 'ARS',minimumFractionDigits: 2}),
             Reg_Agrup:   datos.length,
             tablaAux :  grabados
             
