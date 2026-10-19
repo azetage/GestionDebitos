@@ -928,9 +928,9 @@ async function generartxt(req, res,cod_deb,fecha) {
     if (['48','34','37','11','25',].includes(cod_deb)) {
     let Aux = await DebitosTotalesAux.findAll({where:{COD_DEB: cod_deb,FECHA: fecha },raw:true})
     let {datosAgrupados :datos, MontoTotalAgrupados: monto} = agruparPorNroAgente(Aux)
-    datos= gastoAdministrativo(datos)
+    const   { datosConGastos, montoConGastos } = gastoAdministrativo(datos);
     let totalPesos=0
-
+    datos = datosConGastos  
     datos.map(item   => {
                   totalPesos += item.MTO_CUO}
                 )

@@ -289,5 +289,18 @@ block contenido
                 '_blank'
             );
         });
+        
+        $(document).ready(function () {
+            $('#TablaDebitos').DataTable({
+            paging: false,
+            searching: true,
+            ordering: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
+            }
+            });
+            // activar encabezados fijos
+            new $.fn.dataTable.FixedHeader(table);
+        });
 
         
