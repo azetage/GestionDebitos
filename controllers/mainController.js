@@ -1042,10 +1042,6 @@ async function generartxt(req, res,cod_deb,fecha) {
         const cantidad = String(datos.length).padStart(8, "0");
         // Fechas
 
-    //  const anio = String(year)
-    //  const mes = String(month).padStart(2, "0");
-    //  const dia = String(FechaPrimerDia.getDate()).padStart(2,"0");
-    //  const diaFin = String(FechaUltimoDia.getDate()).padStart(2, "0");
         
         const diaInicio= "01"
         
@@ -1062,7 +1058,8 @@ async function generartxt(req, res,cod_deb,fecha) {
 
             filas = [a188Caracteres(encabezado) + "\n"];
             // Orden de campos
-            const prefijo= anio+mes+diaInicio+(anio+mes+diaFin).repeat(2)+"0".repeat(22)+anio+mes
+            const periodovencido= new Date()
+            const prefijo= anio+mes+diaInicio+(anio+mes+diaFin).repeat(2)+"0".repeat(22)+String(periodovencido.getFullYear())+String(periodovencido.getMonth()+1)
 
             const orden = ["MTO_CUO", "COD","NRO_AGENTE"];
 
