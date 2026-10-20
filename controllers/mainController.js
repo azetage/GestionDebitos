@@ -1063,32 +1063,38 @@ async function generartxt(req, res,cod_deb,fecha) {
 
             const orden = ["MTO_CUO", "COD","NRO_AGENTE"];
 
-            filas.push(
-            ...datos.map(obj => {
-                const valoresOrdenados = orden.map(k => {
-                
-                if (k === "MTO_CUO") {
-                    const montoEntero = Math.round(Number(obj[k] ?? 0) * 100); // centavos
-                    return String(montoEntero).padStart(14, "0");
-                }
-                if (k === "COD") {
-                return String(obj[k] ?? "").padStart(7, "0") + tipoCuenta
-                }
-                
-                if (k === "NRO_AGENTE") {
-                    return String(obj[k] ?? "").padStart(17, "0");
-                }
-            
-                return obj[k] ?? "";
-                });
+           const agentesEspeciales = new Set([
+          "710699112", "710699209", "714077170", "714040001",
+          "712221587", "714040001","710698404", "794946882"
+          ]);
 
-                const fila = prefijo + valoresOrdenados.join("")+" ".repeat(90)+"02"
-                return a188Caracteres(fila+"\n");
-            }))
-            
-           
-        }
+      
+        filas.push(...datos.map(obj => {
+        const tipoCuentaFila = agentesEspeciales.has(String(obj.NRO_AGENTE))
+          ? "30001"
+          : tipoCuenta; // Valor por defecto definido previamente
 
+        const valoresOrdenados = orden.map(k => {
+          if (k === "MTO_CUO") {
+            const montoEntero = Math.round(Number(obj[k] ?? 0) * 100);
+            return String(montoEntero).padStart(14, "0");
+          }
+
+          if (k === "COD") {
+            return String(obj[k] ?? "").padStart(7, "0") + tipoCuentaFila;
+          }
+
+          if (k === "NRO_AGENTE") {
+            return String(obj[k] ?? "").padStart(17, "0");
+          }
+
+          return obj[k] ?? "";
+        });
+
+        const fila = prefijo + valoresOrdenados.join("") + " ".repeat(90) + "02";
+        return a188Caracteres(fila + "\n");
+      }));
+    }
     //////////////////////////////////////////////////
     ////////////////////////////// TXT BANCO GALICIA
     //////////////////////////////////////////////////
