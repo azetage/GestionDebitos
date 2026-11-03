@@ -294,21 +294,29 @@ const subirDebitosBanco = async (req, res) => {
 
         console.log('Primera línea del TXT:', lineas[0].substring(0, 50));
 
-        if (lineas[0].includes("REE")) {
-            console.log("BANCO NACION");
-            Organismo = "BANCO NACION";
-            codigoDebito = 11;
-            data = lineas.slice(1, -1).map(l => ({
-                registro: l.slice(0, 1),
-                sucursal: l.slice(1, 5),
-                tipo: l.slice(5, 7),
-                nro_agente: l.slice(7, 18),
-                importe: Number(l.slice(18, 33)) / 100,
-                fecha: l.slice(33, 41),
-                estado: l.slice(41, 42),
-                observacion: l.slice(42, 72),
-            }));
-        }
+       if (lineas[0].includes("REE")) {
+  console.log("BANCO NACION");
+  Organismo = "BANCO NACION";
+  codigoDebito = 11;
+
+  data = lineas.slice(1, -1).map((l) => {
+    const importeLeido = (Number(l.slice(18, 33)) / 100);
+
+    return {
+      registro: l.slice(0, 1),
+      sucursal: l.slice(1, 5),
+      tipo: l.slice(5, 7),
+      nro_agente: l.slice(7, 18),
+      importe:
+        l.slice(42, 43) == 0 //&& importeLeido > 0
+          ? importeLeido
+          : 0,
+      fecha: l.slice(33, 41),
+      estado: l.slice(41, 42),
+      observacion: l.slice(42, 72),
+    };
+  });
+}
         else if (lineas[0].includes("848")) {
             console.log("BSE JUBILADOS");
             Organismo = "BSE JUBILADOS";
@@ -324,7 +332,7 @@ const subirDebitosBanco = async (req, res) => {
                 cbu_2: l.slice(40, 54),
                 nro_agente: l.slice(43, 53),
                 periodo: periodo,
-                importe: Number(l.slice(60, 74)) / 100,
+                importe: (Number(l.slice(60, 74)) / 100) <= 0 ? 0 : (Number(l.slice(60, 74)) / 100) ,
                 comprobante: l.slice(74, 81),
                 fecha_cobro: l.slice(81, 89),
                 estado: l.slice(89, 90),
@@ -346,7 +354,7 @@ const subirDebitosBanco = async (req, res) => {
                 cbu_2: l.slice(40, 54),
                 nro_agente: l.slice(43, 53),
                 periodo: periodo,
-                importe: Number(l.slice(60, 74)) / 100,
+                importe: (Number(l.slice(60, 74)) / 100) <= 0 ? 0 : (Number(l.slice(60, 74)) / 100) ,
                 comprobante: l.slice(74, 81),
                 fecha_cobro: l.slice(81, 89),
                 estado: l.slice(89, 90),
@@ -592,7 +600,7 @@ async function  actualizarPagados(
   }
 
   console.log("Débitos actualizados");
-  console.log("Pagados:", agentesSi.length);
+  console.log("Pagados:", agentesSi.length+1);
   console.log("No pagados:", agentesNo.length);
   
   return {
@@ -647,7 +655,7 @@ function agruparPorNroAgenteRecepcion(datosSinAgrupar) {
                 };
             }
 
-            acc[key].MONTO += Number(item.MONTO) || 5;
+            acc[key].MONTO += Number(item.MONTO) || 0;
 
             return acc;
 

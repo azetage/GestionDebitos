@@ -279,11 +279,19 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
 });
 
 const agentes = datos.map(d => d.NRO_AGENTE);
+//WHERE TRY_CONVERT(BIGINT, nro_agente) IN (:agentes)
+
+
+// `SELECT nro_agente, cuil
+//    FROM Debitos.dbo.DEBITOS_TOTAL
+//    WHERE CAST(nro_agente AS BIGINT) IN (:agentes)
+//    AND cod_deb = :codigoDebito`,
+  
 
 const resultados = await db_debitos.query(
   `SELECT nro_agente, cuil
    FROM Debitos.dbo.DEBITOS_TOTAL
-   WHERE CAST(nro_agente AS BIGINT) IN (:agentes)
+   WHERE TRY_CONVERT(BIGINT, nro_agente) IN (:agentes)
    AND cod_deb = :codigoDebito`,
   {
     replacements: { agentes, codigoDebito: codigo_debito },
