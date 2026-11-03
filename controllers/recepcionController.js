@@ -92,7 +92,7 @@ const subirDebitos = (req, res) => {
         let codigo_debito_envios = 0;
 
         // UNCa
-        const Unca = ['LEGAJO','APELLIDO', 'NOMBRES', 'DOCUMENTO', 'IMPORTE', 'CODIGO']
+        const Unca = ['LEGAJO','APELLIDO', 'NOMBRE', 'DOCUMENTO', 'IMPORTE', 'CODIGO']
         // MunCapital
         const MunCapital = ['Legajo', 'Apellido y nombres', 'Documento', 'Mes', 'Año', 'Importe'];
         
@@ -127,7 +127,7 @@ const subirDebitos = (req, res) => {
             Organismo = "UNCa";
             codigo_debito_envios = 5;
             
-            data = datos.map(item => ({
+            data = datos.slice(0,-1).map(item => ({
                 ORGANISMO: Organismo,
                 COD_DEB: codigo_debito_envios,
                 PERIODO: PeriodoRecepcion,
@@ -136,6 +136,7 @@ const subirDebitos = (req, res) => {
                 APEYNOM: `${item.APELLIDO} ${item.NOMBRE}`,
                 MONTO: Number(item.IMPORTE)
             }));
+          
         }
         else if (JSON.stringify(encabezados) === JSON.stringify(MunCapital)) {
             console.log("DEBITOS CAPITAL");
