@@ -148,7 +148,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       CUIL:       item.CUIL ? item.CUIL: null,
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
-                      cantidad:   0,
+                      cantidad:   1,
                       FECHA_VTO:  item.FEC_VTO
                   }
           }
@@ -197,7 +197,7 @@ const generarDebitos = async (codigo_debito, periodo, sigla)=>{
                       CUIL:       item.CUIL ? item.CUIL:null,
                       APEYNOM:    item.APEYNOM,                                
                       MTO_CUO:    suma,                            
-                      cantidad:   0,  // ← contador de registros,
+                      cantidad:   1,  // ← contador de registros,
                       FECHA_VTO:  item.VTO_PLAN
 
         }
