@@ -608,7 +608,7 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
         
-        const periodo = (fecha.getMonth() +2) + '' + fecha.getFullYear();
+        const periodo = (fecha.getMonth() +1) + '' + fecha.getFullYear();
 
         worksheet.addRow({
             CODAUX: codigoAuxiliar,
