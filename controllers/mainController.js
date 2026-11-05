@@ -599,7 +599,7 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
             { header: 'DOCUMENTO',      key: 'DNI_DESC', width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center',} }  },
             { header: 'SEXO',           key: 'SEXO',     width: 10,  style: {   alignment: { horizontal: 'center' } }  },
             { header: 'FECHA',          key: 'FECHA',    width: 15,  style: {   numFmt: 'mm/yyyy', alignment: { horizontal: 'center' } } },
-            { header: 'IMPORTE',        key: 'MTO_CUO',  width: 15,  style: {   numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },  
+            { header: 'IMPORTE',        key: 'MTO_CUO',  width: 15,  style: {   numFmt: '0.00', alignment: { horizontal: 'right' } } },  
             { header: 'NUMERO CREDITO', key: 'CODIGO',   width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center' } }  },
             { header: 'NUMERO CUOTA',   key: 'CUOTA',    width: 15,  style: {   numFmt: '0',alignment: { horizontal: 'center' } }  },
         ];
@@ -1000,7 +1000,7 @@ async function generartxt(req, res,cod_deb,fecha) {
 
     if(["11"].includes(cod_deb)){
         // Encabezado
-        const encabezado = `1315504660048000PE${mes}01${anio}${mes}${diaFin}REE`;
+        const encabezado = `13155104660048000PE${mes}01${anio}${mes}${diaFin}REE`;
 
         filas= [a128Caracteres(encabezado) + "\n"];
 

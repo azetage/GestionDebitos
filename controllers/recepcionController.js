@@ -111,6 +111,7 @@ const subirDebitos = (req, res) => {
             ];
 
         // Diputados
+//          Encabezados: Nro. Legajo, Apellido, Nombre, C.U.I.L., INSTITUTO PROV. DE LA VIVIENDA
         const Diputados =  [ 'Nro. Legajo', 'Apellido', 'Nombre', 'C.U.I.L.', 'monto' ]
         // Educacion
         const Educacion = ['__EMPTY', '__EMPTY_1', '__EMPTY_2', '__EMPTY_3', '__EMPTY_4', '__EMPTY_5',
@@ -178,7 +179,7 @@ const subirDebitos = (req, res) => {
                 NRO_AGENTE: Number(item['Nro. Legajo']),
                 DNI_DESC: String(item['C.U.I.L.']).substring(2, 10),
                 APEYNOM: `${item.Apellido} ${item.Nombre}`,
-                MONTO: Number(item['monto'] * -1)
+                MONTO: Number(item['monto'] * 1)
             }));
         }
         else if (JSON.stringify(encabezados) === JSON.stringify(Educacion)) {
