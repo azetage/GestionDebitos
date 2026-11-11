@@ -789,7 +789,7 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
         // agregar filas con CODIGO fijo en 257
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
-        const periodo = (fecha.getMonth() +2) + '/' + fecha.getFullYear();
+        const periodo = (fecha.getMonth() +1) + '/' + fecha.getFullYear();
 
         worksheet.addRow({
             NRO_AGENTE: item.NRO_AGENTE,
