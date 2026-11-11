@@ -782,19 +782,19 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
         //crear columnas de la hoja1
         worksheet.columns = [
             { header: 'CUIL',             key: 'NRO_AGENTE',      width: 15,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
-            { header: 'IMPORTE',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },
-            { header: 'CUOTAIPV',         key: 'PERIODO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },    
+            { header: 'IMPORTE',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '0.00', alignment: { horizontal: 'right' } } },
+            { header: 'CUOTA',         key: 'PERIODO',         width: 15,  style: {  alignment: { horizontal: 'right' } } },    
             ];
             //numFmt: '#,##0.00',
         // agregar filas con CODIGO fijo en 257
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
-        const periodo = (fecha.getMonth() +2) + '' + fecha.getFullYear();
+        const periodo = (fecha.getMonth() +2) + '/' + fecha.getFullYear();
 
         worksheet.addRow({
             NRO_AGENTE: item.NRO_AGENTE,
             MTO_CUO: item.MTO_CUO,
-            PERIODO: periodo
+            PERIODO: 'CUOTA IPV '+periodo
         });
     });
     }
