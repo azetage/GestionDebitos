@@ -773,11 +773,37 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
         })
         
     }
+
+    /////////////////////////////////////////////////////////////////////
+    /////EXCEL FORMATO TRIBUNAL DE CUENTAS
+    /////////////////////////////////////////////////////////////////////
+
+    if(['4'].includes(cod_deb)){
+        //crear columnas de la hoja1
+        worksheet.columns = [
+            { header: 'CUIL',             key: 'NRO_AGENTE',      width: 15,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { header: 'IMPORTE',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },
+            { header: 'CUOTAIPV',         key: 'PERIODO',         width: 15,  style: { numFmt: '#,##0.00', alignment: { horizontal: 'right' } } },    
+            ];
+            //numFmt: '#,##0.00',
+        // agregar filas con CODIGO fijo en 257
+      datos.forEach(item => {
+        const fecha = new Date(item.FECHA);
+        const periodo = (fecha.getMonth() +2) + '' + fecha.getFullYear();
+
+        worksheet.addRow({
+            NRO_AGENTE: item.NRO_AGENTE,
+            MTO_CUO: item.MTO_CUO,
+            PERIODO: periodo
+        });
+    });
+    }
+
  /////////////////////////////////////////////////////////////////////
  /////SI NO SON ESTOS CODIGOS DE DEBITO NO GENERA EL EXCEL
  /////////////////////////////////////////////////////////////////////
 
-    if(!['11','7','55','2','8',"5",'25'].includes(cod_deb)){
+    if(!['11','7','55','2','8',"5",'25','4'].includes(cod_deb)){
      return res.render("templates/mensaje", {
       pagina: "DEBITOS",
       mensaje: "¡EL ORGANISMO SELECIONADO NO GENERA ARCHIVO FORMATO EXCEL!",
