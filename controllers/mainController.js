@@ -780,12 +780,12 @@ async function generarExcelFormateado (req,res,cod_deb,fecha){
 
     if(['4'].includes(cod_deb)){
         //crear columnas de la hoja1
-        // worksheet.columns = [
-        //     { header: 'CUIL',             key: 'NRO_AGENTE',      width: 15,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
-        //     { header: 'IMPORTE',          key: 'MTO_CUO',         width: 15,  style: { numFmt: '0.00', alignment: { horizontal: 'right' } } },
-        //     { header: 'CUOTA',         key: 'PERIODO',         width: 15,  style: {  alignment: { horizontal: 'right' } } },    
-        //     ];
-        //     //numFmt: '#,##0.00',
+        worksheet.columns = [
+            { key: 'NRO_AGENTE',      width: 15,  style: { numFmt: '0',alignment: { horizontal: 'center' } }  },
+            { key: 'MTO_CUO',         width: 15,  style: { numFmt: '0.00', alignment: { horizontal: 'right' } } },
+            { key: 'PERIODO',         width: 15,  style: {  alignment: { horizontal: 'right' } } },    
+            ];
+            //numFmt: '#,##0.00',
         // agregar filas con CODIGO fijo en 257
       datos.forEach(item => {
         const fecha = new Date(item.FECHA);
